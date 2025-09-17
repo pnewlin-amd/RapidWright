@@ -116,4 +116,19 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
     public Integer getKPartitions() {
         return k;
     }
+
+    // set threads
+    public void setNumThreads(int t) {
+        this.numOfThreads = t;
+    }
+
+    // set epsilon
+    public void setEpsilon(double e) {
+        this.epsilon = e;
+    }
+
+    // set seed
+    public void setSeed(int s) {
+        this.seed = s;
+    }
 }

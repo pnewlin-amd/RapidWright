@@ -53,8 +53,8 @@ public class Partitioner {
     }
     
     public static void main(String[] args) {
-        if (args.length != 3) {
-            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit>");
+        if (args.length < 3) {
+            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T]");
             return;
         }
         Path inputEDIF = Paths.get(args[0]);
@@ -100,6 +100,26 @@ public class Partitioner {
         AbstractPartitioner p = getDefaultPartitioner();
         p.setInputFile(hMetisFile);
         p.setKPartitions(k);
+        // optional args
+        if (p instanceof MtKaHyParPartitioner) {
+            MtKaHyParPartitioner mp = (MtKaHyParPartitioner) p;
+            for (int i = 3; i < args.length; i++) {
+                String a = args[i];
+                if (a.equals("--seed") && i + 1 < args.length) {
+                    mp.setSeed(Integer.parseInt(args[++i]));
+                } else if (a.startsWith("--seed=")) {
+                    mp.setSeed(Integer.parseInt(a.substring("--seed=".length())));
+                } else if (a.equals("--epsilon") && i + 1 < args.length) {
+                    mp.setEpsilon(Double.parseDouble(args[++i]));
+                } else if (a.startsWith("--epsilon=")) {
+                    mp.setEpsilon(Double.parseDouble(a.substring("--epsilon=".length())));
+                } else if (a.equals("--threads") && i + 1 < args.length) {
+                    mp.setNumThreads(Integer.parseInt(args[++i]));
+                } else if (a.startsWith("--threads=")) {
+                    mp.setNumThreads(Integer.parseInt(a.substring("--threads=".length())));
+                }
+            }
+        }
         p.runPartitioner();
         t.stop();
         
