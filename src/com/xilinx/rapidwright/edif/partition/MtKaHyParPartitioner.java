@@ -40,10 +40,10 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private Path inputFile;
 
-    private int numOfThreads = Integer.getInteger("rapidwright.partition.threads", Runtime.getRuntime().availableProcessors()); // default from system property or cpu count
+    private int numOfThreads = 2;
 
-    //target imbalance
-    private double epsilon = 0.031;
+    // controls allowed partition imbalance; smaller is more balanced but slower
+    private double epsilon = 0.03;
     
     private String objective = "cut";
     
