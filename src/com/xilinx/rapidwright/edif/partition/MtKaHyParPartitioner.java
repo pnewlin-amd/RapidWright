@@ -42,7 +42,8 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private int numOfThreads = 2;
 
-    private double epsilon = 0.03;
+    //target imbalance
+    private double epsilon = 0.031;
     
     private String objective = "cut";
     
