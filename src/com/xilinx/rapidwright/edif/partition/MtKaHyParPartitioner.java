@@ -40,7 +40,7 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private Path inputFile;
 
-    private int numOfThreads = 2;
+    private int numOfThreads = Integer.getInteger("rapidwright.partition.threads", Runtime.getRuntime().availableProcessors()); // default from system property or cpu count
 
     //target imbalance
     private double epsilon = 0.031;
@@ -74,7 +74,7 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 //                , "--write-partition-file=true" };
 
         
-        String[] environ = new String[] {};
+        String[] environ = null; // inherit env
         File runDir = getOutputDir().toFile();
 
         return FileTools.runCommand(cmd, true, environ, runDir);
