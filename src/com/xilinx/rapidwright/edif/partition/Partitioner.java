@@ -149,10 +149,8 @@ public class Partitioner {
         Path outputFile = p.getOutputFile();
         String[] instLookup = PartitionTools.createInstLookupArray(leafInsts);
         Map<Integer, Set<String>> partitions = PartitionTools.readSolutionFile(outputFile, instLookup);
-        // ======FUNCTIONAL FIX ATTEMPT======
         // add a name-keyed cache to avoid identity/key churn on large netlists
         java.util.Map<String, Integer> lutByName = new java.util.HashMap<>();
-        // ======FUNCTIONAL FIX ATTEMPT END======
 
         {
             int mismatches = 0;
@@ -171,9 +169,9 @@ public class Partitioner {
             }
         }
         MessageGenerator.printHeader("Partition Solution Report");
-        final int DBG_MAX_MISS_LOGS = 5;
-        int dbgMissingLUTCountTotal = 0;
-        int dbgMissingLUTCountPrinted = 0;
+        final int DBG_MAX_MISS_LOGS = 100; //after 100 missed LUT counts stop printing to the terminal..
+        int dbgMissingLUTCountTotal = 0;   //track the amount of times we never had a valid count of LUTs
+        int dbgMissingLUTCountPrinted = 0; //track the amount of times we print missed luts.
         for (int i = 0; i < partitions.size(); i++) {
             int lutCount = 0;
             Set<String> names = partitions.get(i);
@@ -202,17 +200,17 @@ public class Partitioner {
                                         inst.getCellType().isLeafCellOrBlackBox()); // includes hierarchical instance path to localize where the missing lut count occurs
                                 dbgMissingLUTCountPrinted++;
                             }
-                            // ======FUNCTIONAL FIX ATTEMPT======
                             // recompute lut count on-demand for this hierarchical instance and fill caches
                             Integer recomputed = PartitionTools.getLUTCount(inst, new java.util.HashMap<>(), instLutCountMap);
                             if (recomputed != null) {
                                 cnt = recomputed;
                                 lutByName.put(name, cnt);
                             }
-                            // ======FUNCTIONAL FIX ATTEMPT END======
                         }
                         if (cnt == null) {
                             // last resort to avoid crash on extremely large netlists
+                            // don't keep a null value in final report cause a crash will happen
+                            // just set as zero.. partition should still be valid but report will be off.
                             cnt = 0;
                         }
                         lutCount += cnt.intValue();
