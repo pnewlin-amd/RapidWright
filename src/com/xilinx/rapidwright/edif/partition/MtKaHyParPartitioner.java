@@ -54,6 +54,8 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     @Override
     public Integer runPartitioner() {
+        //--verbose=true                 -> displays detailed information on the partitioning process
+        //--show-detailed-timings=true   -> shows detailed sub-timings of each phase of the algorithm at the end of partitioning
         String cmd = name 
                 + " -h " + getInputFile() 
                 + " --preset-type=" + presetType + " "
@@ -62,7 +64,9 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
                 + " --seed " + seed
                 + " --epsilon " + epsilon
                 + " --objective "+ objective
-                + " --write-partition-file=true";
+                + " --write-partition-file=true"
+                + " --verbose=true"
+                + " --show-detailed-timings=true";
 
 //        String[] cmd = new String[] {name
 //                , "-h" , getInputFile().toString() 
