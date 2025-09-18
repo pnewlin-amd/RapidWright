@@ -50,6 +50,12 @@ import com.xilinx.rapidwright.edif.EDIFNetlist;
  */
 public class PartitionTools {
 
+    // debug counters for lut count behavior
+    private static long dbgCacheHits = 0;
+    private static long dbgRecursiveCalls = 0;
+    private static long dbgInstMapWrites = 0;
+    private static int dbgCacheHitLogBudget = 10;
+
     /**
      * Calculates the number of LUTs in a given hierarchical cell instance.
      * 
@@ -66,8 +72,15 @@ public class PartitionTools {
             if (i.getCellType().isLeafCellOrBlackBox()) {
                 totalLUTs += i.getCellType().getName().contains("LUT") ? 1 : 0;
             } else if (map.containsKey(i.getCellType())) {
+                dbgCacheHits++; // count cell-type cache usage
+                if (dbgCacheHitLogBudget > 0) {
+                    System.err.printf("PARTITIONER DEBUG: cache hit -> parentPath=%s childInst=%s cellType=%s childPath=%s%n",
+                            inst.toString(), i.getName(), i.getCellType().getName(), inst.getChild(i).toString()); // shows where cache prevents dfs so child instance path may not be recorded
+                    dbgCacheHitLogBudget--;
+                }
                 totalLUTs += map.get(i.getCellType());
             } else {
+                dbgRecursiveCalls++; // count recursion when cache miss
                 totalLUTs += getLUTCount(inst.getChild(i), map, instMap);
             }
         }
@@ -76,6 +89,7 @@ public class PartitionTools {
             throw new RuntimeException("ERROR: Inconsistent netlist");
         }
         instMap.put(inst, totalLUTs);
+        dbgInstMapWrites++; // count inst map writes
     
         return totalLUTs;
     }
@@ -95,6 +109,8 @@ public class PartitionTools {
             Map<EDIFHierCellInst, Integer> instMap) {
         EDIFHierCellInst topInst = netlist.getTopHierCellInst();
         Map<EDIFCell, Integer> lutCountMap = new HashMap<>();
+        // reset counters
+        dbgCacheHits = 0; dbgRecursiveCalls = 0; dbgInstMapWrites = 0; dbgCacheHitLogBudget = 10;
         getLUTCount(topInst, lutCountMap, instMap);
         // count null lut size decisions
         int dbgNullLUTCountDecisions = 0;
@@ -119,6 +135,8 @@ public class PartitionTools {
             }
         }
     
+        System.out.printf("PARTITIONER DEBUG: lutCount stats -> cacheHits=%d recursiveCalls=%d instMapWrites=%d uniqueCells=%d instMapSize=%d%n",
+                dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, lutCountMap.size(), instMap.size()); // reports cache vs recursion usage and instance map size to explain instmap coverage
         System.out.printf("PARTITIONER DEBUG: identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d%n",
                 leafInsts.size(), dbgNullLUTCountDecisions); // reports leaf count and frequency of null lut size during bfs to validate null-as-leaf misclassification
         return leafInsts;

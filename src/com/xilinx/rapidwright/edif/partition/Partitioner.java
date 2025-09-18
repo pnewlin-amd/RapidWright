@@ -182,9 +182,9 @@ public class Partitioner {
                             dbgMissingLUTCountTotal++;
                             if (dbgMissingLUTCountPrinted < DBG_MAX_MISS_LOGS) {
                                 System.err.printf(
-                                        "PARTITIONER DEBUG: missing lut count -> name=%s type=%s depth=%d isLeafOrBB=%s%n",
-                                        name, inst.getCellType().getName(), inst.getDepth(),
-                                        inst.getCellType().isLeafCellOrBlackBox()); // shows example hierarchical leaf missing lut count to pinpoint offending nodes
+                                        "PARTITIONER DEBUG: missing lut count -> name=%s instPath=%s type=%s depth=%d isLeafOrBB=%s%n",
+                                        name, inst.toString(), inst.getCellType().getName(), inst.getDepth(),
+                                        inst.getCellType().isLeafCellOrBlackBox()); // includes hierarchical instance path to localize where the missing lut count occurs
                                 dbgMissingLUTCountPrinted++;
                             }
                         }
