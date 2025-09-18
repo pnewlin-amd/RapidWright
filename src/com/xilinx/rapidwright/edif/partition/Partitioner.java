@@ -149,6 +149,10 @@ public class Partitioner {
         Path outputFile = p.getOutputFile();
         String[] instLookup = PartitionTools.createInstLookupArray(leafInsts);
         Map<Integer, Set<String>> partitions = PartitionTools.readSolutionFile(outputFile, instLookup);
+        // ======FUNCTIONAL FIX ATTEMPT======
+        // add a name-keyed cache to avoid identity/key churn on large netlists
+        java.util.Map<String, Integer> lutByName = new java.util.HashMap<>();
+        // ======FUNCTIONAL FIX ATTEMPT END======
 
         {
             int mismatches = 0;
@@ -183,6 +187,13 @@ public class Partitioner {
                     } else {
                         Integer cnt = instLutCountMap.get(inst);
                         if (cnt == null) {
+                            // try name-based cache first
+                            Integer cached = lutByName.get(name);
+                            if (cached != null) {
+                                cnt = cached;
+                            }
+                        }
+                        if (cnt == null) {
                             dbgMissingLUTCountTotal++;
                             if (dbgMissingLUTCountPrinted < DBG_MAX_MISS_LOGS) {
                                 System.err.printf(
@@ -191,6 +202,18 @@ public class Partitioner {
                                         inst.getCellType().isLeafCellOrBlackBox()); // includes hierarchical instance path to localize where the missing lut count occurs
                                 dbgMissingLUTCountPrinted++;
                             }
+                            // ======FUNCTIONAL FIX ATTEMPT======
+                            // recompute lut count on-demand for this hierarchical instance and fill caches
+                            Integer recomputed = PartitionTools.getLUTCount(inst, new java.util.HashMap<>(), instLutCountMap);
+                            if (recomputed != null) {
+                                cnt = recomputed;
+                                lutByName.put(name, cnt);
+                            }
+                            // ======FUNCTIONAL FIX ATTEMPT END======
+                        }
+                        if (cnt == null) {
+                            // last resort to avoid crash on extremely large netlists
+                            cnt = 0;
                         }
                         lutCount += cnt.intValue();
                     }
