@@ -135,6 +135,10 @@ public class Partitioner {
                     mp.setNumThreads(Integer.parseInt(args[++i]));
                 } else if (a.startsWith("--threads=")) {
                     mp.setNumThreads(Integer.parseInt(a.substring("--threads=".length())));
+                } else if (a.equals("--partition_config") && i + 1 < args.length) {
+                    mp.setPresetType(args[++i]);
+                } else if (a.startsWith("--partition_config=")) {
+                    mp.setPresetType(a.substring("--partition_config=".length()));
                 }
             }
         }

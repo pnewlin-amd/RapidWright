@@ -46,6 +46,7 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
     private double epsilon = 0.03;
     
     private String objective = "cut";
+    private String presetType = "default";
     
     private Path outputDir = null; // Use current working directory
 
@@ -55,7 +56,7 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
     public Integer runPartitioner() {
         String cmd = name 
                 + " -h " + getInputFile() 
-                + " --preset-type=default "
+                + " --preset-type=" + presetType + " "
                 + " -t " + numOfThreads
                 + " -k " + getKPartitions() 
                 + " --seed " + seed
@@ -130,5 +131,9 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
     // set seed
     public void setSeed(int s) {
         this.seed = s;
+    }
+
+    public void setPresetType(String p) {
+        this.presetType = p;
     }
 }
