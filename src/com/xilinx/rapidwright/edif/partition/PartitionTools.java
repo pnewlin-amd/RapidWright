@@ -96,6 +96,8 @@ public class PartitionTools {
         EDIFHierCellInst topInst = netlist.getTopHierCellInst();
         Map<EDIFCell, Integer> lutCountMap = new HashMap<>();
         getLUTCount(topInst, lutCountMap, instMap);
+        // count null lut size decisions
+        int dbgNullLUTCountDecisions = 0;
 
         Map<EDIFHierCellInst, Integer> leafInsts = new HashMap<>();
         Queue<EDIFHierCellInst> q = new LinkedList<>();
@@ -103,6 +105,10 @@ public class PartitionTools {
         while (!q.isEmpty()) {
             EDIFHierCellInst curr = q.poll();
             Integer lutSize = instMap.get(curr);
+            // track null lut size
+            if (lutSize == null) {
+                dbgNullLUTCountDecisions++;
+            }
             if (lutSize == null || lutSize <= lutCount) {
                 leafInsts.put(curr, leafInsts.size()+1);
                 continue;
@@ -113,6 +119,8 @@ public class PartitionTools {
             }
         }
     
+        System.out.printf("PARTITIONER DEBUG: identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d%n",
+                leafInsts.size(), dbgNullLUTCountDecisions); // reports leaf count and frequency of null lut size during bfs to validate null-as-leaf misclassification
         return leafInsts;
     }
     
