@@ -54,7 +54,7 @@ public class Partitioner {
     
     public static void main(String[] args) {
         if (args.length < 3) {
-            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T]");
+            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic]");
             return;
         }
         Path inputEDIF = Paths.get(args[0]);
