@@ -168,6 +168,24 @@ public class Partitioner {
         Path outputFile = p.getOutputFile();
         String[] instLookup = PartitionTools.createInstLookupArray(leafInsts);
         Map<Integer, Set<String>> partitions = PartitionTools.readSolutionFile(outputFile, instLookup);
+        // Write connectivity report with net names (always)
+        {
+            java.util.Map<String,Integer> nameToPart = new java.util.HashMap<>();
+            for (java.util.Map.Entry<Integer, java.util.Set<String>> pe : partitions.entrySet()) {
+                for (String nm : pe.getValue()) {
+                    nameToPart.put(nm, pe.getKey());
+                }
+            }
+            Path hgr = Paths.get(inputEDIF.toString() + ".hgr");
+            Path eidmap = Paths.get(inputEDIF.toString() + ".eidmap");
+            Path netsOut = Paths.get(inputEDIF.toString() + ".nets.txt");
+            try {
+                PartitionTools.writeConnectivityReportWithNames(hgr, eidmap, instLookup, nameToPart, netsOut);
+                System.out.println("Partitioner artifact written: " + netsOut);
+            } catch (java.io.UncheckedIOException ex) {
+                System.err.println("WARNING: Failed to write nets report: " + ex.getMessage());
+            }
+        }
         // add a name-keyed cache to avoid identity/key churn on large netlists
         java.util.Map<String, Integer> lutByName = new java.util.HashMap<>();
 

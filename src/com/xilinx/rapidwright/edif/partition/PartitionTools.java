@@ -30,6 +30,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -187,10 +189,22 @@ public class PartitionTools {
      */
     public static void writeHMetisFile(Path filePath, Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap, 
             Map<EDIFHierCellInst, Integer> leafInsts) { 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath.toFile()))) {
+        // Derive .eidmap path alongside .hgr (replace .hgr suffix if present)
+        Path eidmapPath;
+        String base = filePath.toString();
+        if (base.endsWith(".hgr")) {
+            eidmapPath = Paths.get(base.substring(0, base.length() - 4) + ".eidmap");
+        } else {
+            eidmapPath = Paths.get(base + ".eidmap");
+        }
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath.toFile()));
+             BufferedWriter emw = new BufferedWriter(new FileWriter(eidmapPath.toFile()))) {
             // <Total Edge Count> <Total Node Count>
             bw.write(edgesMap.size() + " " + leafInsts.size() + "\n");
             for (Entry<EDIFHierNet, Set<EDIFHierCellInst>> e : edgesMap.entrySet()) {
+                // Write net name to .eidmap in the same order edges are emitted
+                emw.write(e.getKey().toString());
+                emw.write("\n");
                 for (EDIFHierCellInst i : e.getValue()) {
                     Integer nodeIdx = leafInsts.get(i);
                     if (nodeIdx == null) {
@@ -235,5 +249,74 @@ public class PartitionTools {
         }
     
         return partitions;
+    }
+
+    /**
+     * Writes a human-readable connectivity report with net names using:
+     *  - .hgr         (edge -> list of vertex IDs)
+     *  - .eidmap      (edge ID -> hierarchical net name)
+     *  - instLookup   (vertex ID -> hierarchical instance name)
+     *  - nameToPart   (instance name -> partition index)
+     *
+     * Output format (for each net/edge):
+     *   Net <id>: <net_name>
+     *     cut=<true|false> partitions={p0:cnt0, p1:cnt1, ...}
+     *     <vid>: <instance_name> p=<partition>
+     */
+    public static void writeConnectivityReportWithNames(Path hgrFile,
+                                                       Path eidmapFile,
+                                                       String[] instLookup,
+                                                       Map<String, Integer> nameToPart,
+                                                       Path netsOut) {
+        try (BufferedReader hgr = new BufferedReader(new FileReader(hgrFile.toFile()));
+             BufferedReader eid = new BufferedReader(new FileReader(eidmapFile.toFile()));
+             BufferedWriter out = new BufferedWriter(new FileWriter(netsOut.toFile()))) {
+
+            // Load eidmap: 1-based edge IDs
+            ArrayList<String> netNames = new ArrayList<>();
+            String line;
+            while ((line = eid.readLine()) != null) {
+                netNames.add(line);
+            }
+
+            // Read header line from .hgr
+            String header = hgr.readLine(); // may be "E V" or "E V fmt"
+            int edgeIdx = 0;
+
+            while ((line = hgr.readLine()) != null) {
+                edgeIdx++;
+                String netName = edgeIdx <= netNames.size() ? netNames.get(edgeIdx - 1)
+                        : ("<edge_" + edgeIdx + ">");
+
+                String[] toks = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
+                Map<Integer, Integer> partCounts = new HashMap<>();
+                ArrayList<String> members = new ArrayList<>();
+
+                for (String t : toks) {
+                    if (t.isEmpty()) continue;
+                    int vid;
+                    try {
+                        vid = Integer.parseInt(t);
+                    } catch (NumberFormatException nfe) {
+                        continue;
+                    }
+                    String instName = (vid >= 0 && vid < instLookup.length) ? instLookup[vid] : null;
+                    Integer part = (instName == null) ? null : nameToPart.get(instName);
+                    int p = (part == null) ? -1 : part.intValue();
+                    partCounts.put(p, partCounts.getOrDefault(p, 0) + 1);
+                    members.add(String.format("  %d: %s p=%d", vid, instName, p));
+                }
+                boolean cut = partCounts.size() > 1;
+
+                out.write(String.format("Net %d: %s%n", edgeIdx, netName));
+                out.write(String.format("  cut=%s partitions=%s%n", cut ? "true" : "false", partCounts.toString()));
+                for (String m : members) {
+                    out.write(m);
+                    out.write("\n");
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
