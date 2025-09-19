@@ -2,6 +2,7 @@ package com.xilinx.rapidwright.debug.memory.audit;
 
 import com.xilinx.rapidwright.design.Design;
 import com.xilinx.rapidwright.edif.EDIFTools;
+import java.io.File;
 
 public class ReadNetlist {
 
@@ -17,6 +18,12 @@ public class ReadNetlist {
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.println("Usage: ReadNetlist <netlist.[edf|dcp]>");
+            return;
+        }
+
+        File input = new File(args[0]);
+        if (!input.exists()) {
+            System.err.printf("ERROR: File not found: %s%n", args[0]);
             return;
         }
 
