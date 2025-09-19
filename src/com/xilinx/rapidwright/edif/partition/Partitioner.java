@@ -47,6 +47,15 @@ import com.xilinx.rapidwright.util.MessageGenerator;
  */
 public class Partitioner {
 
+    private static void memAudit(String label) {
+        Runtime rt = Runtime.getRuntime();
+        long total = rt.totalMemory();
+        long free = rt.freeMemory();
+        long used = total - free;
+        System.out.printf("DEBUG MEMORY AUDIT -> %s : used=%d MB total=%d MB free=%d MB%n",
+                label, used / (1024 * 1024), total / (1024 * 1024), free / (1024 * 1024));
+    }
+
     public static AbstractPartitioner getDefaultPartitioner() {
         MtKaHyParPartitioner p = new MtKaHyParPartitioner();
         return p;
@@ -62,9 +71,11 @@ public class Partitioner {
         int leafLUTCountLimit = Integer.parseInt(args[2]);
         CodePerfTracker t = new CodePerfTracker("Partitioner");
 
+        memAudit("rapidwright mem usg edif before");
         t.start("Read EDIF");
         EDIFNetlist n = EDIFTools.readEdifFile(inputEDIF);
         t.stop();
+        memAudit("rapidwright mem usg edif after");
 
         t.start("Coarsen Netlist");
         Map<EDIFHierCellInst, Integer> instLutCountMap = new HashMap<>();
@@ -142,7 +153,9 @@ public class Partitioner {
                 }
             }
         }
+        memAudit("rapidwright mem usg before partitioner run");
         p.runPartitioner();
+        memAudit("rapidwright mem usg after partitioner run (java)");
         t.stop();
         
         t.start("Read Partition Solution");
