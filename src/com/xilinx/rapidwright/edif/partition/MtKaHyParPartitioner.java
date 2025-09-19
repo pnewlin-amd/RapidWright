@@ -140,4 +140,15 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
     public void setPresetType(String p) {
         this.presetType = p;
     }
+
+    // set objective (defaults to "cut" if not set by user)
+    public void setObjective(String o) {
+        if (o != null && !o.isEmpty()) {
+            this.objective = o;
+        }
+    }
+
+    public String getObjective() {
+        return this.objective;
+    }
 }

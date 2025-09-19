@@ -63,7 +63,7 @@ public class Partitioner {
     
     public static void main(String[] args) {
         if (args.length < 3) {
-            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic]");
+            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed]");
             return;
         }
         Path inputEDIF = Paths.get(args[0]);
@@ -150,8 +150,14 @@ public class Partitioner {
                     mp.setPresetType(args[++i]);
                 } else if (a.startsWith("--partition_config=")) {
                     mp.setPresetType(a.substring("--partition_config=".length()));
+                } else if (a.equals("--objective") && i + 1 < args.length) {
+                    mp.setObjective(args[++i]);
+                } else if (a.startsWith("--objective=")) {
+                    mp.setObjective(a.substring("--objective=".length()));
                 }
             }
+            // print selected user flags summary including objective
+            System.out.printf("Partitioner flag: objective=%s%n", mp.getObjective());
         }
         memAudit("rapidwright mem usg before partitioner run");
         p.runPartitioner();
