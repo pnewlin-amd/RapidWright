@@ -63,7 +63,7 @@ public class Partitioner {
     
     public static void main(String[] args) {
         if (args.length < 3) {
-            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed]");
+            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--part_weights w0,w1,...]");
             return;
         }
         Path inputEDIF = Paths.get(args[0]);
@@ -154,10 +154,19 @@ public class Partitioner {
                     mp.setObjective(args[++i]);
                 } else if (a.startsWith("--objective=")) {
                     mp.setObjective(a.substring("--objective=".length()));
+                } else if (a.equals("--part_weights") && i + 1 < args.length) {
+                    String w = args[++i].trim().replace(",", " ");
+                    mp.setPartWeights(w);
+                } else if (a.startsWith("--part_weights=")) {
+                    String w = a.substring("--part_weights=".length()).trim().replace(",", " ");
+                    mp.setPartWeights(w);
                 }
             }
-            // print selected user flags summary including objective
+            // print selected user flags summary including objective and part_weights
             System.out.printf("Partitioner flag: objective=%s%n", mp.getObjective());
+            if (mp.getPartWeights() != null) {
+                System.out.printf("Partitioner flag: part_weights=%s%n", mp.getPartWeights());
+            }
         }
         memAudit("rapidwright mem usg before partitioner run");
         p.runPartitioner();
