@@ -52,7 +52,7 @@ public class Partitioner {
         long total = rt.totalMemory();
         long free = rt.freeMemory();
         long used = total - free;
-        System.out.printf("DEBUG MEMORY AUDIT -> %s : used=%d MB total=%d MB free=%d MB%n",
+        System.out.printf("PARTITIONER DEBUG: %s -> used=%d MB total=%d MB free=%d MB%n",
                 label, used / (1024 * 1024), total / (1024 * 1024), free / (1024 * 1024));
     }
 
