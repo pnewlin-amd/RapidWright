@@ -201,9 +201,11 @@ public class PartitionTools {
              BufferedWriter emw = new BufferedWriter(new FileWriter(eidmapPath.toFile()))) {
             // <Total Edge Count> <Total Node Count>
             bw.write(edgesMap.size() + " " + leafInsts.size() + "\n");
+            int unnamedCounter = 0; // assign unique ids for unnamed nets
             for (Entry<EDIFHierNet, Set<EDIFHierCellInst>> e : edgesMap.entrySet()) {
-                // Write net name to .eidmap in the same order edges are emitted
-                emw.write(e.getKey().toString());
+                // write net name safely even if key is null
+                String netName = (e.getKey() == null) ? "<unnamed_net_" + (++unnamedCounter) + ">" : e.getKey().toString();
+                emw.write(netName);
                 emw.write("\n");
                 for (EDIFHierCellInst i : e.getValue()) {
                     Integer nodeIdx = leafInsts.get(i);
@@ -309,7 +311,26 @@ public class PartitionTools {
                 boolean cut = partCounts.size() > 1;
 
                 out.write(String.format("Net %d: %s%n", edgeIdx, netName));
-                out.write(String.format("  cut=%s partitions=%s%n", cut ? "true" : "false", partCounts.toString()));
+                //print blocks with pin counts
+                StringBuilder desc = new StringBuilder();
+                desc.append("  cut=").append(cut ? "true" : "false").append(" blocks: ");
+                if (partCounts.isEmpty()) {
+                    desc.append("none");
+                } else {
+                    java.util.List<java.util.Map.Entry<Integer,Integer>> es = new java.util.ArrayList<>(partCounts.entrySet());
+                    es.sort((a,b) -> Integer.compare(a.getKey(), b.getKey())); // sort by block id
+                    for (int i = 0; i < es.size(); i++) {
+                        int bid = es.get(i).getKey();
+                        int cnt = es.get(i).getValue();
+                        desc.append("p").append(bid).append("=").append(cnt).append(" ").append(cnt == 1 ? "pin" : "pins");
+                        if (i + 1 < es.size()) desc.append(", ");
+                    }
+                }
+                //note: 'blocks' lists how many pins of this net are inside each partition
+                //note: pn is the partition id (for example p0 means partition 0)
+                //note: e.g. 'p0=1 pin, p1=1 pin' means one pin in p0 and one pin in p1; 'p6=2 pins' means two pins in p6
+                out.write(desc.toString());
+                out.write("\n");
                 for (String m : members) {
                     out.write(m);
                     out.write("\n");
