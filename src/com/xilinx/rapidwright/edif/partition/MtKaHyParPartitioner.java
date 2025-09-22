@@ -52,9 +52,6 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private int seed = 0;
 
-    //optional, pass-through for mt-kahypar part-weights
-    //must be space-separated weights string (ex -> "700000 300000")
-    private String partWeights = null;
 
     @Override
     public Integer runPartitioner() {
@@ -68,7 +65,6 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
                 + " --seed " + seed
                 + " --epsilon " + epsilon
                 + " --objective "+ objective
-                + (partWeights != null ? " --part-weights=" + partWeights : "")
                 + " --write-partition-file=true"
                 + " --verbose=true"
                 + " --show-detailed-timings=true";
@@ -114,6 +110,11 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
         return outputDir == null ? Paths.get(System.getProperty("user.dir")) : outputDir;
     }
 
+    // allow caller to override where external tool runs and writes outputs
+    public void setOutputDir(Path d) {
+        this.outputDir = d;
+    }
+
     @Override
     public Path getOutputFile() {
         Path outputFile = getOutputDir()
@@ -157,12 +158,5 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
         return this.objective;
     }
 
-    //set per-block target weights for mt-kahypar (space separated string)
-    public void setPartWeights(String w) {
-        this.partWeights = (w == null || w.isEmpty()) ? null : w;
-    }
 
-    public String getPartWeights() {
-        return this.partWeights;
-    }
 }

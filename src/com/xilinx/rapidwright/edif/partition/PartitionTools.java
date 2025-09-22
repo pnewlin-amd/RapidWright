@@ -188,7 +188,7 @@ public class PartitionTools {
      * @param leafInsts Map of nodes or leaves to be included in the output file.
      */
     public static void writeHMetisFile(Path filePath, Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap, 
-            Map<EDIFHierCellInst, Integer> leafInsts) { 
+            Map<EDIFHierCellInst, Integer> leafInsts, boolean writeEidmap) { 
         // Derive .eidmap path alongside .hgr (replace .hgr suffix if present)
         Path eidmapPath;
         String base = filePath.toString();
@@ -197,28 +197,48 @@ public class PartitionTools {
         } else {
             eidmapPath = Paths.get(base + ".eidmap");
         }
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath.toFile()));
-             BufferedWriter emw = new BufferedWriter(new FileWriter(eidmapPath.toFile()))) {
-            // <Total Edge Count> <Total Node Count>
-            bw.write(edgesMap.size() + " " + leafInsts.size() + "\n");
-            int unnamedCounter = 0; // assign unique ids for unnamed nets
-            for (Entry<EDIFHierNet, Set<EDIFHierCellInst>> e : edgesMap.entrySet()) {
-                // write net name safely even if key is null
-                String netName = (e.getKey() == null) ? "<unnamed_net_" + (++unnamedCounter) + ">" : e.getKey().toString();
-                emw.write(netName);
-                emw.write("\n");
-                for (EDIFHierCellInst i : e.getValue()) {
-                    Integer nodeIdx = leafInsts.get(i);
-                    if (nodeIdx == null) {
-                        throw new RuntimeException(
-                                "ERROR: Inconsistent netlist, cannot export .hgr.");
+        if (writeEidmap) {
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath.toFile()));
+                 BufferedWriter emw = new BufferedWriter(new FileWriter(eidmapPath.toFile()))) {
+                // <total edge count> <total node count>
+                bw.write(edgesMap.size() + " " + leafInsts.size() + "\n");
+                int unnamedCounter = 0; // assign unique ids for unnamed nets
+                for (Entry<EDIFHierNet, Set<EDIFHierCellInst>> e : edgesMap.entrySet()) {
+                    // write net name safely even if key is null
+                    String netName = (e.getKey() == null) ? "<unnamed_net_" + (++unnamedCounter) + ">" : e.getKey().toString();
+                    emw.write(netName);
+                    emw.write("\n");
+                    for (EDIFHierCellInst i : e.getValue()) {
+                        Integer nodeIdx = leafInsts.get(i);
+                        if (nodeIdx == null) {
+                            throw new RuntimeException(
+                                    "ERROR: Inconsistent netlist, cannot export .hgr.");
+                        }
+                        bw.write(nodeIdx + " ");
                     }
-                    bw.write(nodeIdx + " ");
+                    bw.write("\n");
                 }
-                bw.write("\n");
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } else {
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath.toFile()))) {
+                // <total edge count> <total node count>
+                bw.write(edgesMap.size() + " " + leafInsts.size() + "\n");
+                for (Entry<EDIFHierNet, Set<EDIFHierCellInst>> e : edgesMap.entrySet()) {
+                    for (EDIFHierCellInst i : e.getValue()) {
+                        Integer nodeIdx = leafInsts.get(i);
+                        if (nodeIdx == null) {
+                            throw new RuntimeException(
+                                    "ERROR: Inconsistent netlist, cannot export .hgr.");
+                        }
+                        bw.write(nodeIdx + " ");
+                    }
+                    bw.write("\n");
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 
@@ -306,7 +326,8 @@ public class PartitionTools {
                     Integer part = (instName == null) ? null : nameToPart.get(instName);
                     int p = (part == null) ? -1 : part.intValue();
                     partCounts.put(p, partCounts.getOrDefault(p, 0) + 1);
-                    members.add(String.format("  %d: %s p=%d", vid, instName, p));
+                    String plabel = (p >= 0) ? PartitionLabel.indexToFpgaLabel(p) : "UNASSIGNED";
+                    members.add(String.format("  %d: %s part=%s", vid, instName, plabel));
                 }
                 boolean cut = partCounts.size() > 1;
 
@@ -322,7 +343,8 @@ public class PartitionTools {
                     for (int i = 0; i < es.size(); i++) {
                         int bid = es.get(i).getKey();
                         int cnt = es.get(i).getValue();
-                        desc.append("p").append(bid).append("=").append(cnt).append(" ").append(cnt == 1 ? "pin" : "pins");
+                        String blabel = (bid >= 0) ? PartitionLabel.indexToFpgaLabel(bid) : "UNASSIGNED";
+                        desc.append(blabel).append("=").append(cnt).append(" ").append(cnt == 1 ? "pin" : "pins");
                         if (i + 1 < es.size()) desc.append(", ");
                     }
                 }
