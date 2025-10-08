@@ -55,6 +55,29 @@ import com.xilinx.rapidwright.util.FileTools;
  */
 public final class HierMappingWriter {
 
+    //EXCLUSION LIST
+    private static final java.util.LinkedHashSet<String> exclusion_names =
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(
+                    "VCC", "GND", "<const0>", "<const1>"
+            ));
+    //END OF EXCLUSION LIST
+
+    private static boolean is_excluded_token(String s) {
+        if (s == null) return false;
+        if (exclusion_names.contains(s)) return true;
+        String t = s.toLowerCase(java.util.Locale.ROOT);
+        return "vcc".equals(t) || "gnd".equals(t);
+    }
+
+    private static boolean path_has_excluded_segment(String path) {
+        if (path == null || path.isEmpty()) return false;
+        String[] segs = path.split("/");
+        for (String seg : segs) {
+            if (is_excluded_token(seg)) return true;
+        }
+        return false;
+    }
+
     /**
      * trie node representing a hierarchical instance path segment.
      *
@@ -80,7 +103,7 @@ public final class HierMappingWriter {
         Node root = buildTrie(partToPaths);
         computeCounts(root);
         List<String> out = new ArrayList<>();
-        selectAndEmitMappings(root, "", out);
+        selectAndEmitMappings(root, "", out, false);
 
         if (defaultPartitionName != null && !partitions.contains(defaultPartitionName)) {
             System.err.println("warning: default partition '" + defaultPartitionName + "' not found in cells.txt");
@@ -147,7 +170,7 @@ public final class HierMappingWriter {
         Node root = buildTrie(partToPaths);
         computeCounts(root);
         List<String> lines = new ArrayList<>();
-        selectAndEmitMappings(root, "", lines);
+        Map<String, Integer> printed_counts = selectAndEmitMappings(root, "", lines, false);
 
         // prefix every path with the top cell name (prefer the top cell’s type name) and append a single top 'home' line at the end for readability
         String topName = null;
@@ -165,13 +188,19 @@ public final class HierMappingWriter {
         for (String line : lines) {
             int sp = line.indexOf(' ');
             String path = sp >= 0 ? line.substring(0, sp) : line;
-            String part = sp >= 0 ? line.substring(sp + 1) : "";
-            prefixed.add(topName + "/" + path + " " + part);
+            String dst = sp >= 0 ? line.substring(sp + 1) : "";
+            if (path_has_excluded_segment(path)) {
+                continue;
+            }
+            String src_full = topName + "/" + path;
+            prefixed.add(src_full + " " + dst);
         }
-        // place top most home (hier) at the bottom of the file.
-        String topHome = chooseHomePartition(root.counts);
-        if (topHome != null) {
-            prefixed.add(topName + " " + topHome);
+        Map<String, Integer> leftover_root = subtractCounts(root.counts, printed_counts);
+        if (leftover_root != null && !leftover_root.isEmpty()) {
+            String topHome = chooseHomePartition(root.counts);
+            if (topHome != null) {
+                prefixed.add(topName + " " + topHome);
+            }
         }
 
         Path mappingFile = outDir.resolve("mapping.txt");
@@ -447,36 +476,40 @@ public final class HierMappingWriter {
     /**
      * selects mapping lines by walking the trie and emits them into 'out'.
      */
-    private static Map<String, Integer> selectAndEmitMappings(Node n, String prefixPath, List<String> out) {
-        String thisPath = prefixPath;
+    private static Map<String, Integer> selectAndEmitMappings(Node n, String prefix_path, List<String> out, boolean in_split) {
+        String this_path = prefix_path;
         if (n.name != null && !n.name.isEmpty()) {
-            if (thisPath.isEmpty()) thisPath = n.name;
-            else thisPath = thisPath + "/" + n.name;
+            if (this_path.isEmpty()) this_path = n.name;
+            else this_path = this_path + "/" + n.name;
         }
 
-        if (isWhollyContained(n.counts) && !thisPath.isEmpty()) {
+        if (isWhollyContained(n.counts) && !this_path.isEmpty()) {
             String p = singlePartition(n.counts);
-            out.add(thisPath + " " + p);
+            if (!path_has_excluded_segment(this_path)) {
+                out.add(this_path + " " + p);
+            }
             return new LinkedHashMap<>(n.counts);
         }
 
-        Map<String, Integer> relocatedFromChildren = new LinkedHashMap<>();
+        Map<String, Integer> relocated_from_children = new LinkedHashMap<>();
         for (Node c : n.children.values()) {
-            Map<String, Integer> childRelocated = selectAndEmitMappings(c, thisPath, out);
-            mergeCounts(relocatedFromChildren, childRelocated);
+            Map<String, Integer> child_relocated = selectAndEmitMappings(c, this_path, out, true);
+            mergeCounts(relocated_from_children, child_relocated);
         }
 
-        Map<String, Integer> leftover = subtractCounts(n.counts, relocatedFromChildren);
+        Map<String, Integer> leftover = subtractCounts(n.counts, relocated_from_children);
 
-        if (!thisPath.isEmpty()) {
+        if (!this_path.isEmpty()) {
             String home = chooseHomePartition(n.counts);
-            if (home != null) {
-                out.add(thisPath + " " + home);
+            if (home != null && !leftover.isEmpty()) {
+                if (!path_has_excluded_segment(this_path)) {
+                    out.add(this_path + " " + home);
+                }
                 return new LinkedHashMap<>(n.counts);
             }
         }
 
-        return relocatedFromChildren;
+        return relocated_from_children;
     }
 
     /**
