@@ -44,40 +44,25 @@ import com.xilinx.rapidwright.util.FileTools;
 /**
  * generates mapping.txt for the wrap/add-cells/regroup flow (wrap the top cell, add new cells per partition, regroup instances).
  *
- * overview in plain english:
- * - the goal is to produce "<instance_path> <partition_label>" lines that tell regroupinstances where each hierarchical instance
- *   should be re-homed. the algorithm favors printing at the highest level that is wholly contained in one partition to minimize
- *   verbosity. where a node is mixed (contains endpoints from multiple partitions), we print finer-grained contained children and
- *   also a single parent “home” line that assigns the parent to the partition with the majority of endpoints. this keeps hierarchy
- *   annotated at both coarse and fine granularity, which is ideal for long-term debug-friendly names.
- * - we also prefix all instance paths with the top cell name (for example, "fft_top/...") and emit a top “home” line like
- *   "fft_top fpga_a". this makes the entire mapping anchored at a single, readable root and gives downstream regrouping a stable
- *   parent path to use.
- *
- * core steps:
- * - read cells.txt to get canonical partition labels (fpga_a, fpga_b, ...); build a partition-name → set-of-instance-paths map.
- * - build a trie of all instance paths and compute per-node subtree endpoint counts per partition. this is the backbone that lets
- *   us answer “is this node wholly contained?” and “which partition has majority endpoints?” at every level.
- * - walk the trie:
- *   - if a node’s subtree is wholly in one partition, print a single mapping line at this node and stop recursing. this is the highest-level print.
- *   - otherwise, recurse into children to print wholly-contained chunks and then emit a parent “home” line for the mixed node.
- * - when done, rewrite all printed lines with a "<top>/<path>" prefix and insert a single top “home” line "top fpga_*" based on the
- *   root’s majority partition.
- *
- * output format:
- * - each line is: "<hierarchical_instance_path> <partition_label>", where partition_label matches cells.txt (for example, fpga_a).
- * - paths are always prefixed by the top cell name (for example, "fft_top/...") to keep the report anchored and readable.
+ * - The goal is to produce "<instance_path> <partition_label>" lines that tell regroupinstances where each hierarchical instance
+ *   should be re-homed.
+ * 
+ *   The HierMappingWriter will only emit simple one liners when an entire hierarchy can be contained onto one partition.
+ *   E.x: top/stage_16 fits entirely on FPGA_A then only write "top/stage_16 FPGA_A"
+ * 
+ *   The HierMappingWriter will emit low-level leaf instance names when a module is split up across partitions. The result is needing to specify 
+ *   hierarchy on the partition destination: "top/stage_32/cell[0]_i FPGA_A/cell[0]_i"
  */
 public final class HierMappingWriter {
 
     /**
      * trie node representing a hierarchical instance path segment.
      *
-     * details:
-     * - name: the segment at this level (for example, "stage_32" or "fwbfly.bfly").
+     * - name: the segment at this level (for example, "stage_16").
      * - children: sub-segments under this node.
-     * - leafCounts: explicit contributions from paths that end exactly at this node (one count per partition per explicit path).
-     * - counts: aggregated counts over this node’s subtree (leafCounts + all children) used to decide “wholly contained” and “home”.
+     * - leafCounts: one count per partition per explicit path)
+     * - counts: aggregated counts over this node’s subtree (leafCounts + all children)
+     *           lets us easily decide if wholly contained or not
      */
     private static final class Node {
         String name;
@@ -88,12 +73,6 @@ public final class HierMappingWriter {
 
     /**
      * builds mapping lines from input partition sets (read from files in partitionDir) and returns a list of "<path> <partition>" lines.
-     *
-     * notes:
-     * - this variant reads partition labels and instance paths directly from disk. it is useful if you want to run mapping generation
-     *   on partition artifacts produced earlier (cells.txt + per-partition instance membership files).
-     * - we keep comments simple here because the write(...) api below is the primary entry point used by the partitioner to generate
-     *   both cells.txt and mapping.txt consistently for a given run.
      */
     public static List<String> buildMappingFromPartitionFiles(String partitionDir, String cellsFile, String defaultPartitionName) {
         List<String> partitions = readPartitionNames(Paths.get(cellsFile));
@@ -113,9 +92,7 @@ public final class HierMappingWriter {
     /**
      * writes mapping lines to a file.
      *
-     * details:
-     * - writes the given lines exactly as provided to outputPath. upstream code should have already handled prefixing and home lines.
-     * - we ensure the parent directories exist so the file emits cleanly even on fresh runs.
+     * - ensure the parent directories exist so the file emits cleanly even on fresh runs.
      */
     public static void writeMappingFile(List<String> lines, String outputPath) {
         try {
@@ -125,21 +102,13 @@ public final class HierMappingWriter {
                 Files.createDirectories(parent);
             }
             Files.write(out, lines, StandardCharsets.UTF_8);
-        } catch (IOException e) {
+        } catch (IOException e) { //more guards the better.
             throw new RuntimeException(e);
         }
     }
 
     /**
      * rapidwright partitioner api: writes mapping.txt in outDir using the provided partition membership, netlist, and labels.
-     *
-     * algorithm in plain english:
-     * - read cells.txt and ensure we have labels for indices 0..k-1; generate missing labels if needed so the run is complete.
-     * - build a partition-name → set-of-instance-paths map and construct a trie over all paths to aggregate per-subtree endpoint counts.
-     * - select mapping lines by walking the trie and printing at the highest wholly-contained levels while also annotating mixed nodes
-     *   with a parent “home” line (majority partition). collect all lines in a list.
-     * - rewrite the list by prefixing every path with the top cell name and insert a top “home” line once (based on root counts).
-     * - write mapping.txt to disk so regroupinstances has a clean, canonical input to preserve hierarchy during regroup.
      */
     public static void write(Path outDir, EDIFNetlist n, Map<Integer, Set<String>> partitions, Map<EDIFHierCellInst, Integer> instLutCountMap) {
         // ensure cells.txt has fpga_* names for all partitions based on indices; generate or extend labels when needed
@@ -211,10 +180,6 @@ public final class HierMappingWriter {
 
     /**
      * convenience main to emit mapping lines from a directory of partition files and a cells.txt.
-     *
-     * usage notes:
-     * - accepts a directory of per-partition files (either "fpga_a" or "fpga_a.txt" style) and a cells.txt path.
-     * - emits mapping lines to the given output path without the top prefix and home line (use write(...) in normal flows).
      */
     public static void main(String[] args) {
         if (args.length < 3 || args.length > 4) {
@@ -233,8 +198,7 @@ public final class HierMappingWriter {
     /**
      * reads partition labels from cells.txt and returns them in order.
      *
-     * notes:
-     * - we ignore comments and blanks and keep order deterministic. downstream code assumes index 0..k-1 maps to these names.
+     * we ignore comments and blanks and keep order deterministic.
      */
     private static List<String> readPartitionNames(Path cellsFile) {
         List<String> partitions = new ArrayList<>();
@@ -251,9 +215,6 @@ public final class HierMappingWriter {
     /**
      * reads instance paths for each partition label from the given directory.
      *
-     * details:
-     * - we support two file name styles per partition label: "<label>" and "<label>.txt".
-     * - comments and blanks are ignored. if a partition file is missing, we print a note and treat it as empty.
      */
     private static Map<String, Set<String>> readPartitionInstanceSets(Path partitionDir, Set<String> partitions) {
         Map<String, Set<String>> partToPaths = new LinkedHashMap<>();
@@ -314,9 +275,6 @@ public final class HierMappingWriter {
 
     /**
      * case-insensitive search for a file that matches either "<name>" or "<name>.txt" in a directory.
-     *
-     * notes:
-     * - this keeps behavior resilient across systems that may normalize case differently while still requiring a regular file.
      */
     private static Path findFileCaseInsensitive(Path dir, String targetName) {
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
@@ -327,7 +285,7 @@ public final class HierMappingWriter {
                 }
             }
         } catch (IOException e) {
-            // ignore
+            // ignore, something to fill in this spot? error print?
         }
         return null;
     }
@@ -346,10 +304,6 @@ public final class HierMappingWriter {
 
     /**
      * builds a trie over all instance paths for all partitions.
-     *
-     * details:
-     * - every explicit path contributes +1 to leafCounts at this node for its partition.
-     * - counts are not computed here; we just lay out the structure so computeCounts can aggregate later.
      */
     private static Node buildTrie(Map<String, Set<String>> partToPaths) {
         Node root = new Node();
@@ -366,10 +320,6 @@ public final class HierMappingWriter {
 
     /**
      * inserts an instance path into the trie and records a leaf contribution at the terminal node for the given partition.
-     *
-     * notes:
-     * - splitting on '/' preserves segment names as-is, including "foo[0].bar" style segments.
-     * - leafCounts accumulate how many explicit paths end at this node per partition.
      */
     private static void addPath(Node root, String fullPath, String partition) {
         List<String> segs = splitPath(fullPath);
@@ -397,10 +347,6 @@ public final class HierMappingWriter {
 
     /**
      * computes per-subtree aggregated counts for every node in the trie.
-     *
-     * details:
-     * - counts = leafCounts at this node + sum(counts of children).
-     * - these totals are used to answer “wholly contained” (exactly one partition present) and “home” (majority partition).
      */
     private static Map<String, Integer> computeCounts(Node n) {
         Map<String, Integer> agg = new LinkedHashMap<>();
@@ -433,8 +379,7 @@ public final class HierMappingWriter {
     /**
      * subtracts entries of b from a on a copy and prunes non-positive results.
      *
-     * notes:
-     * - useful to compute leftovers after child prints; we remove zeros/negatives to keep the map compact and readable.
+     * useful to compute leftovers after child prints.
      */
     private static Map<String, Integer> subtractCounts(Map<String, Integer> a, Map<String, Integer> b) {
         Map<String, Integer> out = new LinkedHashMap<>();
@@ -482,10 +427,8 @@ public final class HierMappingWriter {
 
     /**
      * picks the “home” partition for a node using the largest count (ties broken lexicographically).
-     *
-     * rationale:
-     * - when a node is mixed, assigning it to the majority partition provides a clear, stable parent mapping that keeps hierarchy
-     *   easy to reason about while still preserving child granularity. lexicographic tie-break ensures deterministic output.
+     * 
+     * TODO : May need revision based on requested changes to regroupinstances / mapping.txt needing to change based on that.
      */
     private static String chooseHomePartition(Map<String, Integer> counts) {
         if (counts == null || counts.isEmpty()) return null;
@@ -503,11 +446,6 @@ public final class HierMappingWriter {
 
     /**
      * selects mapping lines by walking the trie and emits them into 'out'.
-     *
-     * decision rules:
-     * - if a node’s subtree is wholly contained in one partition, emit a single line here and stop recursing. this is the highest-level print.
-     * - otherwise, recurse into children to emit contained chunks and then emit a parent “home” line using the majority partition for this node.
-     *   this ensures parents carry a stable partition annotation even when their contents are split across blocks.
      */
     private static Map<String, Integer> selectAndEmitMappings(Node n, String prefixPath, List<String> out) {
         String thisPath = prefixPath;

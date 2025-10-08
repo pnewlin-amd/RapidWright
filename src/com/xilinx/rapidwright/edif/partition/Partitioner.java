@@ -27,6 +27,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,7 +66,7 @@ public class Partitioner {
     
     public static void main(String[] args) {
         if (args.length < 3) {
-            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--edif_nets] [--part_dir DIR]");
+            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--edif_nets] [--part_dir DIR] [--mapping_constraints PATH] [--constraints_debug]");
             return;
         }
         Path inputEDIF = Paths.get(args[0]);
@@ -72,6 +74,10 @@ public class Partitioner {
         int leafLUTCountLimit = Integer.parseInt(args[2]);
         CodePerfTracker t = new CodePerfTracker("Partitioner");
         boolean generateEdifNets = false;
+        // new optional file for fixed vertices constraints
+        Path constraints_file = null;
+        // enable extra logs for constraints
+        boolean constraints_debug = false;
         // establish default output directory next to input EDIF (or cwd if none)
         Path outDir = (inputEDIF.getParent() == null)
                 ? Paths.get(System.getProperty("user.dir"))
@@ -88,6 +94,15 @@ public class Partitioner {
                 outDir = Paths.get(args[++i]);
             } else if (a.startsWith("--part_dir=")) {
                 outDir = Paths.get(a.substring("--part_dir=".length()));
+            } else if ("--mapping_constraints".equals(a) && i + 1 < args.length) {
+                constraints_file = Paths.get(args[++i]);
+            } else if (a.startsWith("--mapping_constraints=")) {
+                constraints_file = Paths.get(a.substring("--mapping_constraints=".length()));
+            } else if ("--constraints_debug".equals(a)) {
+                constraints_debug = true;
+            } else if (a.startsWith("--constraints_debug=")) {
+                String v = a.substring("--constraints_debug=".length()).trim();
+                constraints_debug = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
             }
         }
         try {
@@ -137,7 +152,7 @@ public class Partitioner {
         for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
             for (EDIFHierPortInst pi : e.getKey().getHierPortInsts()) {
                 EDIFHierNet connectedNet = pi.getHierarchicalNet();
-                EDIFHierNet parentNet = null; //skip ambiguous nets
+                EDIFHierNet parentNet = null; //skip ambiguous nets, TODO : is there a better way to handle this edge case..?
                 try { parentNet = n.getParentNet(connectedNet); } catch (RuntimeException ex) { parentNet = null; } //skip ambiguous nets
                 EDIFHierNet keyNet = (parentNet != null) ? parentNet : connectedNet; //skip ambiguous nets
                 if (edgesMap.containsKey(keyNet)) //skip ambiguous nets
@@ -151,6 +166,83 @@ public class Partitioner {
         Path hMetisFile = outDir.resolve(inputEDIF.getFileName().toString() + ".hgr");
         PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generateEdifNets);
         t.stop();
+
+        // generate fixed vertices file if constraints were provided
+        Path fix_file = null;
+        if (constraints_file != null) {
+            // build label->index map
+            java.util.Map<String, Integer> label_to_index = new java.util.HashMap<>();
+            for (int idx = 0; idx < k; idx++) {
+                String lbl = PartitionLabel.indexToFpgaLabel(idx);
+                label_to_index.put(lbl, Integer.valueOf(idx));
+            }
+            // init fix array (1-based vertex ids)
+            int num_vertices = leafInsts.size();
+            int[] fix_arr = new int[num_vertices + 1];
+            for (int i = 0; i <= num_vertices; i++) fix_arr[i] = -1;
+            int fixed_count = 0;
+
+            // parse mapping_constraints.txt and expand to vertices
+            try (BufferedReader cr = new BufferedReader(new FileReader(constraints_file.toFile()))) {
+                String cline;
+                while ((cline = cr.readLine()) != null) {
+                    String orig = cline.trim();
+                    if (orig.isEmpty() || orig.startsWith("#")) continue;
+                    String[] toks = orig.split("\\s+");
+                    if (toks.length != 2) {
+                        throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                    }
+                    String path = toks[0];
+                    String label = toks[1];
+                    Integer block_idx = label_to_index.get(label);
+                    if (block_idx == null) {
+                        throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                    }
+                    int matched = 0;
+                    for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
+                        String name = e.getKey().toString();
+                        int vid = e.getValue().intValue();
+                        boolean leaf_contains_path = path.equals(name) || path.startsWith(name + "/");
+                        boolean path_contains_leaf = name.equals(path) || name.startsWith(path + "/");
+                        if (leaf_contains_path || path_contains_leaf) {
+                            if (fix_arr[vid] == -1) {
+                                fix_arr[vid] = block_idx.intValue();
+                                fixed_count++;
+                            } else if (fix_arr[vid] != block_idx.intValue()) {
+                                throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                            }
+                            matched++;
+                        }
+                    }
+                    if (constraints_debug) {
+                        System.out.printf("partitioner debug: constraint '%s' matched %d vertices%n", orig, matched);
+                    }
+                    if (matched == 0) {
+                        throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                    }
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            // derive fix file path from .hgr
+            String hgr_base = hMetisFile.toString();
+            if (hgr_base.endsWith(".hgr")) {
+                fix_file = Paths.get(hgr_base.substring(0, hgr_base.length() - 4) + ".fix");
+            } else {
+                fix_file = Paths.get(hgr_base + ".fix");
+            }
+            try (BufferedWriter fw = new BufferedWriter(new FileWriter(fix_file.toFile()))) {
+                for (int vid = 1; vid <= num_vertices; vid++) {
+                    fw.write(Integer.toString(fix_arr[vid]));
+                    fw.write("\n");
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            System.out.printf("partitioner debug: fix-file=%s vertices=%d fixed=%d%n",
+                    fix_file, leafInsts.size(), fixed_count);
+        }
         
         t.start("Run Partitioner");
         AbstractPartitioner p = getDefaultPartitioner();
@@ -161,6 +253,10 @@ public class Partitioner {
             MtKaHyParPartitioner mp = (MtKaHyParPartitioner) p;
             // ensure external tool runs and writes outputs into outDir
             mp.setOutputDir(outDir);
+            // pass fixed vertices file if present
+            if (fix_file != null) {
+                mp.setFixedVerticesFile(fix_file);
+            }
             for (int i = 3; i < args.length; i++) {
                 String a = args[i];
                 if (a.equals("--seed") && i + 1 < args.length) {
@@ -194,6 +290,7 @@ public class Partitioner {
             System.out.printf("Partitioner flag: objective=%s%n", mp.getObjective());
             System.out.printf("Partitioner flag: edif_nets=%s%n", generateEdifNets ? "on" : "off");
             System.out.printf("Partitioner flag: part_dir=%s%n", outDir);
+            System.out.printf("Partitioner flag: mapping_constraints=%s%n", constraints_file != null ? constraints_file.toString() : "none");
         }
         memAudit("rapidwright mem usg before partitioner run");
         p.runPartitioner();
@@ -272,9 +369,10 @@ public class Partitioner {
                             }
                         }
                         if (cnt == null) {
-                            // last resort to avoid crash on extremely large netlists
-                            // don't keep a null value in final report cause a crash will happen
-                            // just set as zero.. partition should still be valid but report will be off.
+                            //TODO : is there a better way to handle this edge case?
+                            //last resort to avoid crash on extremely large netlists
+                            //don't keep a null value in final report
+                            //just set as zero.. partition should still be valid but report will be off.
                             cnt = 0;
                         }
                         lutCount += cnt.intValue();
@@ -286,7 +384,7 @@ public class Partitioner {
                 throw new UncheckedIOException(e);
             }
         }
-        // Write aggregate LUT report artifact in outDir
+        // write aggregate LUT report artifact in outDir,
         long sumLuts = 0;
         for (int c : lutCounts) sumLuts += c;
         int meanLuts = (lutCounts.isEmpty()) ? 0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());

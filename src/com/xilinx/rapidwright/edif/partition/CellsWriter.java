@@ -33,16 +33,13 @@ import java.util.Map;
 
 /**
  * writes cells.txt (one partition name per line) into the output directory.
- *
- * overview:
- * - the partitioner assigns vertices to k partitions by index (0..k-1). other artifacts (like mapping.txt)
- *   need stable, human-readable names for those partitions. cells.txt is that simple, canonical source of truth.
- * - this utility provides helpers to emit cells.txt either from a caller-provided list of names, a count (where
- *   we generate names using partitionlabel), or a sparse index->name map. it ensures names exist for all indices
- *   up to the highest observed and fills gaps with canonical fpga_* labels (fpga_a, fpga_b, ...), keeping output
- *   deterministic and easy to audit across runs.
- * - using partitionlabel means name generation is consistent with other tools (for example, partitiontools and
- *   partitioner), so downstream artifacts like mapping.txt and io_cuts.txt remain aligned with the same labels.
+ * 
+ * Simply displays the name of the partitions:
+ *   Line 1: FPGA_A
+ *   Line 2: FPGA_B
+ *   Line 3: FPGA_C
+ *   Line 4: FPGA_D 
+ *   etc.....
  */
 public final class CellsWriter {
 
@@ -52,11 +49,6 @@ public final class CellsWriter {
 
     /**
      * writes cells.txt using the provided list of names (one per line, in order).
-     *
-     * details:
-     * - this function does no transformation of the provided names; it writes them as-is in the given order.
-     * - callers that already have partition labels (for example, loaded from a previous run or a user-specified scheme)
-     *   can use this to preserve exact naming across workflows. downstream tools will read these names verbatim.
      */
     public static void write(Path outDir, List<String> partitionNames) {
         if (partitionNames == null) {
@@ -75,11 +67,6 @@ public final class CellsWriter {
 
     /**
      * writes cells.txt for a given number of partitions, generating names using partitionlabel.
-     *
-     * details:
-     * - when the exact names are not provided, we generate a deterministic set of labels: fpga_a, fpga_b, ...,
-     *   continuing beyond z with fpga_az, fpga_zz, etc. this ensures new runs produce consistent labels without
-     *   external dependencies and that larger k values remain easy to read.
      */
     public static void write(Path outDir, int numPartitions) {
         write(outDir, generateNames(numPartitions));
@@ -87,11 +74,6 @@ public final class CellsWriter {
 
     /**
      * writes cells.txt from an index->name map and fills any missing indices with generated labels.
-     *
-     * details:
-     * - this is useful when only some partitions have custom names or when tooling creates partial mappings.
-     * - we compute the highest index observed and ensure every index from 0..max has a name. if a name is missing
-     *   or blank, we generate a canonical fpga_* label via partitionlabel so the final file is complete.
      */
     public static void write(Path outDir, Map<Integer, String> indexToName) {
         if (indexToName == null || indexToName.isEmpty()) {
@@ -119,10 +101,6 @@ public final class CellsWriter {
 
     /**
      * generates a list of canonical partition names ["fpga_a","fpga_b",...] using partitionlabel.
-     *
-     * details:
-     * - we rely on partitionlabel.indexToFpgaLabel(i) for deterministic naming. this ensures consistency across
-     *   all artifacts and tools that display partition labels and makes diff review easier.
      */
     public static List<String> generateNames(int count) {
         if (count <= 0) return Collections.emptyList();
@@ -135,10 +113,6 @@ public final class CellsWriter {
 
     /**
      * generates a single canonical partition name "fpga_*" via partitionlabel.
-     *
-     * details:
-     * - callers should prefer generateNames(count) when emitting a sequential list, but this helper is convenient
-     *   when filling sparse or partial mappings one index at a time.
      */
     public static String generateName(int index) {
         return PartitionLabel.indexToFpgaLabel(index);

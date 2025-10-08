@@ -40,26 +40,40 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private Path inputFile;
 
+    // user should specify >16 for very large designs
     private int numOfThreads = 2;
 
-    // controls allowed partition imbalance; smaller is more balanced but slower
+    // controls allowed partition imbalance; smaller is more balanced
     private double epsilon = 0.03;
     
     private String objective = "cut";
+    
     private String presetType = "default";
     
-    private Path outputDir = null; // Use current working directory
+    // Use current working directory
+    private Path outputDir = null;
 
     private int seed = 0;
+
+    // fixed vertices file passed to mtkahypar via -f (optional)
+    private Path fixed_vertices_file = null;
 
 
     @Override
     public Integer runPartitioner() {
         //--verbose=true                 -> displays detailed information on the partitioning process
         //--show-detailed-timings=true   -> shows detailed sub-timings of each phase of the algorithm at the end of partitioning
+        // compute effective preset; if fixed vertices are present, override incompatible presets
+        String effectivePreset = presetType;
+        if (fixed_vertices_file != null) {
+            if ("deterministic".equals(effectivePreset) || "large_k".equals(effectivePreset)) {
+                System.out.println("partitioner debug: fixed vertices present; overriding preset to 'quality'");
+                effectivePreset = "quality";
+            }
+        }
         String cmd = name 
                 + " -h " + getInputFile() 
-                + " --preset-type=" + presetType + " "
+                + " --preset-type=" + effectivePreset + " "
                 + " -t " + numOfThreads
                 + " -k " + getKPartitions() 
                 + " --seed " + seed
@@ -68,16 +82,10 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
                 + " --write-partition-file=true"
                 + " --verbose=true"
                 + " --show-detailed-timings=true";
-
-//        String[] cmd = new String[] {name
-//                , "-h" , getInputFile().toString() 
-//                , "--preset-type=default"
-//                , "-t" , Integer.toString(numOfThreads)
-//                , "-k" , Integer.toString(getKPartitions()) 
-//                , "--seed " , Integer.toString(seed)
-//                , "--epsilon " , Double.toString(epsilon)
-//                , "--objective ", objective
-//                , "--write-partition-file=true" };
+        // append fixed vertices file if provided
+        if (fixed_vertices_file != null) {
+            cmd += " -f " + fixed_vertices_file;
+        }
 
         
         String[] environ = null; // inherit env
@@ -156,6 +164,16 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     public String getObjective() {
         return this.objective;
+    }
+
+    // setter for fixed vertices file
+    public void setFixedVerticesFile(Path p) {
+        this.fixed_vertices_file = p;
+    }
+
+    // getter for fixed vertices file
+    public Path getFixedVerticesFile() {
+        return this.fixed_vertices_file;
     }
 
 

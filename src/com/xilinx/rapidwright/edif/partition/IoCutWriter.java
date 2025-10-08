@@ -44,17 +44,8 @@ import com.xilinx.rapidwright.edif.EDIFHierPortInst;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 
 /**
- * writes io_cuts.txt (direction-agnostic summary with both permutations) and io_cuts_directional.txt (driver-resolved), and centralizes generation of the detailed nets.txt report when the --edif_nets flag is enabled.
- *
- * io_cuts overview in plain english:
- * - we iterate every hyperedge (signal) recorded in .hgr and name it via .eidmap. for each signal,
- *   we determine which endpoint is the driver by asking the parent-level hierarchical net for its
- *   list of source-side port instances and matching that to the participating instance endpoints.
- * - once we know the partition of the driver, we look at which other partitions the same signal
- *   reaches. we then increment one count from the driver's partition to each distinct destination
- *   partition, counting each signal at most once per destination partition.
- * - the result is a simple file listing lines like "fpga_a--201--fpga_b", which reads as "there are
- *   201 signals driven in fpga_a that also appear in fpga_b".
+ * writes io_cuts.txt (direction-agnostic summary with both permutations) and io_cuts_directional.txt (driver-resolved), 
+ * and centralizes generation of the detailed nets.txt report when the --edif_nets flag is enabled.
  */
 public final class IoCutWriter {
 
@@ -64,17 +55,6 @@ public final class IoCutWriter {
 
     /**
      * writes both io_cuts.txt (in outDir) and the detailed nets.txt (following existing behavior).
-     *
-     * the algorithm relies on four inputs that already exist after partitioning:
-     * - inputEDIF: provides the base path to discover .hgr and .eidmap artifacts that describe the hypergraph.
-     * - netlist: enables us to climb to the parent-level hierarchical net and query which endpoints are sources.
-     * - instLookup: maps hypergraph vertex id to the absolute hierarchical instance path it represents.
-     * - partitions: maps partition index to set of hierarchical instance paths assigned by the partitioner.
-     *
-     * we first build a fast lookup from instance name to partition index (nameToPart). this is the bridge between
-     * hypergraph members (which are listed by instance name) and their assigned partition. next, we write io_cuts.txt
-     * using the procedure described below and then delegate the detailed nets.txt generation to partitiontools so
-     * the verbose per-net report stays consistent with the rest of the flow.
      */
     public static void write(Path outDir,
                              Path inputEDIF,
@@ -123,15 +103,6 @@ public final class IoCutWriter {
 
     /**
      * writes io_cuts_directional.txt into outdir.
-     *
-     * implementation notes:
-     * - we first read .eidmap to get the human-readable net names for each 1-based edge id. this is necessary because
-     *   the hierarchical net objects we query from the netlist must match these parent-level names to avoid false mismatches.
-     * - we then scan .hgr line-by-line (skipping the header), translating each vertex id to its hierarchical instance path
-     *   and from there to its partition id. this gives us the set of instances (and their blocks) that participate in that edge.
-     * - to find the driver, we inspect each participating instance’s hierarchical port instances, locate the matching hierarchical
-     *   net at the parent scope, and ask that net for its source-side endpoints. any participant that appears in that source list
-     *   is considered the driver, and its block becomes the source partition for this signal.
      */
     private static void writeIoCuts(Path outDir,
                                     Path hgrFile,
@@ -200,8 +171,8 @@ public final class IoCutWriter {
                     for (EDIFHierPortInst pi : inst.getHierPortInsts()) {
                     EDIFHierNet hnet = pi.getHierarchicalNet();
                     if (hnet == null) continue;
-                    EDIFHierNet parent = null; //skip ambiguous nets
-                    try { parent = netlist.getParentNet(hnet); } catch (RuntimeException ex) { parent = null; } //skip ambiguous nets
+                    EDIFHierNet parent = null; //skip ambiguous nets, TODO: is there a better way to handle this!!!
+                    try { parent = netlist.getParentNet(hnet); } catch (RuntimeException ex) { parent = null; } //skip ambiguous nets, TODO: is there a better way to handle this!!!
                     String hn = (parent != null) ? parent.toString() : hnet.toString();
                     if (!netName.equals(hn)) continue;
 
@@ -227,9 +198,7 @@ public final class IoCutWriter {
 
                 String driverLabel = PartitionLabel.indexToFpgaLabel(driverPart);
 
-                // step 2b: accumulate a single count per destination partition for this signal. this prevents
-                // overcounting due to fanout inside the same partition while still reflecting all cross-partition
-                // reach. a net that reaches multiple other partitions contributes one count to each such partition.
+                // step 2b: accumulate a single count per destination partition for this signal.
                 java.util.Set<Integer> destParts = new java.util.HashSet<>();
                 for (String nm : instNames) {
                     if (nm.equals(driverName)) continue;
@@ -443,10 +412,6 @@ public final class IoCutWriter {
 
     /**
      * writes detailed nets.txt using existing partitiontools logic.
-     *
-     * this function preserves the original, verbose reporting format that lists each edge with its
-     * hierarchical net name, whether it is cut, the partition endpoint counts, and each member line
-     * with its vertex id and partition. keeping it centralized here avoids duplicated code paths.
      */
     private static void writeDetailedNetsReport(Path hgrFile,
                                                 Path eidmapFile,
