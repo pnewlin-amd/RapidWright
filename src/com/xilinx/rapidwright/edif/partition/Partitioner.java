@@ -78,6 +78,7 @@ public class Partitioner {
         Path constraints_file = null;
         // enable extra logs for constraints
         boolean constraints_debug = false;
+        boolean bare_bones = false;
         // establish default output directory next to input EDIF (or cwd if none)
         Path outDir = (inputEDIF.getParent() == null)
                 ? Paths.get(System.getProperty("user.dir"))
@@ -103,6 +104,11 @@ public class Partitioner {
             } else if (a.startsWith("--constraints_debug=")) {
                 String v = a.substring("--constraints_debug=".length()).trim();
                 constraints_debug = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
+            } else if ("--bare_bones".equals(a)) {
+                bare_bones = true;
+            } else if (a.startsWith("--bare_bones=")) {
+                String v = a.substring("--bare_bones=".length()).trim();
+                bare_bones = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
             }
         }
         try {
@@ -291,6 +297,7 @@ public class Partitioner {
             System.out.printf("Partitioner flag: edif_nets=%s%n", generateEdifNets ? "on" : "off");
             System.out.printf("Partitioner flag: part_dir=%s%n", outDir);
             System.out.printf("Partitioner flag: mapping_constraints=%s%n", constraints_file != null ? constraints_file.toString() : "none");
+            System.out.printf("Partitioner flag: bare_bones=%s%n", bare_bones ? "on" : "off");
         }
         memAudit("rapidwright mem usg before partitioner run");
         p.runPartitioner();
@@ -301,118 +308,221 @@ public class Partitioner {
         Path outputFile = p.getOutputFile();
         String[] instLookup = PartitionTools.createInstLookupArray(leafInsts);
         Map<Integer, Set<String>> partitions = PartitionTools.readSolutionFile(outputFile, instLookup);
-        // write io cuts and centralized detailed nets report
-        try {
-            IoCutWriter.write(outDir, inputEDIF, n, instLookup, partitions, generateEdifNets);
-        } catch (RuntimeException ex) {
-            System.err.println("WARNING: failed to write io cuts / nets artifacts: " + ex.getMessage());
-        }
-        // add a name-keyed cache to avoid identity/key churn on large netlists
-        java.util.Map<String, Integer> lutByName = new java.util.HashMap<>();
-
-        {
-            int mismatches = 0;
-            int maxCheck = Math.min(1000, instLookup.length - 1);
-            for (int j = 1; j <= maxCheck; j++) {
-                String nm = instLookup[j];
-                if (nm == null) continue;
-                if (n.getHierCellInstFromName(nm) == null) {
-                    mismatches++;
+        if (bare_bones) {
+            int num_vertices = instLookup.length - 1;
+            int[] v2p = new int[num_vertices + 1];
+            try (BufferedReader br = new BufferedReader(new FileReader(outputFile.toFile()))) {
+                String line = null;
+                int i = 1;
+                while ((line = br.readLine()) != null) {
+                    int part = Integer.parseInt(line.trim());
+                    v2p[i++] = part;
                 }
-            }
-            if (mismatches > 0) {
-                System.err.printf("PARTITIONER DEBUG: name roundtrip -> mismatches=%d checked=%d%n", mismatches, maxCheck); // verifies name to instance roundtrip integrity is not causing errors
-            } else {
-                System.out.println("PARTITIONER DEBUG: name roundtrip -> ok"); // verifies name to instance roundtrip integrity is not causing errors
-            }
-        }
-        MessageGenerator.printHeader("Partition Solution Report");
-        final int DBG_MAX_MISS_LOGS = 100; //after 100 missed LUT counts stop printing to the terminal..
-        int dbgMissingLUTCountTotal = 0;   //track the amount of times we never had a valid count of LUTs
-        int dbgMissingLUTCountPrinted = 0; //track the amount of times we print missed luts.
-        // collect per-partition LUT counts for lut_report.txt
-        java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
-        for (int i = 0; i < partitions.size(); i++) {
-            int lutCount = 0;
-            Set<String> names = partitions.get(i);
-            String partLabel = PartitionLabel.indexToFpgaLabel(i);
-            Path partitionFile = outDir.resolve(inputEDIF.getFileName().toString() + "." + partLabel);
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(partitionFile.toFile()))) {
-                for (String name : names) {
-                    bw.write(name + "\n");
-                    EDIFHierCellInst inst = n.getHierCellInstFromName(name);
-                    if (inst.getCellType().isLeafCellOrBlackBox()) {
-                        lutCount += inst.getCellName().contains("LUT") ? 1 : 0;
-                    } else {
-                        Integer cnt = instLutCountMap.get(inst);
-                        if (cnt == null) {
-                            // try name-based cache first
-                            Integer cached = lutByName.get(name);
-                            if (cached != null) {
-                                cnt = cached;
-                            }
-                        }
-                        if (cnt == null) {
-                            dbgMissingLUTCountTotal++;
-                            if (dbgMissingLUTCountPrinted < DBG_MAX_MISS_LOGS) {
-                                System.err.printf(
-                                        "PARTITIONER DEBUG: missing lut count -> name=%s instPath=%s type=%s depth=%d isLeafOrBB=%s%n",
-                                        name, inst.toString(), inst.getCellType().getName(), inst.getDepth(),
-                                        inst.getCellType().isLeafCellOrBlackBox()); // includes hierarchical instance path to localize where the missing lut count occurs
-                                dbgMissingLUTCountPrinted++;
-                            }
-                            // recompute lut count on-demand for this hierarchical instance and fill caches
-                            Integer recomputed = PartitionTools.getLUTCount(inst, new java.util.HashMap<>(), instLutCountMap);
-                            if (recomputed != null) {
-                                cnt = recomputed;
-                                lutByName.put(name, cnt);
-                            }
-                        }
-                        if (cnt == null) {
-                            //TODO : is there a better way to handle this edge case?
-                            //last resort to avoid crash on extremely large netlists
-                            //don't keep a null value in final report
-                            //just set as zero.. partition should still be valid but report will be off.
-                            cnt = 0;
-                        }
-                        lutCount += cnt.intValue();
-                    }
-                }
-                System.out.printf("  Partition %3d %10d LUTs %s\n", i, lutCount, partitionFile);
-                lutCounts.add(Integer.valueOf(lutCount));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-        }
-        // write aggregate LUT report artifact in outDir,
-        long sumLuts = 0;
-        for (int c : lutCounts) sumLuts += c;
-        int meanLuts = (lutCounts.isEmpty()) ? 0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
-        Path lutReport = outDir.resolve("lut_report.txt");
-        try (BufferedWriter lw = new BufferedWriter(new FileWriter(lutReport.toFile()))) {
-            for (int idx = 0; idx < lutCounts.size(); idx++) {
-                String label = PartitionLabel.indexToFpgaLabel(idx);
-                lw.write(lutCounts.get(idx) + "LUTS " + label);
-                lw.write("\n");
+            EDIFHierCellInst[] inst_by_vid = new EDIFHierCellInst[num_vertices + 1];
+            for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
+                int vid = e.getValue().intValue();
+                inst_by_vid[vid] = e.getKey();
             }
-            lw.write(meanLuts + "LUTS mean");
-            lw.write("\n");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        System.out.println("Partitioner artifact written: " + lutReport);
-        System.out.printf("PARTITIONER DEBUG: missing lut count summary -> total=%d printed=%d limit=%d%n",
-                dbgMissingLUTCountTotal, dbgMissingLUTCountPrinted, DBG_MAX_MISS_LOGS); // reports total missing lut count lookups to quantify impact
-        System.out.println("-----------------------------------------------------------");
-        System.out.printf("        Total : %10d LUTs\n\n\n", totalLUTs);
+            int[] lut_by_vid = new int[num_vertices + 1];
+            for (int vid = 1; vid <= num_vertices; vid++) {
+                EDIFHierCellInst inst = inst_by_vid[vid];
+                if (inst == null) continue;
+                if (inst.getCellType().isLeafCellOrBlackBox()) {
+                    lut_by_vid[vid] = inst.getCellName().contains("LUT") ? 1 : 0;
+                } else {
+                    Integer cnt = instLutCountMap.get(inst);
+                    lut_by_vid[vid] = (cnt == null) ? 0 : cnt.intValue();
+                }
+            }
+            Path hgr = outDir.resolve(inputEDIF.getFileName().toString() + ".hgr");
+            Map<String, Integer> pair_counts = new java.util.LinkedHashMap<>();
+            try (BufferedReader hgr_br = new BufferedReader(new FileReader(hgr.toFile()))) {
+                String header = hgr_br.readLine();
+                String line = null;
+                while ((line = hgr_br.readLine()) != null) {
+                    String[] toks = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
+                    java.util.Set<Integer> parts_set = new java.util.HashSet<>();
+                    for (String tkn : toks) {
+                        if (tkn.isEmpty()) continue;
+                        int vid;
+                        try { vid = Integer.parseInt(tkn); } catch (NumberFormatException nfe) { continue; }
+                        int part_idx = (vid >= 1 && vid <= num_vertices) ? v2p[vid] : -1;
+                        if (part_idx >= 0) parts_set.add(part_idx);
+                    }
+                    if (parts_set.size() < 2) continue;
+                    java.util.List<Integer> plist = new java.util.ArrayList<>(parts_set);
+                    for (int i = 0; i < plist.size(); i++) {
+                        for (int j = i + 1; j < plist.size(); j++) {
+                            String a = PartitionLabel.indexToFpgaLabel(plist.get(i));
+                            String b = PartitionLabel.indexToFpgaLabel(plist.get(j));
+                            String k1 = a + "," + b;
+                            String k2 = b + "," + a;
+                            pair_counts.put(k1, pair_counts.getOrDefault(k1, 0) + 1);
+                            pair_counts.put(k2, pair_counts.getOrDefault(k2, 0) + 1);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            java.util.List<String> keys = new java.util.ArrayList<>(pair_counts.keySet());
+            java.util.Collections.sort(keys);
+            java.util.List<String> lines = new java.util.ArrayList<>(keys.size());
+            for (String key : keys) {
+                int sep = key.indexOf(',');
+                String a = key.substring(0, sep);
+                String b = key.substring(sep + 1);
+                int cnt = pair_counts.get(key);
+                lines.add(a + "--" + cnt + "--" + b);
+            }
+            Path io_cuts = outDir.resolve("io_cuts.txt");
+            try {
+                Files.write(io_cuts, lines, java.nio.charset.StandardCharsets.UTF_8);
+                System.out.println("Partitioner artifact written: " + io_cuts);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            java.util.ArrayList<Integer> lut_counts = new java.util.ArrayList<>();
+            int max_part = -1;
+            for (int vid = 1; vid <= num_vertices; vid++) {
+                int part_idx = v2p[vid];
+                if (part_idx > max_part) max_part = part_idx;
+            }
+            for (int i = 0; i <= max_part; i++) lut_counts.add(0);
+            for (int vid = 1; vid <= num_vertices; vid++) {
+                int part_idx = v2p[vid];
+                if (part_idx < 0) continue;
+                lut_counts.set(part_idx, lut_counts.get(part_idx) + lut_by_vid[vid]);
+            }
+            long sum_luts = 0;
+            for (int c : lut_counts) sum_luts += c;
+            int mean_luts = (lut_counts.isEmpty()) ? 0 : (int) Math.ceil(sum_luts / (double) lut_counts.size());
+            Path lut_report = outDir.resolve("lut_report.txt");
+            try (BufferedWriter lw = new BufferedWriter(new FileWriter(lut_report.toFile()))) {
+                for (int idx = 0; idx < lut_counts.size(); idx++) {
+                    String label = PartitionLabel.indexToFpgaLabel(idx);
+                    lw.write(lut_counts.get(idx) + "LUTS " + label);
+                    lw.write("\n");
+                }
+                lw.write(mean_luts + "LUTS mean");
+                lw.write("\n");
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            System.out.println("Partitioner artifact written: " + lut_report);
+            try {
+                HierMappingWriter.write(outDir, n, partitions, instLutCountMap);
+                System.out.println("Partitioner artifact written: " + outDir.resolve("cells.txt"));
+                System.out.println("Partitioner artifact written: " + outDir.resolve("mapping.txt"));
+            } catch (RuntimeException ex) {
+                System.err.println("WARNING: failed to write hierarchical mapping artifacts: " + ex.getMessage());
+            }
+        } else {
+            try {
+                IoCutWriter.write(outDir, inputEDIF, n, instLookup, partitions, generateEdifNets);
+            } catch (RuntimeException ex) {
+                System.err.println("WARNING: failed to write io cuts / nets artifacts: " + ex.getMessage());
+            }
+            java.util.Map<String, Integer> lutByName = new java.util.HashMap<>();
 
-        //output new hierarchical artifacts
-        try {
-            HierMappingWriter.write(outDir, n, partitions, instLutCountMap);
-            System.out.println("Partitioner artifact written: " + outDir.resolve("cells.txt"));
-            System.out.println("Partitioner artifact written: " + outDir.resolve("mapping.txt"));
-        } catch (RuntimeException ex) {
-            System.err.println("WARNING: failed to write hierarchical mapping artifacts: " + ex.getMessage());
+            {
+                int mismatches = 0;
+                int maxCheck = Math.min(1000, instLookup.length - 1);
+                for (int j = 1; j <= maxCheck; j++) {
+                    String nm = instLookup[j];
+                    if (nm == null) continue;
+                    if (n.getHierCellInstFromName(nm) == null) {
+                        mismatches++;
+                    }
+                }
+                if (mismatches > 0) {
+                    System.err.printf("PARTITIONER DEBUG: name roundtrip -> mismatches=%d checked=%d%n", mismatches, maxCheck);
+                } else {
+                    System.out.println("PARTITIONER DEBUG: name roundtrip -> ok");
+                }
+            }
+            MessageGenerator.printHeader("Partition Solution Report");
+            final int DBG_MAX_MISS_LOGS = 100;
+            int dbgMissingLUTCountTotal = 0;
+            int dbgMissingLUTCountPrinted = 0;
+            java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
+            for (int i = 0; i < partitions.size(); i++) {
+                int lutCount = 0;
+                Set<String> names = partitions.get(i);
+                String partLabel = PartitionLabel.indexToFpgaLabel(i);
+                Path partitionFile = outDir.resolve(inputEDIF.getFileName().toString() + "." + partLabel);
+                try (BufferedWriter bw = new BufferedWriter(new FileWriter(partitionFile.toFile()))) {
+                    for (String name : names) {
+                        bw.write(name + "\n");
+                        EDIFHierCellInst inst = n.getHierCellInstFromName(name);
+                        if (inst.getCellType().isLeafCellOrBlackBox()) {
+                            lutCount += inst.getCellName().contains("LUT") ? 1 : 0;
+                        } else {
+                            Integer cnt = instLutCountMap.get(inst);
+                            if (cnt == null) {
+                                Integer cached = lutByName.get(name);
+                                if (cached != null) {
+                                    cnt = cached;
+                                }
+                            }
+                            if (cnt == null) {
+                                dbgMissingLUTCountTotal++;
+                                if (dbgMissingLUTCountPrinted < DBG_MAX_MISS_LOGS) {
+                                    System.err.printf(
+                                            "PARTITIONER DEBUG: missing lut count -> name=%s instPath=%s type=%s depth=%d isLeafOrBB=%s%n",
+                                            name, inst.toString(), inst.getCellType().getName(), inst.getDepth(),
+                                            inst.getCellType().isLeafCellOrBlackBox());
+                                    dbgMissingLUTCountPrinted++;
+                                }
+                                Integer recomputed = PartitionTools.getLUTCount(inst, new java.util.HashMap<>(), instLutCountMap);
+                                if (recomputed != null) {
+                                    cnt = recomputed;
+                                    lutByName.put(name, cnt);
+                                }
+                            }
+                            if (cnt == null) {
+                                cnt = 0;
+                            }
+                            lutCount += cnt.intValue();
+                        }
+                    }
+                    System.out.printf("  Partition %3d %10d LUTs %s\n", i, lutCount, partitionFile);
+                    lutCounts.add(Integer.valueOf(lutCount));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+            long sumLuts = 0;
+            for (int c : lutCounts) sumLuts += c;
+            int meanLuts = (lutCounts.isEmpty()) ? 0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
+            Path lutReport = outDir.resolve("lut_report.txt");
+            try (BufferedWriter lw = new BufferedWriter(new FileWriter(lutReport.toFile()))) {
+                for (int idx = 0; idx < lutCounts.size(); idx++) {
+                    String label = PartitionLabel.indexToFpgaLabel(idx);
+                    lw.write(lutCounts.get(idx) + "LUTS " + label);
+                    lw.write("\n");
+                }
+                lw.write(meanLuts + "LUTS mean");
+                lw.write("\n");
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            System.out.println("Partitioner artifact written: " + lutReport);
+            System.out.printf("PARTITIONER DEBUG: missing lut count summary -> total=%d printed=%d limit=%d%n",
+                    dbgMissingLUTCountTotal, dbgMissingLUTCountPrinted, DBG_MAX_MISS_LOGS);
+            System.out.println("-----------------------------------------------------------");
+            System.out.printf("        Total : %10d LUTs\n\n\n", totalLUTs);
+
+            try {
+                HierMappingWriter.write(outDir, n, partitions, instLutCountMap);
+                System.out.println("Partitioner artifact written: " + outDir.resolve("cells.txt"));
+                System.out.println("Partitioner artifact written: " + outDir.resolve("mapping.txt"));
+            } catch (RuntimeException ex) {
+                System.err.println("WARNING: failed to write hierarchical mapping artifacts: " + ex.getMessage());
+            }
         }
 
         t.stop();
