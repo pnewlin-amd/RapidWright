@@ -66,14 +66,14 @@ public class Partitioner {
     
     public static void main(String[] args) {
         if (args.length < 3) {
-            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--edif_nets] [--part_dir DIR] [--mapping_constraints PATH] [--constraints_debug]");
+            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--part_dir DIR] [--mapping_constraints PATH] [--constraints_debug]");
             return;
         }
         Path inputEDIF = Paths.get(args[0]);
         int k = Integer.parseInt(args[1]);
         int leafLUTCountLimit = Integer.parseInt(args[2]);
         CodePerfTracker t = new CodePerfTracker("Partitioner");
-        boolean generateEdifNets = false;
+        boolean generate_edif_nets = false;
         // new optional file for fixed vertices constraints
         Path constraints_file = null;
         // enable extra logs for constraints
@@ -86,12 +86,7 @@ public class Partitioner {
         // parse early flags that affect artifact emission and locations
         for (int i = 3; i < args.length; i++) {
             String a = args[i];
-            if ("--edif_nets".equals(a)) {
-                generateEdifNets = true;
-            } else if (a.startsWith("--edif_nets=")) {
-                String v = a.substring("--edif_nets=".length()).trim();
-                generateEdifNets = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
-            } else if ("--part_dir".equals(a) && i + 1 < args.length) {
+            if ("--part_dir".equals(a) && i + 1 < args.length) {
                 outDir = Paths.get(args[++i]);
             } else if (a.startsWith("--part_dir=")) {
                 outDir = Paths.get(a.substring("--part_dir=".length()));
@@ -111,6 +106,7 @@ public class Partitioner {
                 bare_bones = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
             }
         }
+        generate_edif_nets = !bare_bones;
         try {
             Files.createDirectories(outDir);
         } catch (IOException ioe) {
@@ -170,7 +166,7 @@ public class Partitioner {
 
         t.start("Write hMETIS File");
         Path hMetisFile = outDir.resolve(inputEDIF.getFileName().toString() + ".hgr");
-        PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generateEdifNets);
+        PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generate_edif_nets);
         t.stop();
 
         // generate fixed vertices file if constraints were provided
@@ -285,16 +281,10 @@ public class Partitioner {
                     mp.setObjective(args[++i]);
                 } else if (a.startsWith("--objective=")) {
                     mp.setObjective(a.substring("--objective=".length()));
-                } else if (a.equals("--edif_nets")) {
-                    generateEdifNets = true;
-                } else if (a.startsWith("--edif_nets=")) {
-                    String v = a.substring("--edif_nets=".length()).trim();
-                    generateEdifNets = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
                 }
             }
             // print selected user flags summary
             System.out.printf("Partitioner flag: objective=%s%n", mp.getObjective());
-            System.out.printf("Partitioner flag: edif_nets=%s%n", generateEdifNets ? "on" : "off");
             System.out.printf("Partitioner flag: part_dir=%s%n", outDir);
             System.out.printf("Partitioner flag: mapping_constraints=%s%n", constraints_file != null ? constraints_file.toString() : "none");
             System.out.printf("Partitioner flag: bare_bones=%s%n", bare_bones ? "on" : "off");
@@ -422,7 +412,7 @@ public class Partitioner {
             }
         } else {
             try {
-                IoCutWriter.write(outDir, inputEDIF, n, instLookup, partitions, generateEdifNets);
+                IoCutWriter.write(outDir, inputEDIF, n, instLookup, partitions, generate_edif_nets);
             } catch (RuntimeException ex) {
                 System.err.println("WARNING: failed to write io cuts / nets artifacts: " + ex.getMessage());
             }

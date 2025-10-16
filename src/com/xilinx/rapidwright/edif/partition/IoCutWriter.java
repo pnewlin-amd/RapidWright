@@ -45,7 +45,7 @@ import com.xilinx.rapidwright.edif.EDIFNetlist;
 
 /**
  * writes io_cuts.txt (direction-agnostic summary with both permutations) and io_cuts_directional.txt (driver-resolved), 
- * and centralizes generation of the detailed nets.txt report when the --edif_nets flag is enabled.
+ * and centralizes generation of the detailed nets.txt report.
  */
 public final class IoCutWriter {
 
@@ -61,7 +61,7 @@ public final class IoCutWriter {
                              EDIFNetlist netlist,
                              String[] instLookup,
                              Map<Integer, Set<String>> partitions,
-                             boolean generateEdifNets) {
+                             boolean generate_edif_nets) {
         // build a deterministic name -> partition id lookup so we can translate each hypergraph member to its block id quickly.
         Map<String, Integer> nameToPart = new LinkedHashMap<>();
         for (Map.Entry<Integer, Set<String>> pe : partitions.entrySet()) {
@@ -87,16 +87,15 @@ public final class IoCutWriter {
         // this uses .hgr membership and ignores driver direction, emitting counts for both permutations.
         writeIoCutsUndirected(outDir, hgr, instLookup, nameToPart);
 
-        // write directional io cuts into io_cuts_directional.txt. when --edif_nets is enabled,
-        // we use the existing eidmap-guided resolver; otherwise, we recompute edges from the netlist.
-        if (generateEdifNets) {
+        // write directional io cuts into io_cuts_directional.txt.
+        if (generate_edif_nets) {
             writeIoCuts(outDir, hgr, eidmap, instLookup, nameToPart, netlist);
         } else {
             writeDirectionalIoCutsNoEidmap(outDir, netlist, instLookup, nameToPart);
         }
 
-        // generate the detailed per-net report only when --edif_nets is enabled.
-        if (generateEdifNets) {
+        // generate the detailed per-net report
+        if (generate_edif_nets) {
             writeDetailedNetsReport(hgr, eidmap, instLookup, nameToPart, netsOut);
         }
     }
