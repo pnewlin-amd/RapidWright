@@ -42,6 +42,7 @@ import com.xilinx.rapidwright.edif.EDIFHierNet;
 import com.xilinx.rapidwright.edif.EDIFHierPortInst;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 import com.xilinx.rapidwright.edif.EDIFTools;
+import com.xilinx.rapidwright.design.Design;
 import com.xilinx.rapidwright.tests.CodePerfTracker;
 import com.xilinx.rapidwright.util.MessageGenerator;
 
@@ -66,23 +67,26 @@ public class Partitioner {
     
     public static void main(String[] args) {
         if (args.length < 3) {
-            System.out.println("<input.edf> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--part_dir DIR] [--mapping_constraints PATH] [--constraints_debug]");
+            System.out.println("<input.edf|input.dcp> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--part_dir DIR] [--mapping_constraints PATH] [--constraints_debug] [--bare_bones]");
             return;
         }
-        Path inputEDIF = Paths.get(args[0]);
+        Path inputPath = Paths.get(args[0]);
         int k = Integer.parseInt(args[1]);
         int leafLUTCountLimit = Integer.parseInt(args[2]);
         CodePerfTracker t = new CodePerfTracker("Partitioner");
-        boolean generate_edif_nets = false;
-        // new optional file for fixed vertices constraints
+        
+        boolean generate_edif_nets = false; //verbose information
+
         Path constraints_file = null;
         // enable extra logs for constraints
+
         boolean constraints_debug = false;
         boolean bare_bones = false;
+        
         // establish default output directory next to input EDIF (or cwd if none)
-        Path outDir = (inputEDIF.getParent() == null)
+        Path outDir = (inputPath.getParent() == null)
                 ? Paths.get(System.getProperty("user.dir"))
-                : inputEDIF.getParent();
+                : inputPath.getParent();
         // parse early flags that affect artifact emission and locations
         for (int i = 3; i < args.length; i++) {
             String a = args[i];
@@ -113,11 +117,22 @@ public class Partitioner {
             throw new UncheckedIOException(ioe);
         }
 
-        memAudit("rapidwright mem usg edif before");
-        t.start("Read EDIF");
-        EDIFNetlist n = EDIFTools.readEdifFile(inputEDIF);
+        memAudit("rapidwright mem usg input before");
+        t.start("Read Input");
+        EDIFNetlist n;
+        String inLower = inputPath.toString().toLowerCase();
+        if (inLower.endsWith(".dcp")) {
+            Design d = Design.readCheckpoint(inputPath.toString());
+            n = d.getNetlist();
+            int encrypted_count = n.getEncryptedCells().size();
+            if (encrypted_count > 0) {
+                throw new RuntimeException("ERROR: Encrypted DCP detected (encryptedCells=" + encrypted_count + "). Encrypted DCPs are unsupported.");
+            }
+        } else {
+            n = EDIFTools.readEdifFile(inputPath);
+        }
         t.stop();
-        memAudit("rapidwright mem usg edif after");
+        memAudit("rapidwright mem usg input after");
 
         t.start("Coarsen Netlist");
         Map<EDIFHierCellInst, Integer> instLutCountMap = new HashMap<>();
@@ -142,6 +157,16 @@ public class Partitioner {
             System.out.printf("PARTITIONER DEBUG: leafInsts coverage -> sampledHier=%d missingHier=%d pct=%.4f step=%d%n",
                     sampledHier, missingHier, pct, step); // reports sampled coverage of missing lut counts among hierarchical leaves to confirm incomplete instance coverage
         }
+        if (inLower.endsWith(".dcp")) {
+            java.util.Map<com.xilinx.rapidwright.edif.EDIFCell, java.lang.Integer> __p_cache = new java.util.HashMap<>();
+            for (EDIFHierCellInst leaf : leafInsts.keySet()) {
+                if (!leaf.getCellType().isLeafCellOrBlackBox()) {
+                    if (instLutCountMap.get(leaf) == null) {
+                        PartitionTools.getLUTCount(leaf, __p_cache, instLutCountMap);
+                    }
+                }
+            }
+        }
         int totalLUTs = instLutCountMap.get(n.getTopHierCellInst());
         if (leafLUTCountLimit >= totalLUTs || leafLUTCountLimit < 1) {
             throw new RuntimeException("ERROR: Invalid leafLUTCountLimit '" + leafLUTCountLimit
@@ -156,16 +181,16 @@ public class Partitioner {
                 EDIFHierNet connectedNet = pi.getHierarchicalNet();
                 EDIFHierNet parentNet = null; //skip ambiguous nets, TODO : is there a better way to handle this edge case..?
                 try { parentNet = n.getParentNet(connectedNet); } catch (RuntimeException ex) { parentNet = null; } //skip ambiguous nets
-                EDIFHierNet keyNet = (parentNet != null) ? parentNet : connectedNet; //skip ambiguous nets
-                if (edgesMap.containsKey(keyNet)) //skip ambiguous nets
+                EDIFHierNet keyNet = (parentNet != null) ? parentNet : connectedNet;
+                if (edgesMap.containsKey(keyNet))
                     continue;
-                edgesMap.put(keyNet, connectedNet.getConnectedInsts(leafInsts.keySet())); //skip ambiguous nets
+                edgesMap.put(keyNet, connectedNet.getConnectedInsts(leafInsts.keySet())); 
             }
         }
         t.stop();
 
         t.start("Write hMETIS File");
-        Path hMetisFile = outDir.resolve(inputEDIF.getFileName().toString() + ".hgr");
+        Path hMetisFile = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
         PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generate_edif_nets);
         t.stop();
 
@@ -255,7 +280,7 @@ public class Partitioner {
             MtKaHyParPartitioner mp = (MtKaHyParPartitioner) p;
             // ensure external tool runs and writes outputs into outDir
             mp.setOutputDir(outDir);
-            // pass fixed vertices file if present
+            // pass fixed vertices file if detected
             if (fix_file != null) {
                 mp.setFixedVerticesFile(fix_file);
             }
@@ -283,7 +308,7 @@ public class Partitioner {
                     mp.setObjective(a.substring("--objective=".length()));
                 }
             }
-            // print selected user flags summary
+            // print user flags summary
             System.out.printf("Partitioner flag: objective=%s%n", mp.getObjective());
             System.out.printf("Partitioner flag: part_dir=%s%n", outDir);
             System.out.printf("Partitioner flag: mapping_constraints=%s%n", constraints_file != null ? constraints_file.toString() : "none");
@@ -321,13 +346,13 @@ public class Partitioner {
                 EDIFHierCellInst inst = inst_by_vid[vid];
                 if (inst == null) continue;
                 if (inst.getCellType().isLeafCellOrBlackBox()) {
-                    lut_by_vid[vid] = inst.getCellName().contains("LUT") ? 1 : 0;
+                    lut_by_vid[vid] = logicDiscoveryPolicy.lut_count_for_leaf(inst);
                 } else {
                     Integer cnt = instLutCountMap.get(inst);
                     lut_by_vid[vid] = (cnt == null) ? 0 : cnt.intValue();
                 }
             }
-            Path hgr = outDir.resolve(inputEDIF.getFileName().toString() + ".hgr");
+            Path hgr = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
             Map<String, Integer> pair_counts = new java.util.LinkedHashMap<>();
             try (BufferedReader hgr_br = new BufferedReader(new FileReader(hgr.toFile()))) {
                 String header = hgr_br.readLine();
@@ -403,6 +428,9 @@ public class Partitioner {
                 throw new UncheckedIOException(e);
             }
             System.out.println("Partitioner artifact written: " + lut_report);
+            if (sum_luts != totalLUTs) {
+                System.err.printf("ERROR: LUT count policy mismatch: per-partitions sum=%d, top-level total=%d%n", sum_luts, totalLUTs);
+            }
             try {
                 HierMappingWriter.write(outDir, n, partitions, instLutCountMap);
                 System.out.println("Partitioner artifact written: " + outDir.resolve("cells.txt"));
@@ -412,7 +440,7 @@ public class Partitioner {
             }
         } else {
             try {
-                IoCutWriter.write(outDir, inputEDIF, n, instLookup, partitions, generate_edif_nets);
+                IoCutWriter.write(outDir, inputPath, n, instLookup, partitions, generate_edif_nets);
             } catch (RuntimeException ex) {
                 System.err.println("WARNING: failed to write io cuts / nets artifacts: " + ex.getMessage());
             }
@@ -443,13 +471,13 @@ public class Partitioner {
                 int lutCount = 0;
                 Set<String> names = partitions.get(i);
                 String partLabel = PartitionLabel.indexToFpgaLabel(i);
-                Path partitionFile = outDir.resolve(inputEDIF.getFileName().toString() + "." + partLabel);
+                Path partitionFile = outDir.resolve(inputPath.getFileName().toString() + "." + partLabel);
                 try (BufferedWriter bw = new BufferedWriter(new FileWriter(partitionFile.toFile()))) {
                     for (String name : names) {
                         bw.write(name + "\n");
                         EDIFHierCellInst inst = n.getHierCellInstFromName(name);
                         if (inst.getCellType().isLeafCellOrBlackBox()) {
-                            lutCount += inst.getCellName().contains("LUT") ? 1 : 0;
+                            lutCount += logicDiscoveryPolicy.lut_count_for_leaf(inst);
                         } else {
                             Integer cnt = instLutCountMap.get(inst);
                             if (cnt == null) {
@@ -501,6 +529,9 @@ public class Partitioner {
                 throw new UncheckedIOException(e);
             }
             System.out.println("Partitioner artifact written: " + lutReport);
+            if (sumLuts != totalLUTs) {
+                System.err.printf("ERROR: LUT count policy mismatch: per-partitions sum=%d, top-level total=%d%n", sumLuts, totalLUTs);
+            }
             System.out.printf("PARTITIONER DEBUG: missing lut count summary -> total=%d printed=%d limit=%d%n",
                     dbgMissingLUTCountTotal, dbgMissingLUTCountPrinted, DBG_MAX_MISS_LOGS);
             System.out.println("-----------------------------------------------------------");

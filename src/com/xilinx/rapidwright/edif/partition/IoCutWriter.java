@@ -44,17 +44,16 @@ import com.xilinx.rapidwright.edif.EDIFHierPortInst;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 
 /**
- * writes io_cuts.txt (direction-agnostic summary with both permutations) and io_cuts_directional.txt (driver-resolved), 
- * and centralizes generation of the detailed nets.txt report.
+ * writes io_cuts.txt (direction-agnostic summary with both permutations) and io_cuts_directional.txt (driver-resolved)
  */
 public final class IoCutWriter {
 
     private IoCutWriter() {
-        // no instances; this utility is a static facade that writes summary artifacts derived from the partition solution
+        // no instances.
     }
 
     /**
-     * writes both io_cuts.txt (in outDir) and the detailed nets.txt (following existing behavior).
+     * writes both io_cuts.txt (in outDir) and the detailed nets.txt
      */
     public static void write(Path outDir,
                              Path inputEDIF,
@@ -62,7 +61,7 @@ public final class IoCutWriter {
                              String[] instLookup,
                              Map<Integer, Set<String>> partitions,
                              boolean generate_edif_nets) {
-        // build a deterministic name -> partition id lookup so we can translate each hypergraph member to its block id quickly.
+        // build a deterministic name -> partition id lookup so we can translate each hypergraph member to its block id.
         Map<String, Integer> nameToPart = new LinkedHashMap<>();
         for (Map.Entry<Integer, Set<String>> pe : partitions.entrySet()) {
             for (String nm : pe.getValue()) {
@@ -79,9 +78,13 @@ public final class IoCutWriter {
         Path eidmap = outDir.resolve(base + ".eidmap");
         Path netsOut = outDir.resolve(base + ".nets.txt");
 
+
+
         //=================================^IO CUT WRITER^===================================
         //=================================*-*-*-*-*-*-*-*===================================
         //===============================vDETAILED .NETS.TXTv================================
+
+
 
         // always write the new, direction-agnostic io cuts into io_cuts.txt.
         // this uses .hgr membership and ignores driver direction, emitting counts for both permutations.
@@ -110,8 +113,8 @@ public final class IoCutWriter {
                                     Map<String, Integer> nameToPart,
                                     EDIFNetlist netlist) {
         // step 1: read .eidmap so edge index -> net name lookups are fast and aligned with .hgr.
-        // this is crucial because .eidmap encodes the parent-level hierarchical name, which is the same
-        // string representation we will reconstruct when we query the netlist at the parent scope.
+        // because .eidmap encodes the parent-level hierarchical name, which is the same
+        // string representation, we will then reconstruct when we query the netlist at the parent scope.
         List<String> netNames = new ArrayList<>();
         try (BufferedReader eid = new BufferedReader(new FileReader(eidmapFile.toFile()))) {
             String line;
@@ -122,13 +125,12 @@ public final class IoCutWriter {
             throw new UncheckedIOException(e);
         }
 
-        // this map accumulates "srcLabel-->dstLabel" -> count. we keep it ordered for stable output,
-        // which makes diffs cleaner and pattern recognition easier during review.
+        // this map accumulates "srcLabel-->dstLabel" counts. we keep it ordered for stable output,
         Map<String, Integer> pairCounts = new LinkedHashMap<>();
 
         // step 2: scan the hypergraph (.hgr). for each edge, build the list of participating hierarchical
         // instance names by translating vertex ids through instLookup. if there are no participants, we skip.
-        // otherwise, we attempt to resolve a single driving participant by comparing hierarchical port instances
+        // otherwise try to resolve a single driving participant by comparing hierarchical port instances
         // against the parent-level hierarchical net name and its source-side endpoints.
         try (BufferedReader hgr = new BufferedReader(new FileReader(hgrFile.toFile()))) {
             String header = hgr.readLine(); // ignore header; the following lines are the edges
@@ -142,7 +144,6 @@ public final class IoCutWriter {
                 String[] toks = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
 
                 // gather all participating hierarchical instance names for this edge (signal).
-                // these names let us locate each instance in the netlist and ultimately identify the driver.
                 List<String> instNames = new ArrayList<>(toks.length);
                 for (String t : toks) {
                     if (t.isEmpty()) continue;
@@ -159,9 +160,6 @@ public final class IoCutWriter {
 
                 // step 2a: identify the driving participant. we do this by inspecting each participant’s
                 // hierarchical port instances and retrieving its hierarchical net at the parent scope.
-                // using the parent-level net ensures the string name (toString) matches the .eidmap entry.
-                // if this participant’s hierarchical port instance is listed as a source on that net, we
-                // designate it as the driver and record its partition as the source partition for this signal.
                 String driverName = null;
                 Integer driverPart = null;
                 for (String nm : instNames) {
@@ -175,8 +173,8 @@ public final class IoCutWriter {
                     String hn = (parent != null) ? parent.toString() : hnet.toString();
                     if (!netName.equals(hn)) continue;
 
-                        // now compare against the net’s source endpoints at the same scope we used for naming.
-                        // if this port instance is one of the sources, we treat this participant as the driver.
+                    // now compare against the net’s source endpoints at the same scope we used for naming.
+                    // if this port instance is one of the sources, we treat this participant as the driver.
                     List<EDIFHierPortInst> sources = ((parent != null) ? parent : hnet).getSourcePortInsts(true);
                     if (sources == null || sources.size() != 1) continue; //skip ambiguous nets
                     for (EDIFHierPortInst spi : sources) {
@@ -191,8 +189,9 @@ public final class IoCutWriter {
                     if (driverName != null) break;
                 }
 
-                // if no driver can be resolved (for example, tie-offs that are not represented as a source),
-                // we skip this edge for the directional summary. the detailed nets.txt will still list it normally.
+                // if there is no driver that can be resolved (for example, tie-offs that are not represented as a source),
+                // we skip this edge for the directional summary.
+                // nets.txt will still cover this. 
                 if (driverName == null || driverPart == null) continue;
 
                 String driverLabel = PartitionLabel.indexToFpgaLabel(driverPart);
@@ -216,14 +215,14 @@ public final class IoCutWriter {
             throw new UncheckedIOException(e);
         }
 
-        // step 3: write io_cuts.txt in a stable, sorted order. presenting entries deterministically makes it
-        // much easier to review diffs between runs and to visually scan where the heaviest traffic resides.
+        // step 3: write io_cuts.txt in sorted order. presenting entries deterministically makes it
+        // much easier to review diffs between runs. Makes finding heavy traffic easier as well in artifact.
         List<String> lines = new ArrayList<>(pairCounts.size());
         java.util.List<String> keys = new java.util.ArrayList<>(pairCounts.keySet());
         java.util.Collections.sort(keys);
         for (String key : keys) {
             int cnt = pairCounts.get(key);
-            // each key is "fpga_x-->fpga_y"; we rewrite it as "fpga_x--N--fpga_y" where n is the net count between them.
+            // each key is "fpga_x-->fpga_y"; we rewrite it as "fpga_x--N--fpga_y" where n is the cut net count between them.
             String formatted = key.replace("-->", "--" + cnt + "--");
             lines.add(formatted);
         }
@@ -240,7 +239,11 @@ public final class IoCutWriter {
     /**
      * writes io_cuts.txt (direction-agnostic) into outdir by scanning .hgr membership and
      * counting every pair of distinct partitions that share a net. for each unordered pair,
-     * both permutations are written so downstream tools can consume either ordering.
+     * both permutations are written.
+     * 
+     * ex: 
+     * fpga_b--20--fpga_a
+     * fpga_a--20--fpga_b
      */
     private static void writeIoCutsUndirected(Path outDir,
                                               Path hgrFile,
@@ -306,7 +309,9 @@ public final class IoCutWriter {
 
     /**
      * writes io_cuts_directional.txt by recomputing edges from the netlist when .eidmap
-     * is not available. this avoids relying on large eidmap files while still producing
+     * is not available. 
+     * 
+     * Avoids relying on large eidmap files while still producing
      * the directional summary.
      */
     private static void writeDirectionalIoCutsNoEidmap(Path outDir,
@@ -328,7 +333,7 @@ public final class IoCutWriter {
             for (EDIFHierPortInst pi : ci.getHierPortInsts()) {
                 EDIFHierNet hnet = pi.getHierarchicalNet();
                 if (hnet == null) continue;
-                EDIFHierNet parent = null; //skip ambiguous nets
+                EDIFHierNet parent = null;
                 try { parent = netlist.getParentNet(hnet); } catch (RuntimeException ex) { parent = null; } //skip ambiguous nets
                 EDIFHierNet key = (parent != null) ? parent : hnet; //skip ambiguous nets
                 if (edgesMap.containsKey(key)) continue;
@@ -354,7 +359,7 @@ public final class IoCutWriter {
                 for (EDIFHierPortInst pi : inst.getHierPortInsts()) {
                     EDIFHierNet hnet = pi.getHierarchicalNet();
                     if (hnet == null) continue;
-                    EDIFHierNet parent = null; //skip ambiguous nets
+                    EDIFHierNet parent = null;
                     try { parent = netlist.getParentNet(hnet); } catch (RuntimeException ex) { parent = null; } //skip ambiguous nets
                     EDIFHierNet netRef = (parent != null) ? parent : hnet;
                     if (netRef != e.getKey()) continue;

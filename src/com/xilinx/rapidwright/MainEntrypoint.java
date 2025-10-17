@@ -116,6 +116,7 @@ import com.xilinx.rapidwright.util.ReplaceEDIFInDCP;
 import com.xilinx.rapidwright.util.ReportRouteStatus;
 import com.xilinx.rapidwright.util.StringTools;
 import com.xilinx.rapidwright.util.Unzip;
+import com.xilinx.rapidwright.util.LUTCount;
 import com.xilinx.rapidwright.util.performance_evaluation.PerformanceEvaluation;
 import com.xilinx.rapidwright.debug.memory.audit.ReadNetlist;
 
@@ -223,6 +224,7 @@ public class MainEntrypoint {
         addFunction("Unzip", Unzip::main);
         addFunction("UpdateRoutingUsingSATRouter", UpdateRoutingUsingSATRouter::main);
         addFunction("ReadNetlist", ReadNetlist::main);
+        addFunction("LUTCount", LUTCount::main);
     }
 
     private static void listModes(PrintStream ps) {

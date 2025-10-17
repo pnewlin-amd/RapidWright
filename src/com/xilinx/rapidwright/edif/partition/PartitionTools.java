@@ -53,6 +53,8 @@ import com.xilinx.rapidwright.edif.EDIFNetlist;
 public class PartitionTools {
 
     // debug counters for lut count behavior
+    // keep track how many times bad behavior 
+    // is caught. good debug info.
     private static long dbgCacheHits = 0;
     private static long dbgRecursiveCalls = 0;
     private static long dbgInstMapWrites = 0;
@@ -72,7 +74,7 @@ public class PartitionTools {
         Integer totalLUTs = 0;
         for (EDIFCellInst i : inst.getCellType().getCellInsts()) {
             if (i.getCellType().isLeafCellOrBlackBox()) {
-                totalLUTs += i.getCellType().getName().contains("LUT") ? 1 : 0;
+                totalLUTs += isLogicLUT(i.getCellType().getName()) ? 1 : 0;
             } else if (map.containsKey(i.getCellType())) {
                 dbgCacheHits++; // count cell-type cache usage
                 if (dbgCacheHitLogBudget > 0) {
@@ -90,10 +92,18 @@ public class PartitionTools {
         if (prevCount != null && !prevCount.equals(totalLUTs)) {
             throw new RuntimeException("ERROR: Inconsistent netlist");
         }
-        instMap.put(inst, totalLUTs);
-        dbgInstMapWrites++; // count inst map writes
+        if (instMap != null) {
+            instMap.put(inst, totalLUTs);
+            dbgInstMapWrites++; // count inst map writes
+        }
     
         return totalLUTs;
+    }
+
+    //relies on the user providing an accurate list of known 'LUT types'
+    private static boolean isLogicLUT(String name) {
+        //source-of-truth policy
+        return logicDiscoveryPolicy.is_logic_lut_type_name(name);
     }
 
     /**
@@ -124,6 +134,7 @@ public class PartitionTools {
             EDIFHierCellInst curr = q.poll();
             Integer lutSize = instMap.get(curr);
             // track null lut size
+            // increase count whenever lutsize is unknown.
             if (lutSize == null) {
                 dbgNullLUTCountDecisions++;
             }
@@ -138,7 +149,7 @@ public class PartitionTools {
         }
     
         System.out.printf("PARTITIONER DEBUG: lutCount stats -> cacheHits=%d recursiveCalls=%d instMapWrites=%d uniqueCells=%d instMapSize=%d%n",
-                dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, lutCountMap.size(), instMap.size()); // reports cache vs recursion usage and instance map size to explain instmap coverage
+                dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, lutCountMap.size(), instMap.size()); // reports cache vs recursion usage and instance map size
         System.out.printf("PARTITIONER DEBUG: identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d%n",
                 leafInsts.size(), dbgNullLUTCountDecisions); // reports leaf count and frequency of null lut size during bfs to validate null-as-leaf misclassification
         return leafInsts;
@@ -164,9 +175,8 @@ public class PartitionTools {
     /**
      * Writes out instance names to integers to store the enumerated mapping.
      * 
-     * @param mappingFile A file that maps index to instance name (one per line) to
-     *                    the partitioned solution can be decoded.
-     * @param leafInsts   Current enumeration map for the instances used.
+     * @param mappingFile A file that maps index to instance name
+     * @param leafInsts   current enumeration map for the instances used.
      */
     public static void writeInstMappingFile(Path mappingFile, String[] instLookup) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(mappingFile.toFile()))) {
@@ -204,7 +214,8 @@ public class PartitionTools {
                 bw.write(edgesMap.size() + " " + leafInsts.size() + "\n");
                 int unnamedCounter = 0; // assign unique ids for unnamed nets
                 for (Entry<EDIFHierNet, Set<EDIFHierCellInst>> e : edgesMap.entrySet()) {
-                    // write net name safely even if key is null
+                    //write net name safely even if key is null
+                    //might be a better way to resolve this?
                     String netName = (e.getKey() == null) ? "<unnamed_net_" + (++unnamedCounter) + ">" : e.getKey().toString();
                     emw.write(netName);
                     emw.write("\n");
@@ -275,13 +286,13 @@ public class PartitionTools {
 
     /**
      * Writes a human-readable connectivity report with net names using:
-     *  - .hgr         (edge -> list of vertex IDs)
-     *  - .eidmap      (edge ID -> hierarchical net name)
-     *  - instLookup   (vertex ID -> hierarchical instance name)
-     *  - nameToPart   (instance name -> partition index)
+     *  - .hgr         edge -> list of vertex IDs
+     *  - .eidmap      edge ID -> net name
+     *  - instLookup   vertex ID -> instance name
+     *  - nameToPart   instance name -> partition index
      *
-     * Output format (for each net/edge):
-     *   Net <id>: <net_name>
+     * output for every net and edge
+     *   <net_id> : <net_name>
      *     cut=<true|false> partitions={p0:cnt0, p1:cnt1, ...}
      *     <vid>: <instance_name> p=<partition>
      */
@@ -294,14 +305,14 @@ public class PartitionTools {
              BufferedReader eid = new BufferedReader(new FileReader(eidmapFile.toFile()));
              BufferedWriter out = new BufferedWriter(new FileWriter(netsOut.toFile()))) {
 
-            // Load eidmap: 1-based edge IDs
+            // load eidmap: 1-based edge IDs
             ArrayList<String> netNames = new ArrayList<>();
             String line;
             while ((line = eid.readLine()) != null) {
                 netNames.add(line);
             }
 
-            // Read header line from .hgr
+            // read header line from .hgr
             String header = hgr.readLine(); // may be "E V" or "E V fmt"
             int edgeIdx = 0;
 
@@ -348,9 +359,9 @@ public class PartitionTools {
                         if (i + 1 < es.size()) desc.append(", ");
                     }
                 }
-                //note: 'blocks' lists how many pins of this net are inside each partition
-                //note: pn is the partition id (for example p0 means partition 0)
-                //note: e.g. 'p0=1 pin, p1=1 pin' means one pin in p0 and one pin in p1; 'p6=2 pins' means two pins in p6
+                //'blocks' lists how many pins of net are inside each partition
+                //pn is the partition id p2 = partition 2, p0 = partition 0
+                //'p0=1 pin, p1=1 pin' means one pin in p0 and one pin in p1; 'p6=2 pins' means two pins in p6
                 out.write(desc.toString());
                 out.write("\n");
                 for (String m : members) {

@@ -40,11 +40,13 @@ import java.util.Map;
  *   Line 3: FPGA_C
  *   Line 4: FPGA_D 
  *   etc.....
+ * 
+ * TODO: likely not needed for final version of regroup instances, might be redudant artifact
  */
 public final class CellsWriter {
 
     private CellsWriter() {
-        // no instances; this is a pure document writer that emits cells.txt using simple rules and shared naming helpers
+        // no instances.
     }
 
     /**

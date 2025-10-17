@@ -44,18 +44,17 @@ import com.xilinx.rapidwright.util.FileTools;
 /**
  * generates mapping.txt for the wrap/add-cells/regroup flow (wrap the top cell, add new cells per partition, regroup instances).
  *
- * - The goal is to produce "<instance_path> <partition_label>" lines that tell regroupinstances where each hierarchical instance
- *   should be re-homed.
+ * - The goal is to produce "<instance_path> <partition_label>"
  * 
- *   The HierMappingWriter will only emit simple one liners when an entire hierarchy can be contained onto one partition.
- *   E.x: top/stage_16 fits entirely on FPGA_A then only write "top/stage_16 FPGA_A"
+ * if fft_top/stage_16 is wholly contained into FPGA_B partition then only one line should be written which references stage_16
+ * explicitly, fft_top/stage_16 FPGA_B and then stop.
  * 
- *   The HierMappingWriter will emit low-level leaf instance names when a module is split up across partitions. The result is needing to specify 
- *   hierarchy on the partition destination: "top/stage_32/cell[0]_i FPGA_A/cell[0]_i"
  */
 public final class HierMappingWriter {
 
     //EXCLUSION LIST
+    //TODO, might need a new file if list gets big or uses more complex logic
+    //a source of truth setup just like logicDiscoveryPolicy for example
     private static final java.util.LinkedHashSet<String> exclusion_names =
             new java.util.LinkedHashSet<>(java.util.Arrays.asList(
                     "VCC", "GND", "<const0>", "<const1>"
@@ -115,7 +114,7 @@ public final class HierMappingWriter {
     /**
      * writes mapping lines to a file.
      *
-     * - ensure the parent directories exist so the file emits cleanly even on fresh runs.
+     * ensure the parent directories exist so the file emits cleanly even on fresh runs.
      */
     public static void writeMappingFile(List<String> lines, String outputPath) {
         try {
@@ -131,10 +130,11 @@ public final class HierMappingWriter {
     }
 
     /**
-     * rapidwright partitioner api: writes mapping.txt in outDir using the provided partition membership, netlist, and labels.
+     * rapidwright partitioner api: writes mapping.txt in outDir
      */
     public static void write(Path outDir, EDIFNetlist n, Map<Integer, Set<String>> partitions, Map<EDIFHierCellInst, Integer> instLutCountMap) {
-        // ensure cells.txt has fpga_* names for all partitions based on indices; generate or extend labels when needed
+        // ensure cells.txt has fpga_* names for all partitions based on indices; 
+        // will generate or extend labels when needed
         Path cellsFile = outDir.resolve("cells.txt");
 
         int maxIdx = -1;
@@ -243,7 +243,6 @@ public final class HierMappingWriter {
 
     /**
      * reads instance paths for each partition label from the given directory.
-     *
      */
     private static Map<String, Set<String>> readPartitionInstanceSets(Path partitionDir, Set<String> partitions) {
         Map<String, Set<String>> partToPaths = new LinkedHashMap<>();
@@ -458,6 +457,7 @@ public final class HierMappingWriter {
      * picks the “home” partition for a node using the largest count (ties broken lexicographically).
      * 
      * TODO : May need revision based on requested changes to regroupinstances / mapping.txt needing to change based on that.
+     * this part is likely to change...
      */
     private static String chooseHomePartition(Map<String, Integer> counts) {
         if (counts == null || counts.isEmpty()) return null;

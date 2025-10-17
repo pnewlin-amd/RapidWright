@@ -40,22 +40,21 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private Path inputFile;
 
-    // user should specify >16 for very large designs
     private int numOfThreads = 2;
 
-    // controls allowed partition imbalance; smaller is more balanced
+    // controls allowed partition imbalance; smaller = more balance
     private double epsilon = 0.03;
     
     private String objective = "cut";
     
     private String presetType = "default";
     
-    // Use current working directory
+    // use current working directory
     private Path outputDir = null;
 
     private int seed = 0;
 
-    // fixed vertices file passed to mtkahypar via -f (optional)
+    // fixed vertices file passed to mtkahypar with -f (mapping constraints)
     private Path fixed_vertices_file = null;
 
 
