@@ -45,22 +45,20 @@ public final class logicDiscoveryPolicy {
 
     /**
      * Returns true if a cell type name represents a LUT used as logic.
-     *
-     * Current policy:
-     *   LUT1, LUT2, LUT3, LUT4, LUT5, LUT6, LUT6_2
-     *
-     * NEVER do substring matches. It must compare full type names.
+     * 
+     * Treat any cell type whose name contains "LUT" as a logic LUT.
+     * substring match to be consistent with legacy policy.
+     * 
+     * TODO : probably a better implementation
      */
     public static boolean is_logic_lut_type_name(String type_name) {
         if (type_name == null) return false;
-        String n = type_name.toUpperCase();
-        return n.equals("LUT1") || n.equals("LUT2") || n.equals("LUT3") || n.equals("LUT4")
-            || n.equals("LUT5") || n.equals("LUT6") || n.equals("LUT6_2");
+        return type_name.contains("LUT");
     }
 
     /**
      * Convenience helper: returns 1 if the given instance is a leaf and its type
-     * is a  LUT according to policy, else return 0.
+     * is a LUT.
      */
     public static int lut_count_for_leaf(EDIFHierCellInst inst) {
         if (inst == null) return 0;
