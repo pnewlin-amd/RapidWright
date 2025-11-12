@@ -71,6 +71,7 @@ import com.xilinx.rapidwright.examples.PrintEDIFInstances;
 import com.xilinx.rapidwright.examples.ReportTimingExample;
 import com.xilinx.rapidwright.examples.RunSATRouterExample;
 import com.xilinx.rapidwright.examples.SLRCrosserGenerator;
+import com.xilinx.rapidwright.examples.SnakePathCLI;
 import com.xilinx.rapidwright.examples.StampPlacement;
 import com.xilinx.rapidwright.examples.UpdateRoutingUsingSATRouter;
 import com.xilinx.rapidwright.examples.tilebrowser.PartTileBrowser;
@@ -217,6 +218,7 @@ public class MainEntrypoint {
         addFunction("RWRoute", RWRoute::main);
         addFunction("SLRCrosserGenerator", SLRCrosserGenerator::main);
         addFunction("SmallestEnclosingCircle", SmallestEnclosingCircle::main);
+        addFunction("SnakePath", SnakePathCLI::main);
         addFunction("StampPlacement", StampPlacement::main);
         addFunction("StandaloneEntrypoint", StandaloneEntrypoint::main);
         addFunction("StringTools", StringTools::main);
