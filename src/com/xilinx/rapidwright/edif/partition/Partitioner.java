@@ -194,6 +194,11 @@ public class Partitioner {
         PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generate_edif_nets);
         t.stop();
 
+        //free edgesMap memory after .hgr file is written
+        edgesMap.clear();
+        edgesMap = null;
+        System.gc();
+
         // generate fixed vertices file if constraints were provided
         Path fix_file = null;
         if (constraints_file != null) {
