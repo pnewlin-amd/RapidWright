@@ -158,14 +158,34 @@ public class Partitioner {
                     sampledHier, missingHier, pct, step); // reports sampled coverage of missing lut counts among hierarchical leaves to confirm incomplete instance coverage
         }
         if (inLower.endsWith(".dcp")) {
+            System.err.printf("PARTITIONER DEBUG: DCP backfill start -> leafCount=%d%n", leafInsts.size());
+            int backfillAttempts = 0;
+            int backfillSuccess = 0;
+            int backfillSkipped = 0;
             java.util.Map<com.xilinx.rapidwright.edif.EDIFCell, java.lang.Integer> __p_cache = new java.util.HashMap<>();
             for (EDIFHierCellInst leaf : leafInsts.keySet()) {
                 if (!leaf.getCellType().isLeafCellOrBlackBox()) {
                     if (instLutCountMap.get(leaf) == null) {
+                        backfillAttempts++;
+                        if (backfillAttempts <= 10) {
+                            System.err.printf("PARTITIONER DEBUG: DCP backfill attempt -> instPath=%s cellType=%s%n",
+                                    leaf.toString(), leaf.getCellType().getName());
+                        }
                         PartitionTools.getLUTCount(leaf, __p_cache, instLutCountMap);
+                        if (instLutCountMap.get(leaf) != null) {
+                            backfillSuccess++;
+                            if (backfillSuccess <= 10) {
+                                System.err.printf("PARTITIONER DEBUG: DCP backfill success -> instPath=%s lutCount=%d%n",
+                                        leaf.toString(), instLutCountMap.get(leaf));
+                            }
+                        }
+                    } else {
+                        backfillSkipped++;
                     }
                 }
             }
+            System.err.printf("PARTITIONER DEBUG: DCP backfill complete -> attempts=%d success=%d skipped=%d%n",
+                    backfillAttempts, backfillSuccess, backfillSkipped);
         }
         int totalLUTs = instLutCountMap.get(n.getTopHierCellInst());
         if (leafLUTCountLimit >= totalLUTs || leafLUTCountLimit < 1) {
@@ -347,14 +367,43 @@ public class Partitioner {
                 inst_by_vid[vid] = e.getKey();
             }
             int[] lut_by_vid = new int[num_vertices + 1];
+            int dbgLeafLUTs = 0;
+            int dbgHierLUTs = 0;
+            int dbgHierMissing = 0;
+            int dbgHierFound = 0;
+            java.util.Map<String, Integer> dbgMissingCellTypes = new java.util.HashMap<>();
             for (int vid = 1; vid <= num_vertices; vid++) {
                 EDIFHierCellInst inst = inst_by_vid[vid];
                 if (inst == null) continue;
                 if (inst.getCellType().isLeafCellOrBlackBox()) {
                     lut_by_vid[vid] = logicDiscoveryPolicy.lut_count_for_leaf(inst);
+                    dbgLeafLUTs += lut_by_vid[vid];
                 } else {
                     Integer cnt = instLutCountMap.get(inst);
                     lut_by_vid[vid] = (cnt == null) ? 0 : cnt.intValue();
+                    dbgHierLUTs += lut_by_vid[vid];
+                    if (cnt == null) {
+                        dbgHierMissing++;
+                        String cellType = inst.getCellType().getName();
+                        dbgMissingCellTypes.put(cellType, dbgMissingCellTypes.getOrDefault(cellType, 0) + 1);
+                        if (dbgHierMissing <= 10) {
+                            System.err.printf("PARTITIONER DEBUG: bare_bones hier missing -> vid=%d instPath=%s cellType=%s lutCount=0 (missing)%n",
+                                    vid, inst.toString(), inst.getCellType().getName());
+                        }
+                    } else {
+                        dbgHierFound++;
+                    }
+                }
+            }
+            System.err.printf("PARTITIONER DEBUG: bare_bones lut_by_vid -> leafLUTs=%d hierLUTs=%d hierMissing=%d hierFound=%d%n",
+                    dbgLeafLUTs, dbgHierLUTs, dbgHierMissing, dbgHierFound);
+            if (!dbgMissingCellTypes.isEmpty()) {
+                System.err.printf("PARTITIONER DEBUG: bare_bones missing cell types -> uniqueTypes=%d%n", dbgMissingCellTypes.size());
+                java.util.List<java.util.Map.Entry<String, Integer>> sorted = new java.util.ArrayList<>(dbgMissingCellTypes.entrySet());
+                sorted.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+                for (int i = 0; i < Math.min(10, sorted.size()); i++) {
+                    System.err.printf("PARTITIONER DEBUG: missing cell type -> type=%s count=%d%n",
+                            sorted.get(i).getKey(), sorted.get(i).getValue());
                 }
             }
             Path hgr = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
@@ -419,6 +468,8 @@ public class Partitioner {
             }
             long sum_luts = 0;
             for (int c : lut_counts) sum_luts += c;
+            System.err.printf("PARTITIONER DEBUG: bare_bones partition sum -> sumLUTs=%d topLevelTotal=%d diff=%d%n",
+                    sum_luts, totalLUTs, (sum_luts - totalLUTs));
             int mean_luts = (lut_counts.isEmpty()) ? 0 : (int) Math.ceil(sum_luts / (double) lut_counts.size());
             Path lut_report = outDir.resolve("lut_report.txt");
             try (BufferedWriter lw = new BufferedWriter(new FileWriter(lut_report.toFile()))) {
@@ -471,9 +522,16 @@ public class Partitioner {
             final int DBG_MAX_MISS_LOGS = 100;
             int dbgMissingLUTCountTotal = 0;
             int dbgMissingLUTCountPrinted = 0;
+            int dbgLeafLUTsTotal = 0;
+            int dbgHierLUTsTotal = 0;
+            int dbgRecomputeAttempts = 0;
+            int dbgRecomputeSuccess = 0;
+            int dbgCachedByName = 0;
             java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
             for (int i = 0; i < partitions.size(); i++) {
                 int lutCount = 0;
+                int partLeafLUTs = 0;
+                int partHierLUTs = 0;
                 Set<String> names = partitions.get(i);
                 String partLabel = PartitionLabel.indexToFpgaLabel(i);
                 Path partitionFile = outDir.resolve(inputPath.getFileName().toString() + "." + partLabel);
@@ -482,13 +540,16 @@ public class Partitioner {
                         bw.write(name + "\n");
                         EDIFHierCellInst inst = n.getHierCellInstFromName(name);
                         if (inst.getCellType().isLeafCellOrBlackBox()) {
-                            lutCount += logicDiscoveryPolicy.lut_count_for_leaf(inst);
+                            int leafLUTs = logicDiscoveryPolicy.lut_count_for_leaf(inst);
+                            lutCount += leafLUTs;
+                            partLeafLUTs += leafLUTs;
                         } else {
                             Integer cnt = instLutCountMap.get(inst);
                             if (cnt == null) {
                                 Integer cached = lutByName.get(name);
                                 if (cached != null) {
                                     cnt = cached;
+                                    dbgCachedByName++;
                                 }
                             }
                             if (cnt == null) {
@@ -500,26 +561,35 @@ public class Partitioner {
                                             inst.getCellType().isLeafCellOrBlackBox());
                                     dbgMissingLUTCountPrinted++;
                                 }
+                                dbgRecomputeAttempts++;
                                 Integer recomputed = PartitionTools.getLUTCount(inst, new java.util.HashMap<>(), instLutCountMap);
                                 if (recomputed != null) {
                                     cnt = recomputed;
                                     lutByName.put(name, cnt);
+                                    dbgRecomputeSuccess++;
                                 }
                             }
                             if (cnt == null) {
                                 cnt = 0;
                             }
                             lutCount += cnt.intValue();
+                            partHierLUTs += cnt.intValue();
                         }
                     }
+                    dbgLeafLUTsTotal += partLeafLUTs;
+                    dbgHierLUTsTotal += partHierLUTs;
                     System.out.printf("  Partition %3d %10d LUTs %s\n", i, lutCount, partitionFile);
                     lutCounts.add(Integer.valueOf(lutCount));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             }
+            System.err.printf("PARTITIONER DEBUG: all partitions -> leafLUTsTotal=%d hierLUTsTotal=%d cachedByName=%d recomputeAttempts=%d recomputeSuccess=%d%n",
+                    dbgLeafLUTsTotal, dbgHierLUTsTotal, dbgCachedByName, dbgRecomputeAttempts, dbgRecomputeSuccess);
             long sumLuts = 0;
             for (int c : lutCounts) sumLuts += c;
+            System.err.printf("PARTITIONER DEBUG: non-bare-bones partition sum -> sumLUTs=%d topLevelTotal=%d diff=%d%n",
+                    sumLuts, totalLUTs, (sumLuts - totalLUTs));
             int meanLuts = (lutCounts.isEmpty()) ? 0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
             Path lutReport = outDir.resolve("lut_report.txt");
             try (BufferedWriter lw = new BufferedWriter(new FileWriter(lutReport.toFile()))) {

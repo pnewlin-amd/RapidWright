@@ -74,17 +74,19 @@ public class PartitionTools {
         Integer totalLUTs = 0;
         for (EDIFCellInst i : inst.getCellType().getCellInsts()) {
             if (i.getCellType().isLeafCellOrBlackBox()) {
-                totalLUTs += isLogicLUT(i.getCellType().getName()) ? 1 : 0;
+                int lutVal = isLogicLUT(i.getCellType().getName()) ? 1 : 0;
+                totalLUTs += lutVal;
             } else if (map.containsKey(i.getCellType())) {
-                dbgCacheHits++; // count cell-type cache usage
+                dbgCacheHits++;
+                Integer cachedVal = map.get(i.getCellType());
                 if (dbgCacheHitLogBudget > 0) {
-                    System.err.printf("PARTITIONER DEBUG: cache hit -> parentPath=%s childInst=%s cellType=%s childPath=%s%n",
-                            inst.toString(), i.getName(), i.getCellType().getName(), inst.getChild(i).toString()); // shows where cache prevents dfs so child instance path may not be recorded
+                    System.err.printf("PARTITIONER DEBUG: cache hit -> parentPath=%s childInst=%s cellType=%s childPath=%s cachedLUTs=%d%n",
+                            inst.toString(), i.getName(), i.getCellType().getName(), inst.getChild(i).toString(), cachedVal);
                     dbgCacheHitLogBudget--;
                 }
-                totalLUTs += map.get(i.getCellType());
+                totalLUTs += cachedVal;
             } else {
-                dbgRecursiveCalls++; // count recursion when cache miss
+                dbgRecursiveCalls++;
                 totalLUTs += getLUTCount(inst.getChild(i), map, instMap);
             }
         }
@@ -94,7 +96,7 @@ public class PartitionTools {
         }
         if (instMap != null) {
             instMap.put(inst, totalLUTs);
-            dbgInstMapWrites++; // count inst map writes
+            dbgInstMapWrites++;
         }
     
         return totalLUTs;
@@ -121,11 +123,15 @@ public class PartitionTools {
             Map<EDIFHierCellInst, Integer> instMap) {
         EDIFHierCellInst topInst = netlist.getTopHierCellInst();
         Map<EDIFCell, Integer> lutCountMap = new HashMap<>();
-        // reset counters
         dbgCacheHits = 0; dbgRecursiveCalls = 0; dbgInstMapWrites = 0; dbgCacheHitLogBudget = 10;
+        System.err.printf("PARTITIONER DEBUG: identifyLeafInstances start -> topInst=%s lutCountThreshold=%d%n",
+                topInst.toString(), lutCount);
         getLUTCount(topInst, lutCountMap, instMap);
-        // count null lut size decisions
+        System.err.printf("PARTITIONER DEBUG: getLUTCount complete -> topLUTs=%d instMapSize=%d lutCountMapSize=%d%n",
+                instMap.get(topInst), instMap.size(), lutCountMap.size());
         int dbgNullLUTCountDecisions = 0;
+        int dbgNullButHier = 0;
+        int dbgNullButLeaf = 0;
 
         Map<EDIFHierCellInst, Integer> leafInsts = new HashMap<>();
         Queue<EDIFHierCellInst> q = new LinkedList<>();
@@ -133,10 +139,21 @@ public class PartitionTools {
         while (!q.isEmpty()) {
             EDIFHierCellInst curr = q.poll();
             Integer lutSize = instMap.get(curr);
-            // track null lut size
-            // increase count whenever lutsize is unknown.
             if (lutSize == null) {
                 dbgNullLUTCountDecisions++;
+                if (curr.getCellType().isLeafCellOrBlackBox()) {
+                    dbgNullButLeaf++;
+                    if (dbgNullButLeaf <= 10) {
+                        System.err.printf("PARTITIONER DEBUG: null LUT count (leaf) -> instPath=%s cellType=%s isLeaf=%s%n",
+                                curr.toString(), curr.getCellType().getName(), curr.getCellType().isLeafCellOrBlackBox());
+                    }
+                } else {
+                    dbgNullButHier++;
+                    if (dbgNullButHier <= 10) {
+                        System.err.printf("PARTITIONER DEBUG: null LUT count (hier) -> instPath=%s cellType=%s depth=%d childCount=%d%n",
+                                curr.toString(), curr.getCellType().getName(), curr.getDepth(), curr.getCellType().getCellInsts().size());
+                    }
+                }
             }
             if (lutSize == null || lutSize <= lutCount) {
                 leafInsts.put(curr, leafInsts.size()+1);
@@ -149,9 +166,9 @@ public class PartitionTools {
         }
     
         System.out.printf("PARTITIONER DEBUG: lutCount stats -> cacheHits=%d recursiveCalls=%d instMapWrites=%d uniqueCells=%d instMapSize=%d%n",
-                dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, lutCountMap.size(), instMap.size()); // reports cache vs recursion usage and instance map size
-        System.out.printf("PARTITIONER DEBUG: identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d%n",
-                leafInsts.size(), dbgNullLUTCountDecisions); // reports leaf count and frequency of null lut size during bfs to validate null-as-leaf misclassification
+                dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, lutCountMap.size(), instMap.size());
+        System.out.printf("PARTITIONER DEBUG: identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d nullButHier=%d nullButLeaf=%d%n",
+                leafInsts.size(), dbgNullLUTCountDecisions, dbgNullButHier, dbgNullButLeaf);
         return leafInsts;
     }
     
