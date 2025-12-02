@@ -372,6 +372,7 @@ public class Partitioner {
             int dbgHierMissing = 0;
             int dbgHierFound = 0;
             java.util.Map<String, Integer> dbgMissingCellTypes = new java.util.HashMap<>();
+            java.util.Map<String, Integer> dbgMissingParentTypes = new java.util.HashMap<>();
             for (int vid = 1; vid <= num_vertices; vid++) {
                 EDIFHierCellInst inst = inst_by_vid[vid];
                 if (inst == null) continue;
@@ -386,9 +387,14 @@ public class Partitioner {
                         dbgHierMissing++;
                         String cellType = inst.getCellType().getName();
                         dbgMissingCellTypes.put(cellType, dbgMissingCellTypes.getOrDefault(cellType, 0) + 1);
+                        if (inst.getParent() != null) {
+                            String parentType = inst.getParent().getCellType().getName();
+                            dbgMissingParentTypes.put(parentType, dbgMissingParentTypes.getOrDefault(parentType, 0) + 1);
+                        }
                         if (dbgHierMissing <= 10) {
-                            System.err.printf("PARTITIONER DEBUG: bare_bones hier missing -> vid=%d instPath=%s cellType=%s lutCount=0 (missing)%n",
-                                    vid, inst.toString(), inst.getCellType().getName());
+                            String parentInfo = (inst.getParent() != null) ? inst.getParent().getCellType().getName() : "null";
+                            System.err.printf("PARTITIONER DEBUG: bare_bones hier missing -> vid=%d instPath=%s cellType=%s parentType=%s lutCount=0 (missing)%n",
+                                    vid, inst.toString(), inst.getCellType().getName(), parentInfo);
                         }
                     } else {
                         dbgHierFound++;
@@ -404,6 +410,15 @@ public class Partitioner {
                 for (int i = 0; i < Math.min(10, sorted.size()); i++) {
                     System.err.printf("PARTITIONER DEBUG: missing cell type -> type=%s count=%d%n",
                             sorted.get(i).getKey(), sorted.get(i).getValue());
+                }
+            }
+            if (!dbgMissingParentTypes.isEmpty()) {
+                System.err.printf("PARTITIONER DEBUG: missing instances parent types -> uniqueParents=%d%n", dbgMissingParentTypes.size());
+                java.util.List<java.util.Map.Entry<String, Integer>> sortedParents = new java.util.ArrayList<>(dbgMissingParentTypes.entrySet());
+                sortedParents.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+                for (int i = 0; i < Math.min(10, sortedParents.size()); i++) {
+                    System.err.printf("PARTITIONER DEBUG: missing parent type -> type=%s childrenMissing=%d%n",
+                            sortedParents.get(i).getKey(), sortedParents.get(i).getValue());
                 }
             }
             Path hgr = outDir.resolve(inputPath.getFileName().toString() + ".hgr");

@@ -58,7 +58,29 @@ public class PartitionTools {
     private static long dbgCacheHits = 0;
     private static long dbgRecursiveCalls = 0;
     private static long dbgInstMapWrites = 0;
+    private static long dbgCacheHitInstMapWrites = 0;
     private static int dbgCacheHitLogBudget = 10;
+    private static long dbgSubtreePopulations = 0;
+    private static long dbgSubtreeInstances = 0;
+
+    private static void populateInstMapFromCache(EDIFHierCellInst inst, 
+                                                  Map<EDIFCell, Integer> cellTypeCache,
+                                                  Map<EDIFHierCellInst, Integer> instMap) {
+        if (instMap == null) return;
+        
+        Integer lutCount = cellTypeCache.get(inst.getCellType());
+        if (lutCount != null) {
+            instMap.put(inst, lutCount);
+            dbgInstMapWrites++;
+            dbgSubtreeInstances++;
+        }
+        
+        if (!inst.getCellType().isLeafCellOrBlackBox()) {
+            for (EDIFCellInst child : inst.getCellType().getCellInsts()) {
+                populateInstMapFromCache(inst.getChild(child), cellTypeCache, instMap);
+            }
+        }
+    }
 
     /**
      * Calculates the number of LUTs in a given hierarchical cell instance.
@@ -79,12 +101,25 @@ public class PartitionTools {
             } else if (map.containsKey(i.getCellType())) {
                 dbgCacheHits++;
                 Integer cachedVal = map.get(i.getCellType());
+                EDIFHierCellInst childInst = inst.getChild(i);
                 if (dbgCacheHitLogBudget > 0) {
                     System.err.printf("PARTITIONER DEBUG: cache hit -> parentPath=%s childInst=%s cellType=%s childPath=%s cachedLUTs=%d%n",
-                            inst.toString(), i.getName(), i.getCellType().getName(), inst.getChild(i).toString(), cachedVal);
+                            inst.toString(), i.getName(), i.getCellType().getName(), childInst.toString(), cachedVal);
                     dbgCacheHitLogBudget--;
                 }
                 totalLUTs += cachedVal;
+                
+                if (instMap != null) {
+                    long beforeSubtree = dbgSubtreeInstances;
+                    populateInstMapFromCache(childInst, map, instMap);
+                    dbgCacheHitInstMapWrites++;
+                    dbgSubtreePopulations++;
+                    long subtreeCount = dbgSubtreeInstances - beforeSubtree;
+                    if (dbgSubtreePopulations <= 5) {
+                        System.err.printf("PARTITIONER DEBUG: subtree populated -> childPath=%s subtreeInstances=%d%n",
+                                childInst.toString(), subtreeCount);
+                    }
+                }
             } else {
                 dbgRecursiveCalls++;
                 totalLUTs += getLUTCount(inst.getChild(i), map, instMap);
@@ -123,12 +158,12 @@ public class PartitionTools {
             Map<EDIFHierCellInst, Integer> instMap) {
         EDIFHierCellInst topInst = netlist.getTopHierCellInst();
         Map<EDIFCell, Integer> lutCountMap = new HashMap<>();
-        dbgCacheHits = 0; dbgRecursiveCalls = 0; dbgInstMapWrites = 0; dbgCacheHitLogBudget = 10;
+        dbgCacheHits = 0; dbgRecursiveCalls = 0; dbgInstMapWrites = 0; dbgCacheHitInstMapWrites = 0; dbgCacheHitLogBudget = 10;
         System.err.printf("PARTITIONER DEBUG: identifyLeafInstances start -> topInst=%s lutCountThreshold=%d%n",
                 topInst.toString(), lutCount);
         getLUTCount(topInst, lutCountMap, instMap);
-        System.err.printf("PARTITIONER DEBUG: getLUTCount complete -> topLUTs=%d instMapSize=%d lutCountMapSize=%d%n",
-                instMap.get(topInst), instMap.size(), lutCountMap.size());
+        System.err.printf("PARTITIONER DEBUG: getLUTCount complete -> topLUTs=%d instMapSize=%d lutCountMapSize=%d cacheHitInstMapWrites=%d%n",
+                instMap.get(topInst), instMap.size(), lutCountMap.size(), dbgCacheHitInstMapWrites);
         int dbgNullLUTCountDecisions = 0;
         int dbgNullButHier = 0;
         int dbgNullButLeaf = 0;
@@ -165,10 +200,12 @@ public class PartitionTools {
             }
         }
     
-        System.out.printf("PARTITIONER DEBUG: lutCount stats -> cacheHits=%d recursiveCalls=%d instMapWrites=%d uniqueCells=%d instMapSize=%d%n",
-                dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, lutCountMap.size(), instMap.size());
+        System.out.printf("PARTITIONER DEBUG: lutCount stats -> cacheHits=%d recursiveCalls=%d instMapWrites=%d cacheHitInstMapWrites=%d uniqueCells=%d instMapSize=%d%n",
+                dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, dbgCacheHitInstMapWrites, lutCountMap.size(), instMap.size());
         System.out.printf("PARTITIONER DEBUG: identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d nullButHier=%d nullButLeaf=%d%n",
                 leafInsts.size(), dbgNullLUTCountDecisions, dbgNullButHier, dbgNullButLeaf);
+        System.err.printf("PARTITIONER DEBUG: fix validation -> cacheHits=%d cacheHitInstMapWrites=%d shouldMatch=%s subtreePopulations=%d subtreeInstances=%d%n",
+                dbgCacheHits, dbgCacheHitInstMapWrites, (dbgCacheHits == dbgCacheHitInstMapWrites), dbgSubtreePopulations, dbgSubtreeInstances);
         return leafInsts;
     }
     
