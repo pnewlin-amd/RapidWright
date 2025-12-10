@@ -195,11 +195,52 @@ public final class HierMappingWriter {
             String src_full = topName + "/" + path;
             prefixed.add(src_full + " " + dst);
         }
-        Map<String, Integer> leftover_root = subtractCounts(root.counts, printed_counts);
-        if (leftover_root != null && !leftover_root.isEmpty()) {
-            String topHome = chooseHomePartition(root.counts);
-            if (topHome != null) {
-                prefixed.add(topName + " " + topHome);
+        String top_home = chooseHomePartition(root.counts);
+        if (top_home != null) {
+            prefixed.add(topName + " " + top_home);
+        }
+        int show_limit = Math.min(5, prefixed.size());
+        System.err.printf("MAPPING_ORDER_DEBUG: pre-sort -> totalLines=%d topName=%s topHome=%s%n",
+                prefixed.size(), topName, top_home);
+        for (int i = 0; i < show_limit; i++) {
+            System.err.printf("MAPPING_ORDER_DEBUG: pre-sort[%d] depth=%d line=%s%n",
+                    i, depthOfPath(prefixed.get(i)), prefixed.get(i));
+        }
+        if (prefixed.size() > 10) {
+            System.err.println("MAPPING_ORDER_DEBUG: pre-sort ... (middle lines omitted)");
+            for (int i = prefixed.size() - show_limit; i < prefixed.size(); i++) {
+                System.err.printf("MAPPING_ORDER_DEBUG: pre-sort[%d] depth=%d line=%s%n",
+                        i, depthOfPath(prefixed.get(i)), prefixed.get(i));
+            }
+        }
+        prefixed = sortByPathDepth(prefixed);
+        System.err.printf("MAPPING_ORDER_DEBUG: post-sort -> totalLines=%d%n", prefixed.size());
+        for (int i = 0; i < show_limit; i++) {
+            System.err.printf("MAPPING_ORDER_DEBUG: post-sort[%d] depth=%d line=%s%n",
+                    i, depthOfPath(prefixed.get(i)), prefixed.get(i));
+        }
+        if (prefixed.size() > 10) {
+            System.err.println("MAPPING_ORDER_DEBUG: post-sort ... (middle lines omitted)");
+            for (int i = prefixed.size() - show_limit; i < prefixed.size(); i++) {
+                System.err.printf("MAPPING_ORDER_DEBUG: post-sort[%d] depth=%d line=%s%n",
+                        i, depthOfPath(prefixed.get(i)), prefixed.get(i));
+            }
+        }
+        java.util.Map<Integer, Integer> depth_counts = new java.util.HashMap<>();
+        int max_depth = 0;
+        for (String line : prefixed) {
+            int d = depthOfPath(line);
+            depth_counts.put(d, depth_counts.getOrDefault(d, 0) + 1);
+            if (d > max_depth) {
+                max_depth = d;
+            }
+        }
+        System.err.printf("MAPPING_ORDER_DEBUG: depth-stats -> maxDepth=%d uniqueDepths=%d%n",
+                max_depth, depth_counts.size());
+        for (int d = max_depth; d >= 0; d--) {
+            Integer count = depth_counts.get(d);
+            if (count != null) {
+                System.err.printf("MAPPING_ORDER_DEBUG: depth=%d count=%d%n", d, count);
             }
         }
 
@@ -520,7 +561,7 @@ public final class HierMappingWriter {
         Collections.sort(out, (a, b) -> {
             int da = depthOfPath(a);
             int db = depthOfPath(b);
-            if (da != db) return Integer.compare(da, db);
+            if (da != db) return Integer.compare(db, da);
             return a.compareTo(b);
         });
         return out;
