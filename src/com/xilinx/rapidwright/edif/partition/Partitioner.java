@@ -97,7 +97,8 @@ public class Partitioner {
         System.out.println("  --part_dir DIR              Set output directory");
         System.out.println("  --mapping_constraints PATH  Specify constraints file");
         System.out.println("  --constraints_debug         Enable constraint debugging");
-        System.out.println("  --skip_detailed_reports     Skip detailed report generation");
+        System.out.println("  --skip_detailed_reports     Skip detailed report generation,");
+        System.out.println("                              HIGHLY advised for large designs.");
         System.out.println();
         System.out.println("===================================================================");
     }
@@ -600,7 +601,7 @@ public class Partitioner {
             }
             Map<String, Integer> pairCounts = PartitionPairCounter.countPartitionPairs(
                     hgr, instLookup, nameToPartMap);
-            Path ioCutsFile = outDir.resolve("ioCutsFile.txt");
+            Path ioCutsFile = outDir.resolve("io_cuts.txt");
             PartitionPairCounter.writePairCountsToFile(ioCutsFile, pairCounts);
             java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
             int maxPart = -1;
