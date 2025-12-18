@@ -52,16 +52,6 @@ import com.xilinx.rapidwright.edif.EDIFNetlist;
  */
 public class PartitionTools {
 
-    // debug counters for lut count behavior
-    // keep track how many times bad behavior 
-    // is caught. good debug info.
-    private static long dbgCacheHits = 0;
-    private static long dbgRecursiveCalls = 0;
-    private static long dbgInstMapWrites = 0;
-    private static long dbgCacheHitInstMapWrites = 0;
-    private static int dbgCacheHitLogBudget = 10; // Large netlists you'll need to constrain prints
-    private static long dbgSubtreePopulations = 0;
-    private static long dbgSubtreeInstances = 0;
 
     /**
      * Helper to print partitioner debug messages with a consistent prefix.
@@ -78,103 +68,16 @@ public class PartitionTools {
     }
 
     /**
-     * Populates the instance map from the cache for a given hierarchical instance.
-     * This method recursively traverses the children of the instance.
-     * It updates the map with cached LUT counts if available.
-     * 
-     * @param hierInst      The hierarchical instance to populate from.
-     * @param cellTypeCache The cache of cell types to LUT counts.
-     * @param instMap       The map to populate with instance LUT counts.
+     * Calculates LUT count for hierarchical instance.
+     * @param hierInst Hierarchical cell instance
+     * @param cellTypeCache Cell type cache
+     * @param instMap Instance map
+     * @return LUT count
      */
-    private static void populateInstMapFromCache(EDIFHierCellInst hierInst, 
-                                                  Map<EDIFCell, Integer> cellTypeCache,
-                                                  Map<EDIFHierCellInst, Integer> instMap) {
-        if (instMap == null) return;
-        
-        Integer lutCount = cellTypeCache.get(hierInst.getCellType());
-        if (lutCount != null) {
-            instMap.put(hierInst, lutCount);
-            dbgInstMapWrites++;
-            dbgSubtreeInstances++;
-        }
-        
-        if (!hierInst.getCellType().isLeafCellOrBlackBox()) {
-            for (EDIFCellInst childInst : hierInst.getCellType().getCellInsts()) {
-                populateInstMapFromCache(hierInst.getChild(childInst), cellTypeCache, instMap);
-            }
-        }
-    }
-
-    /**
-     * Calculates the number of LUTs in a given hierarchical cell instance.
-     * 
-     * @param hierInst      The hierarchical cell instance to calculate a LUT count.
-     * @param cellTypeCache A caching map to avoid recalculating LUTs for each cell type.
-     * @param instMap       A map that keeps track of all hierarchical instances and their
-     *                      LUT counts.
-     * @return The number of LUTs in the hierarchical cell instance.
-     */
-    public static Integer getLUTCount(EDIFHierCellInst hierInst, 
+    public static Integer getLUTCount(EDIFHierCellInst hierInst,
             Map<EDIFCell, Integer> cellTypeCache,
             Map<EDIFHierCellInst, Integer> instMap) {
-        Integer totalLUTs = 0;
-        for (EDIFCellInst childInst : hierInst.getCellType().getCellInsts()) {
-            if (childInst.getCellType().isLeafCellOrBlackBox()) {
-                int lutVal = isLogicLUT(childInst.getCellType().getName()) ? 1 : 0;
-                totalLUTs += lutVal;
-            } else if (cellTypeCache.containsKey(childInst.getCellType())) {
-                dbgCacheHits++;
-                Integer cachedVal = cellTypeCache.get(childInst.getCellType());
-                EDIFHierCellInst childHierInst = hierInst.getChild(childInst);
-                if (dbgCacheHitLogBudget > 0) {
-                    logPartitionerDebug(System.err, 
-                        "cache hit -> parentPath=%s childInst=%s cellType=%s childPath=%s " 
-                        + "cachedLUTs=%d",
-                        hierInst.toString(), childInst.getName(), 
-                        childInst.getCellType().getName(), 
-                        childHierInst.toString(), cachedVal);
-                    dbgCacheHitLogBudget--;
-                }
-                totalLUTs += cachedVal;
-                
-                if (instMap != null) {
-                    long beforeSubtree = dbgSubtreeInstances;
-                    populateInstMapFromCache(childHierInst, cellTypeCache, instMap);
-                    dbgCacheHitInstMapWrites++;
-                    dbgSubtreePopulations++;
-                    long subtreeCount = dbgSubtreeInstances - beforeSubtree;
-                    if (dbgSubtreePopulations <= 5) {
-                        logPartitionerDebug(System.err, 
-                            "subtree populated -> childPath=%s subtreeInstances=%d",
-                            childHierInst.toString(), subtreeCount);
-                    }
-                }
-            } else {
-                dbgRecursiveCalls++;
-                totalLUTs += getLUTCount(hierInst.getChild(childInst), cellTypeCache, instMap);
-            }
-        }
-        Integer prevCount = cellTypeCache.put(hierInst.getCellType(), totalLUTs);
-        if (prevCount != null && !prevCount.equals(totalLUTs)) {
-            throw new RuntimeException("ERROR: Inconsistent netlist");
-        }
-        if (instMap != null) {
-            instMap.put(hierInst, totalLUTs);
-            dbgInstMapWrites++;
-        }
-    
-        return totalLUTs;
-    }
-
-    /**
-     * Checks if the given cell name corresponds to a logic LUT.
-     * This relies on the logicDiscoveryPolicy source of truth.
-     * @param name The name of the cell to check
-     * @return True if the cell is a logic LUT
-     */
-    private static boolean isLogicLUT(String name) {
-        //source-of-truth policy
-        return logicDiscoveryPolicy.isLogicLUT(name);
+        return LUTCountingUtils.computeLUTCount(hierInst, cellTypeCache, instMap);
     }
 
     /**
@@ -193,20 +96,20 @@ public class PartitionTools {
             Map<EDIFHierCellInst, Integer> instMap) {
         EDIFHierCellInst topInst = netlist.getTopHierCellInst();
         Map<EDIFCell, Integer> lutCountMap = new HashMap<>();
-        dbgCacheHits = 0; 
-        dbgRecursiveCalls = 0; 
-        dbgInstMapWrites = 0; 
-        dbgCacheHitInstMapWrites = 0; 
-        dbgCacheHitLogBudget = 10; // Constrain prints.
-        logPartitionerDebug(System.err, 
-            "identifyLeafInstances start -> topInst=%s lutCountThreshold=%d",
-            topInst.toString(), lutCount);
+        LUTCountingUtils.dbgCacheHits = 0;
+        LUTCountingUtils.dbgRecursiveCalls = 0;
+        LUTCountingUtils.dbgInstMapWrites = 0;
+        LUTCountingUtils.dbgCacheHitInstMapWrites = 0;
+        LUTCountingUtils.dbgCacheHitLogBudget = 10;
+        logPartitionerDebug(System.err,
+                "identifyLeafInstances start -> topInst=%s lutCountThreshold=%d",
+                topInst.toString(), lutCount);
         getLUTCount(topInst, lutCountMap, instMap);
-        logPartitionerDebug(System.err, 
-            "getLUTCount complete -> topLUTs=%d instMapSize=%d lutCountMapSize=%d " 
-            + "cacheHitInstMapWrites=%d",
-            instMap.get(topInst), instMap.size(), lutCountMap.size(), 
-            dbgCacheHitInstMapWrites);
+        logPartitionerDebug(System.err,
+                "getLUTCount complete -> topLUTs=%d instMapSize=%d lutCountMapSize=%d "
+                + "cacheHitInstMapWrites=%d",
+                instMap.get(topInst), instMap.size(), lutCountMap.size(),
+                LUTCountingUtils.dbgCacheHitInstMapWrites);
         int dbgNullLUTCountDecisions = 0;
         int dbgNullButHier = 0;
         int dbgNullButLeaf = 0;
@@ -249,20 +152,22 @@ public class PartitionTools {
             }
         }
     
-        logPartitionerDebug(System.out, 
-            "lutCount stats -> cacheHits=%d recursiveCalls=%d instMapWrites=%d " 
-            + "cacheHitInstMapWrites=%d uniqueCells=%d instMapSize=%d",
-            dbgCacheHits, dbgRecursiveCalls, dbgInstMapWrites, dbgCacheHitInstMapWrites, 
-            lutCountMap.size(), instMap.size());
-        logPartitionerDebug(System.out, 
-            "identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d nullButHier=%d " 
-            + "nullButLeaf=%d",
-            leafInsts.size(), dbgNullLUTCountDecisions, dbgNullButHier, dbgNullButLeaf);
-        logPartitionerDebug(System.err, 
-            "fix validation -> cacheHits=%d cacheHitInstMapWrites=%d shouldMatch=%s " 
-            + "subtreePopulations=%d subtreeInstances=%d",
-            dbgCacheHits, dbgCacheHitInstMapWrites, (dbgCacheHits == dbgCacheHitInstMapWrites), 
-            dbgSubtreePopulations, dbgSubtreeInstances);
+        logPartitionerDebug(System.out,
+                "lutCount stats -> cacheHits=%d recursiveCalls=%d instMapWrites=%d "
+                + "cacheHitInstMapWrites=%d uniqueCells=%d instMapSize=%d",
+                LUTCountingUtils.dbgCacheHits, LUTCountingUtils.dbgRecursiveCalls,
+                LUTCountingUtils.dbgInstMapWrites, LUTCountingUtils.dbgCacheHitInstMapWrites,
+                lutCountMap.size(), instMap.size());
+        logPartitionerDebug(System.out,
+                "identifyLeafInstances -> leaves=%d nullLUTCountDecisions=%d nullButHier=%d "
+                + "nullButLeaf=%d",
+                leafInsts.size(), dbgNullLUTCountDecisions, dbgNullButHier, dbgNullButLeaf);
+        logPartitionerDebug(System.err,
+                "fix validation -> cacheHits=%d cacheHitInstMapWrites=%d shouldMatch=%s "
+                + "subtreePopulations=%d subtreeInstances=%d",
+                LUTCountingUtils.dbgCacheHits, LUTCountingUtils.dbgCacheHitInstMapWrites,
+                (LUTCountingUtils.dbgCacheHits == LUTCountingUtils.dbgCacheHitInstMapWrites),
+                LUTCountingUtils.dbgSubtreePopulations, LUTCountingUtils.dbgSubtreeInstances);
         return leafInsts;
     }
     

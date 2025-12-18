@@ -42,7 +42,7 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private int numOfThreads = 2;
 
-    private double epsilon = 0.03; // goal imbalance for partition
+    private double epsilon = 0.03; // Imbalance for partition
     
     private String objective = "cut"; // Cost function 
     

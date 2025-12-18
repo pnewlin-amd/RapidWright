@@ -590,61 +590,18 @@ public class Partitioner {
                 }
             }
             Path hgr = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
-            Map<String, Integer> pairCounts = new java.util.LinkedHashMap<>();
-            try (BufferedReader hgrReader = new BufferedReader(new FileReader(hgr.toFile()))) {
-                String header = hgrReader.readLine();
-                String line = null;
-                while ((line = hgrReader.readLine()) != null) {
-                    String[] toks = line.trim().isEmpty() ?
-                            new String[0] : line.trim().split("\\s+");
-                    java.util.Set<Integer> partsSet = new java.util.HashSet<>();
-                    for (String tkn : toks) {
-                        if (tkn.isEmpty()) continue;
-                        int vertex_id;
-                        try {
-                            vertex_id = Integer.parseInt(tkn);
-                        } catch (NumberFormatException nfe) {
-                            continue;
-                        }
-                        int partIndex = (vertex_id >= 1 && vertex_id <= numVertices) ?
-                                vertexToPartition[vertex_id] : -1;
-                        if (partIndex >= 0) partsSet.add(partIndex);
-                    }
-                    if (partsSet.size() < 2) continue;
-                    java.util.List<Integer> plist = new java.util.ArrayList<>(partsSet);
-                    for (int i = 0; i < plist.size(); i++) {
-                        for (int j = i + 1; j < plist.size(); j++) {
-                            String partitionLabelA = PartitionLabel.indexToFpgaLabel(plist.get(i));
-                            String partitionLabelB = PartitionLabel.indexToFpgaLabel(plist.get(j));
-                            String pairKeyForward = partitionLabelA + "," + partitionLabelB;
-                            String pairKeyBackward = partitionLabelB + "," + partitionLabelA;
-                            pairCounts.put(pairKeyForward,
-                                    pairCounts.getOrDefault(pairKeyForward, 0) + 1);
-                            pairCounts.put(pairKeyBackward,
-                                    pairCounts.getOrDefault(pairKeyBackward, 0) + 1);
-                        }
-                    }
+            java.util.Map<String, Integer> nameToPartMap = new java.util.LinkedHashMap<>();
+            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
+                String instanceName = instLookup[vertex_id];
+                if (instanceName != null) {
+                    nameToPartMap.put(instanceName,
+                            Integer.valueOf(vertexToPartition[vertex_id]));
                 }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
             }
-            java.util.List<String> keys = new java.util.ArrayList<>(pairCounts.keySet());
-            java.util.Collections.sort(keys);
-            java.util.List<String> lines = new java.util.ArrayList<>(keys.size());
-            for (String pairKey : keys) {
-                int sep = pairKey.indexOf(',');
-                String labelA = pairKey.substring(0, sep);
-                String labelB = pairKey.substring(sep + 1);
-                int pairCount = pairCounts.get(pairKey);
-                lines.add(labelA + "--" + pairCount + "--" + labelB);
-            }
+            Map<String, Integer> pairCounts = PartitionPairCounter.countPartitionPairs(
+                    hgr, instLookup, nameToPartMap);
             Path ioCutsFile = outDir.resolve("ioCutsFile.txt");
-            try {
-                Files.write(ioCutsFile, lines, java.nio.charset.StandardCharsets.UTF_8);
-                System.out.println("Partitioner artifact written: " + ioCutsFile);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            PartitionPairCounter.writePairCountsToFile(ioCutsFile, pairCounts);
             java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
             int maxPart = -1;
             for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
