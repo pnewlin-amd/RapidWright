@@ -23,16 +23,16 @@
 package com.xilinx.rapidwright.edif.partition;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,8 @@ import com.xilinx.rapidwright.edif.EDIFHierPortInst;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 
 /**
- * writes io_cuts.txt (direction-agnostic summary with both permutations) and io_cuts_directional.txt (driver-resolved)
+ * Writes io_cuts.txt (direction-agnostic summary with both permutations)
+ * and io_cuts_directional.txt (driver-resolved).
  */
 public final class IoCutWriter {
 
@@ -53,72 +54,71 @@ public final class IoCutWriter {
     }
 
     /**
-     * writes both io_cuts.txt (in outDir) and the detailed nets.txt
+     * Writes both io_cuts.txt (in outDir) and the detailed nets.txt.
      */
-    public static void write(Path outDir,
-                             Path inputEDIF,
-                             EDIFNetlist netlist,
-                             String[] instLookup,
-                             Map<Integer, Set<String>> partitions,
-                             boolean generate_edif_nets) {
-        // build a deterministic name -> partition id lookup so we can translate each hypergraph member to its block id.
+    public static void write(Path outDir
+            , Path inputEdif
+            , EDIFNetlist netlist
+            , String[] instLookup
+            , Map<Integer, Set<String>> partitions
+            , boolean generateEdifNets) {
+        // build a deterministic name -> partition id lookup so we can translate each
+        // hypergraph member to its block id.
         Map<String, Integer> nameToPart = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<String>> pe : partitions.entrySet()) {
-            for (String nm : pe.getValue()) {
-                nameToPart.put(nm, pe.getKey());
+        for (Map.Entry<Integer, Set<String>> partitionEntry : partitions.entrySet()) {
+            for (String instanceName : partitionEntry.getValue()) {
+                nameToPart.put(instanceName, partitionEntry.getKey());
             }
         }
 
-        // derive all artifact paths alongside the input edif; these are produced earlier in the flow:
+        // derive artifact paths w/ the input edif; these are produced earlier in the flow:
         // - .hgr lists each edge as a space-separated list of vertex ids
         // - .eidmap is a 1-based list of hierarchical net names aligned with the edges in .hgr
         // - .nets.txt is the verbose connectivity report we keep centralized here for convenience
-        String base = inputEDIF.getFileName().toString();
+        String base = inputEdif.getFileName().toString();
         Path hgr = outDir.resolve(base + ".hgr");
         Path eidmap = outDir.resolve(base + ".eidmap");
         Path netsOut = outDir.resolve(base + ".nets.txt");
 
-
-
-        //=================================^IO CUT WRITER^===================================
-        //=================================*-*-*-*-*-*-*-*===================================
-        //===============================vDETAILED .NETS.TXTv================================
-
-
-
         // always write the new, direction-agnostic io cuts into io_cuts.txt.
-        // this uses .hgr membership and ignores driver direction, emitting counts for both permutations.
+        // this uses .hgr membership and ignores driver direction, emitting counts for both
+        // permutations.
         writeIoCutsUndirected(outDir, hgr, instLookup, nameToPart);
 
         // write directional io cuts into io_cuts_directional.txt.
-        if (generate_edif_nets) {
+        if (generateEdifNets) {
             writeIoCuts(outDir, hgr, eidmap, instLookup, nameToPart, netlist);
         } else {
             writeDirectionalIoCutsNoEidmap(outDir, netlist, instLookup, nameToPart);
         }
 
         // generate the detailed per-net report
-        if (generate_edif_nets) {
+        if (generateEdifNets) {
             writeDetailedNetsReport(hgr, eidmap, instLookup, nameToPart, netsOut);
         }
     }
 
     /**
-     * writes io_cuts_directional.txt into outdir.
+     * Writes io_cuts_directional.txt into outdir.
      */
-    private static void writeIoCuts(Path outDir,
-                                    Path hgrFile,
-                                    Path eidmapFile,
-                                    String[] instLookup,
-                                    Map<String, Integer> nameToPart,
-                                    EDIFNetlist netlist) {
-        // step 1: read .eidmap so edge index -> net name lookups are fast and aligned with .hgr.
-        // because .eidmap encodes the parent-level hierarchical name, which is the same
-        // string representation, we will then reconstruct when we query the netlist at the parent scope.
+    private static void writeIoCuts(Path outDir
+            , Path hgrFile
+            , Path eidmapFile
+            , String[] instLookup
+            , Map<String, Integer> nameToPart
+            , EDIFNetlist netlist) {
+        // ============================================================================
+        // STEP 1
+        // Read .eidmap so edge index -> net name lookups are fast and aligned with .hgr.
+        // Because .eidmap encodes the parent-level hierarchical name, which is the same
+        // string representation, we will then reconstruct when we query the netlist at the
+        // parent scope.
+        // ============================================================================
         List<String> netNames = new ArrayList<>();
-        try (BufferedReader eid = new BufferedReader(new FileReader(eidmapFile.toFile()))) {
+        try (BufferedReader eidmapReader = new BufferedReader(
+                new FileReader(eidmapFile.toFile()))) {
             String line;
-            while ((line = eid.readLine()) != null) {
+            while ((line = eidmapReader.readLine()) != null) {
                 netNames.add(line);
             }
         } catch (IOException e) {
@@ -128,158 +128,228 @@ public final class IoCutWriter {
         // this map accumulates "srcLabel-->dstLabel" counts. we keep it ordered for stable output,
         Map<String, Integer> pairCounts = new LinkedHashMap<>();
 
-        // step 2: scan the hypergraph (.hgr). for each edge, build the list of participating hierarchical
-        // instance names by translating vertex ids through instLookup. if there are no participants, we skip.
-        // otherwise try to resolve a single driving participant by comparing hierarchical port instances
-        // against the parent-level hierarchical net name and its source-side endpoints.
-        try (BufferedReader hgr = new BufferedReader(new FileReader(hgrFile.toFile()))) {
-            String header = hgr.readLine(); // ignore header; the following lines are the edges
+        // ============================================================================
+        // STEP 2
+        // Scan the hypergraph (.hgr). For each edge, build the list of participating
+        // hierarchical instance names by translating vertex ids through instLookup. If there are
+        // no participants, we skip. Otherwise try to resolve a single driving participant by
+        // comparing hierarchical port instances against the parent-level hierarchical net name
+        // and its source-side endpoints.
+        // ============================================================================
+        try (BufferedReader hgrReader = new BufferedReader(new FileReader(hgrFile.toFile()))) {
+            String header = hgrReader.readLine(); // ignore header; following lines are edges
             String line;
             int edgeIdx = 0;
-            while ((line = hgr.readLine()) != null) {
+            while ((line = hgrReader.readLine()) != null) {
                 edgeIdx++;
                 String netName = edgeIdx <= netNames.size() ? netNames.get(edgeIdx - 1)
                         : ("<edge_" + edgeIdx + ">");
 
-                String[] toks = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
+                String[] tokens = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
 
                 // gather all participating hierarchical instance names for this edge (signal).
-                List<String> instNames = new ArrayList<>(toks.length);
-                for (String t : toks) {
-                    if (t.isEmpty()) continue;
-                    int vid;
+                List<String> instNames = new ArrayList<>(tokens.length);
+                for (String t : tokens) {
+                    if (t.isEmpty()) {
+                        continue;
+                    }
+                    int vertexId;
                     try {
-                        vid = Integer.parseInt(t);
+                        vertexId = Integer.parseInt(t);
                     } catch (NumberFormatException nfe) {
                         continue;
                     }
-                    String instName = (vid >= 0 && vid < instLookup.length) ? instLookup[vid] : null;
-                    if (instName != null) instNames.add(instName);
+                    String instanceName = (vertexId >= 0 && vertexId < instLookup.length)
+                            ? instLookup[vertexId] : null;
+                    if (instanceName != null) {
+                        instNames.add(instanceName);
+                    }
                 }
-                if (instNames.isEmpty()) continue;
+                if (instNames.isEmpty()) {
+                    continue;
+                }
 
-                // step 2a: identify the driving participant. we do this by inspecting each participant’s
-                // hierarchical port instances and retrieving its hierarchical net at the parent scope.
+                // ============================================================================
+                // STEP 2a
+                // Identify the driving participant. We do this by inspecting each
+                // participant’s hierarchical port instances and retrieving its hierarchical net
+                // at the parent scope.
+                // ============================================================================
                 String driverName = null;
                 Integer driverPart = null;
-                for (String nm : instNames) {
-                    EDIFHierCellInst inst = netlist.getHierCellInstFromName(nm);
-                    if (inst == null) continue;
-                    for (EDIFHierPortInst pi : inst.getHierPortInsts()) {
-                    EDIFHierNet hnet = pi.getHierarchicalNet();
-                    if (hnet == null) continue;
-                    EDIFHierNet parent = null; //skip ambiguous nets, TODO: is there a better way to handle this!!!
-                    try { parent = netlist.getParentNet(hnet); } catch (RuntimeException ex) { parent = null; } //skip ambiguous nets, TODO: is there a better way to handle this!!!
-                    String hn = (parent != null) ? parent.toString() : hnet.toString();
-                    if (!netName.equals(hn)) continue;
+                for (String instanceName : instNames) {
+                    EDIFHierCellInst inst = netlist.getHierCellInstFromName(instanceName);
+                    if (inst == null) {
+                        continue;
+                    }
+                    for (EDIFHierPortInst portInst : inst.getHierPortInsts()) {
+                        EDIFHierNet hierNet = portInst.getHierarchicalNet();
+                        if (hierNet == null) {
+                            continue;
+                        }
+                        EDIFHierNet parentNet = null;
+                        try {
+                            parentNet = netlist.getParentNet(hierNet);
+                        } catch (RuntimeException ex) {
+                            parentNet = null;
+                        }
+                        // skip ambiguous nets, TODO: is there a better way to handle this?
+                        String hierNetName = (parentNet != null)
+                                ? parentNet.toString() : hierNet.toString();
+                        if (!netName.equals(hierNetName)) {
+                            continue;
+                        }
 
-                    // now compare against the net’s source endpoints at the same scope we used for naming.
-                    // if this port instance is one of the sources, we treat this participant as the driver.
-                    List<EDIFHierPortInst> sources = ((parent != null) ? parent : hnet).getSourcePortInsts(true);
-                    if (sources == null || sources.size() != 1) continue; //skip ambiguous nets
-                    for (EDIFHierPortInst spi : sources) {
-                            if (spi.equals(pi)) {
-                                driverName = nm;
+                        // now compare against the net’s source endpoints at the same scope we used
+                        // for naming. if this port instance is one of the sources, we treat this
+                        // participant as the driver.
+                        List<EDIFHierPortInst> sourcePortInsts =
+                                ((parentNet != null) ? parentNet : hierNet)
+                                        .getSourcePortInsts(true);
+                        if (sourcePortInsts == null || sourcePortInsts.size() != 1) {
+                            continue; // skip ambiguous nets
+                        }
+                        for (EDIFHierPortInst sourcePortInst : sourcePortInsts) {
+                            if (sourcePortInst.equals(portInst)) {
+                                driverName = instanceName;
                                 driverPart = nameToPart.get(driverName);
                                 break;
                             }
                         }
-                        if (driverName != null) break;
+                        if (driverName != null) {
+                            break;
+                        }
                     }
-                    if (driverName != null) break;
+                    if (driverName != null) {
+                        break;
+                    }
                 }
 
-                // if there is no driver that can be resolved (for example, tie-offs that are not represented as a source),
-                // we skip this edge for the directional summary.
-                // nets.txt will still cover this. 
-                if (driverName == null || driverPart == null) continue;
+                // if there is no driver that can be resolved (for example, tie-offs that are not
+                // represented as a source), we skip this edge for the directional summary.
+                // TODO: directional report may undercount? Silent drop of nets when driver 
+                // resolution fails. Is this acceptable?
+                if (driverName == null || driverPart == null) {
+                    continue;
+                }
 
                 String driverLabel = PartitionLabel.indexToFpgaLabel(driverPart);
 
-                // step 2b: accumulate a single count per destination partition for this signal.
-                java.util.Set<Integer> destParts = new java.util.HashSet<>();
-                for (String nm : instNames) {
-                    if (nm.equals(driverName)) continue;
-                    Integer dst = nameToPart.get(nm);
-                    if (dst == null) continue;
-                    if (dst.intValue() == driverPart.intValue()) continue;
-                    destParts.add(dst);
+                // ============================================================================
+                // STEP 2b
+                // Accumulate a single count per destination partition for this signal.
+                // ============================================================================
+                Set<Integer> destinationPartitions = new HashSet<>();
+                for (String instanceName : instNames) {
+                    if (instanceName.equals(driverName)) {
+                        continue;
+                    }
+                    Integer destinationPartition = nameToPart.get(instanceName);
+                    if (destinationPartition == null) {
+                        continue;
+                    }
+                    if (destinationPartition.intValue() == driverPart.intValue()) {
+                        continue;
+                    }
+                    destinationPartitions.add(destinationPartition);
                 }
-                for (Integer dp : destParts) {
-                    String sinkLabel = PartitionLabel.indexToFpgaLabel(dp);
-                    String key = driverLabel + "-->" + sinkLabel;
-                    pairCounts.put(key, pairCounts.getOrDefault(key, 0) + 1);
+                for (Integer destinationPartition : destinationPartitions) {
+                    String sinkLabel = PartitionLabel.indexToFpgaLabel(destinationPartition);
+                    String pairKey = driverLabel + "-->" + sinkLabel;
+                    pairCounts.put(pairKey, pairCounts.getOrDefault(pairKey, 0) + 1);
                 }
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        // step 3: write io_cuts.txt in sorted order. presenting entries deterministically makes it
-        // much easier to review diffs between runs. Makes finding heavy traffic easier as well in artifact.
+        // ============================================================================
+        // STEP 3
+        // Write io_cuts.txt in sorted order. Presenting entries deterministically makes it
+        // much easier to review diffs between runs. Makes finding heavy traffic easier as well
+        // in artifact.
+        // ============================================================================
         List<String> lines = new ArrayList<>(pairCounts.size());
-        java.util.List<String> keys = new java.util.ArrayList<>(pairCounts.keySet());
-        java.util.Collections.sort(keys);
-        for (String key : keys) {
-            int cnt = pairCounts.get(key);
-            // each key is "fpga_x-->fpga_y"; we rewrite it as "fpga_x--N--fpga_y" where n is the cut net count between them.
-            String formatted = key.replace("-->", "--" + cnt + "--");
+        List<String> keys = new ArrayList<>(pairCounts.keySet());
+        Collections.sort(keys);
+        for (String pairKey : keys) {
+            int pairCount = pairCounts.get(pairKey);
+            // each key is "fpga_x-->fpga_y"; we rewrite it as "fpga_x--N--fpga_y" where n is the
+            // cut net count between them.
+            String formatted = pairKey.replace("-->", "--" + pairCount + "--");
             lines.add(formatted);
         }
 
         Path ioCuts = outDir.resolve("io_cuts_directional.txt");
         try {
             Files.write(ioCuts, lines, StandardCharsets.UTF_8);
-            System.out.println("Partitioner artifact written: " + ioCuts);
+            PartitionTools.logPartitionerDebug(null, "Partitioner artifact written: %s",
+                    ioCuts.toString());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     /**
-     * writes io_cuts.txt (direction-agnostic) into outdir by scanning .hgr membership and
+     * Writes io_cuts.txt (direction-agnostic) into outdir by scanning .hgr membership and
      * counting every pair of distinct partitions that share a net. for each unordered pair,
      * both permutations are written.
-     * 
-     * ex: 
+     *
+     * ex:
      * fpga_b--20--fpga_a
      * fpga_a--20--fpga_b
      */
-    private static void writeIoCutsUndirected(Path outDir,
-                                              Path hgrFile,
-                                              String[] instLookup,
-                                              Map<String, Integer> nameToPart) {
+    private static void writeIoCutsUndirected(Path outDir
+            , Path hgrFile
+            , String[] instLookup
+            , Map<String, Integer> nameToPart) {
         Map<String, Integer> pairCounts = new LinkedHashMap<>();
 
-        try (BufferedReader hgr = new BufferedReader(new FileReader(hgrFile.toFile()))) {
-            String header = hgr.readLine(); // ignore header
+        // ============================================================================
+        // STEP 1
+        // Scan the hypergraph (.hgr) and count every pair of distinct partitions that share a net.
+        // For each unordered pair, both permutations are written.
+        // ============================================================================
+        try (BufferedReader hgrReader = new BufferedReader(new FileReader(hgrFile.toFile()))) {
+            String header = hgrReader.readLine(); // ignore header
             String line;
-            while ((line = hgr.readLine()) != null) {
-                String[] toks = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
-                java.util.Set<Integer> parts = new java.util.HashSet<>();
-                for (String t : toks) {
-                    if (t.isEmpty()) continue;
-                    int vid;
+            while ((line = hgrReader.readLine()) != null) {
+                String[] tokens = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
+                Set<Integer> partitionIds = new HashSet<>();
+                for (String t : tokens) {
+                    if (t.isEmpty()) {
+                        continue;
+                    }
+                    int vertexId;
                     try {
-                        vid = Integer.parseInt(t);
+                        vertexId = Integer.parseInt(t);
                     } catch (NumberFormatException nfe) {
                         continue;
                     }
-                    String instName = (vid >= 0 && vid < instLookup.length) ? instLookup[vid] : null;
-                    Integer part = (instName == null) ? null : nameToPart.get(instName);
-                    if (part != null) parts.add(part.intValue());
+                    String instanceName = (vertexId >= 0 && vertexId < instLookup.length)
+                            ? instLookup[vertexId] : null;
+                    Integer part = (instanceName == null) ? null : nameToPart.get(instanceName);
+                    if (part != null) {
+                        partitionIds.add(part.intValue());
+                    }
                 }
-                if (parts.size() < 2) continue;
+                if (partitionIds.size() < 2) {
+                    continue;
+                }
 
-                java.util.List<Integer> plist = new java.util.ArrayList<>(parts);
-                for (int i = 0; i < plist.size(); i++) {
-                    for (int j = i + 1; j < plist.size(); j++) {
-                        String a = PartitionLabel.indexToFpgaLabel(plist.get(i));
-                        String b = PartitionLabel.indexToFpgaLabel(plist.get(j));
-                        String k1 = a + "," + b;
-                        String k2 = b + "," + a;
-                        pairCounts.put(k1, pairCounts.getOrDefault(k1, 0) + 1);
-                        pairCounts.put(k2, pairCounts.getOrDefault(k2, 0) + 1);
+                List<Integer> partitionIdList = new ArrayList<>(partitionIds);
+                for (int i = 0; i < partitionIdList.size(); i++) {
+                    for (int j = i + 1; j < partitionIdList.size(); j++) {
+                        String partitionLabelA =
+                                PartitionLabel.indexToFpgaLabel(partitionIdList.get(i));
+                        String partitionLabelB =
+                                PartitionLabel.indexToFpgaLabel(partitionIdList.get(j));
+                        String pairKeyForward = partitionLabelA + "," + partitionLabelB;
+                        String pairKeyBackward = partitionLabelB + "," + partitionLabelA;
+                        pairCounts.put(pairKeyForward,
+                                pairCounts.getOrDefault(pairKeyForward, 0) + 1);
+                        pairCounts.put(pairKeyBackward,
+                                pairCounts.getOrDefault(pairKeyBackward, 0) + 1);
                     }
                 }
             }
@@ -287,146 +357,213 @@ public final class IoCutWriter {
             throw new UncheckedIOException(e);
         }
 
-        java.util.List<String> keys = new java.util.ArrayList<>(pairCounts.keySet());
-        java.util.Collections.sort(keys);
-        java.util.List<String> lines = new java.util.ArrayList<>(keys.size());
-        for (String key : keys) {
-            int sep = key.indexOf(',');
-            String a = key.substring(0, sep);
-            String b = key.substring(sep + 1);
-            int cnt = pairCounts.get(key);
-            lines.add(a + "--" + cnt + "--" + b);
+        // ============================================================================
+        // STEP 2
+        // Write io_cuts.txt in sorted order.
+        // ============================================================================
+        List<String> keys = new ArrayList<>(pairCounts.keySet());
+        Collections.sort(keys);
+        List<String> lines = new ArrayList<>(keys.size());
+        for (String pairKey : keys) {
+            int separatorIndex = pairKey.indexOf(',');
+            String partitionLabelA = pairKey.substring(0, separatorIndex);
+            String partitionLabelB = pairKey.substring(separatorIndex + 1);
+            int pairCount = pairCounts.get(pairKey);
+            lines.add(partitionLabelA + "--" + pairCount + "--" + partitionLabelB);
         }
 
         Path ioCuts = outDir.resolve("io_cuts.txt");
         try {
             Files.write(ioCuts, lines, StandardCharsets.UTF_8);
-            System.out.println("Partitioner artifact written: " + ioCuts);
+            PartitionTools.logPartitionerDebug(null, "Partitioner artifact written: %s",
+                    ioCuts.toString());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     /**
-     * writes io_cuts_directional.txt by recomputing edges from the netlist when .eidmap
-     * is not available. 
-     * 
+     * Writes io_cuts_directional.txt by recomputing edges from the netlist when .eidmap
+     * is not available.
+     *
      * Avoids relying on large eidmap files while still producing
      * the directional summary.
      */
-    private static void writeDirectionalIoCutsNoEidmap(Path outDir,
-                                                       EDIFNetlist netlist,
-                                                       String[] instLookup,
-                                                       Map<String, Integer> nameToPart) {
-        // reconstruct leaf set from instlookup
-        java.util.Set<EDIFHierCellInst> leafSet = new java.util.HashSet<>();
+    private static void writeDirectionalIoCutsNoEidmap(Path outDir
+            , EDIFNetlist netlist
+            , String[] instLookup
+            , Map<String, Integer> nameToPart) {
+        // ============================================================================
+        // STEP 1
+        // Reconstruct leaf set from instlookup.
+        // ============================================================================
+        Set<EDIFHierCellInst> leafSet = new HashSet<>();
         for (int i = 1; i < instLookup.length; i++) {
-            String nm = instLookup[i];
-            if (nm == null) continue;
-            EDIFHierCellInst inst = netlist.getHierCellInstFromName(nm);
-            if (inst != null) leafSet.add(inst);
+            String instanceName = instLookup[i];
+            if (instanceName == null) {
+                continue;
+            }
+            EDIFHierCellInst cellInst = netlist.getHierCellInstFromName(instanceName);
+            if (cellInst != null) {
+                leafSet.add(cellInst);
+            }
         }
 
-        // rebuild edges: parent-level net -> participating leaf instances
-        Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap = new java.util.HashMap<>();
-        for (EDIFHierCellInst ci : leafSet) {
-            for (EDIFHierPortInst pi : ci.getHierPortInsts()) {
-                EDIFHierNet hnet = pi.getHierarchicalNet();
-                if (hnet == null) continue;
-                EDIFHierNet parent = null;
-                try { parent = netlist.getParentNet(hnet); } catch (RuntimeException ex) { parent = null; } //skip ambiguous nets
-                EDIFHierNet key = (parent != null) ? parent : hnet; //skip ambiguous nets
-                if (edgesMap.containsKey(key)) continue;
-                edgesMap.put(key, hnet.getConnectedInsts(leafSet));
+        // ============================================================================
+        // STEP 2
+        // Rebuild edges: parent-level net -> participating leaf instances.
+        // ============================================================================
+        Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap = new HashMap<>();
+        for (EDIFHierCellInst cellInst : leafSet) {
+            for (EDIFHierPortInst portInst : cellInst.getHierPortInsts()) {
+                EDIFHierNet hierNet = portInst.getHierarchicalNet();
+                if (hierNet == null) {
+                    continue;
+                }
+                EDIFHierNet parentNet = null;
+                try {
+                    parentNet = netlist.getParentNet(hierNet);
+                } catch (RuntimeException ex) {
+                    parentNet = null;
+                }
+                // skip ambiguous nets
+                EDIFHierNet netKey = (parentNet != null) ? parentNet : hierNet;
+                if (edgesMap.containsKey(netKey)) {
+                    continue;
+                }
+                edgesMap.put(netKey, hierNet.getConnectedInsts(leafSet));
             }
         }
 
         Map<String, Integer> pairCounts = new LinkedHashMap<>();
 
-        for (Map.Entry<EDIFHierNet, Set<EDIFHierCellInst>> e : edgesMap.entrySet()) {
-            java.util.List<String> instNames = new java.util.ArrayList<>(e.getValue().size());
-            for (EDIFHierCellInst ci : e.getValue()) {
-                instNames.add(ci.toString());
+        // ============================================================================
+        // STEP 3
+        // Process edges to find drivers and accumulate counts.
+        // ============================================================================
+        for (Map.Entry<EDIFHierNet, Set<EDIFHierCellInst>> edgeEntry : edgesMap.entrySet()) {
+            List<String> instNames = new ArrayList<>(edgeEntry.getValue().size());
+            for (EDIFHierCellInst cellInst : edgeEntry.getValue()) {
+                instNames.add(cellInst.toString());
             }
-            if (instNames.isEmpty()) continue;
+            if (instNames.isEmpty()) {
+                continue;
+            }
 
             // find driver by matching source endpoints on the same parent net
             String driverName = null;
             Integer driverPart = null;
-            for (String nm : instNames) {
-                EDIFHierCellInst inst = netlist.getHierCellInstFromName(nm);
-                if (inst == null) continue;
-                for (EDIFHierPortInst pi : inst.getHierPortInsts()) {
-                    EDIFHierNet hnet = pi.getHierarchicalNet();
-                    if (hnet == null) continue;
-                    EDIFHierNet parent = null;
-                    try { parent = netlist.getParentNet(hnet); } catch (RuntimeException ex) { parent = null; } //skip ambiguous nets
-                    EDIFHierNet netRef = (parent != null) ? parent : hnet;
-                    if (netRef != e.getKey()) continue;
+            for (String instanceName : instNames) {
+                EDIFHierCellInst inst = netlist.getHierCellInstFromName(instanceName);
+                if (inst == null) {
+                    continue;
+                }
+                for (EDIFHierPortInst portInst : inst.getHierPortInsts()) {
+                    EDIFHierNet hierNet = portInst.getHierarchicalNet();
+                    if (hierNet == null) {
+                        continue;
+                    }
+                    EDIFHierNet parentNet = null;
+                    try {
+                        parentNet = netlist.getParentNet(hierNet);
+                    } catch (RuntimeException ex) {
+                        parentNet = null;
+                    }
+                    // skip ambiguous nets
+                    EDIFHierNet netRef = (parentNet != null) ? parentNet : hierNet;
+                    if (netRef != edgeEntry.getKey()) {
+                        continue;
+                    }
 
-                    java.util.List<EDIFHierPortInst> sources = netRef.getSourcePortInsts(true);
-                    if (sources == null || sources.size() != 1) continue; //skip ambiguous nets
-                    for (EDIFHierPortInst spi : sources) {
-                        if (spi.equals(pi)) {
-                            driverName = nm;
+                    List<EDIFHierPortInst> sourcePortInsts = netRef.getSourcePortInsts(true);
+                    if (sourcePortInsts == null || sourcePortInsts.size() != 1) {
+                        continue; // skip ambiguous nets
+                    }
+                    for (EDIFHierPortInst sourcePortInst : sourcePortInsts) {
+                        if (sourcePortInst.equals(portInst)) {
+                            driverName = instanceName;
                             driverPart = nameToPart.get(driverName);
                             break;
                         }
                     }
-                    if (driverName != null) break;
+                    if (driverName != null) {
+                        break;
+                    }
                 }
-                if (driverName != null) break;
+                if (driverName != null) {
+                    break;
+                }
             }
-            if (driverName == null || driverPart == null) continue;
+            if (driverName == null || driverPart == null) {
+                continue;
+            }
 
             String driverLabel = PartitionLabel.indexToFpgaLabel(driverPart);
 
-            java.util.Set<Integer> destParts = new java.util.HashSet<>();
-            for (String nm : instNames) {
-                if (nm.equals(driverName)) continue;
-                Integer dst = nameToPart.get(nm);
-                if (dst == null) continue;
-                if (dst.intValue() == driverPart.intValue()) continue;
-                destParts.add(dst);
+            Set<Integer> destinationPartitions = new HashSet<>();
+            for (String instanceName : instNames) {
+                if (instanceName.equals(driverName)) {
+                    continue;
+                }
+                Integer destinationPartition = nameToPart.get(instanceName);
+                if (destinationPartition == null) {
+                    continue;
+                }
+                if (destinationPartition.intValue() == driverPart.intValue()) {
+                    continue;
+                }
+                destinationPartitions.add(destinationPartition);
             }
-            for (Integer dp : destParts) {
-                String sinkLabel = PartitionLabel.indexToFpgaLabel(dp);
-                String key = driverLabel + "-->" + sinkLabel;
-                pairCounts.put(key, pairCounts.getOrDefault(key, 0) + 1);
+            for (Integer destinationPartition : destinationPartitions) {
+                String sinkLabel = PartitionLabel.indexToFpgaLabel(destinationPartition);
+                String pairKey = driverLabel + "-->" + sinkLabel;
+                pairCounts.put(pairKey, pairCounts.getOrDefault(pairKey, 0) + 1);
             }
         }
 
-        java.util.List<String> keys = new java.util.ArrayList<>(pairCounts.keySet());
-        java.util.Collections.sort(keys);
-        java.util.List<String> lines = new java.util.ArrayList<>(keys.size());
-        for (String key : keys) {
-            int cnt = pairCounts.get(key);
-            String formatted = key.replace("-->", "--" + cnt + "--");
+        // ============================================================================
+        // STEP 4
+        // Write io_cuts_directional.txt in sorted order.
+        // ============================================================================
+        List<String> keys = new ArrayList<>(pairCounts.keySet());
+        Collections.sort(keys);
+        List<String> lines = new ArrayList<>(keys.size());
+        for (String pairKey : keys) {
+            int pairCount = pairCounts.get(pairKey);
+            String formatted = pairKey.replace("-->", "--" + pairCount + "--");
             lines.add(formatted);
         }
 
         Path ioCuts = outDir.resolve("io_cuts_directional.txt");
         try {
             Files.write(ioCuts, lines, StandardCharsets.UTF_8);
-            System.out.println("Partitioner artifact written: " + ioCuts);
+            PartitionTools.logPartitionerDebug(null, "Partitioner artifact written: %s",
+                    ioCuts.toString());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     /**
-     * writes detailed nets.txt using existing partitiontools logic.
+     * Writes detailed nets.txt using existing partitiontools logic.
      */
-    private static void writeDetailedNetsReport(Path hgrFile,
-                                                Path eidmapFile,
-                                                String[] instLookup,
-                                                Map<String, Integer> nameToPart,
-                                                Path netsOut) {
+    private static void writeDetailedNetsReport(Path hgrFile
+            , Path eidmapFile
+            , String[] instLookup
+            , Map<String, Integer> nameToPart
+            , Path netsOut) {
         try {
-            PartitionTools.writeConnectivityReportWithNames(hgrFile, eidmapFile, instLookup, nameToPart, netsOut);
-            System.out.println("Partitioner artifact written: " + netsOut);
+            PartitionTools.writeConnectivityReportWithNames(hgrFile,
+                    eidmapFile,
+                    instLookup,
+                    nameToPart,
+                    netsOut);
+            PartitionTools.logPartitionerDebug(null, "Partitioner artifact written: %s",
+                    netsOut.toString());
         } catch (UncheckedIOException ex) {
-            System.err.println("WARNING: failed to write nets report: " + ex.getMessage());
+            PartitionTools.logPartitionerDebug(null,
+                    "WARNING: failed to write nets report: %s",
+                    ex.getMessage());
         }
     }
 }

@@ -23,13 +23,14 @@
 package com.xilinx.rapidwright.edif.partition;
 
 /**
- *
+ * Facilitates conversion from partition index 
+ * to FPGA partition label using the following
  * naming scheme:
  *   0..25  -> A..Z
  *   26..51 -> AZ..ZZ
  *   52..77 -> AZZ..ZZZ
  *
- * close to "excel-style (bijective) base-26"
+ * similar to "excel-style (bijective) base-26"
  */
 final class PartitionLabel {
 
@@ -37,7 +38,11 @@ final class PartitionLabel {
 
     private static final char[] ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
-    //returns FPGA_<SUFFIX>
+    /**
+     * Converts partition index to FPGA label string.
+     * @param idx The partition index to convert
+     * @return FPGA label string like "FPGA_A" or "FPGA_BZ"
+     */
     static String indexToFpgaLabel(int idx) {
         if (idx < 0) throw new IllegalArgumentException("partition index must be non-negative");
         String suffix;
@@ -45,7 +50,7 @@ final class PartitionLabel {
             suffix = String.valueOf(ALPHA[idx]);
         } else {
             int t = idx - 26;
-            int q = t / 26;   //how many trailing Z's to add
+            int q = t / 26;   //how many trailing 'Z' to add
             int r = t % 26;   //leading letter
             StringBuilder sb = new StringBuilder();
             sb.append(ALPHA[r]);

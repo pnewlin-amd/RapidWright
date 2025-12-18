@@ -26,21 +26,23 @@ package com.xilinx.rapidwright.edif.partition;
 import com.xilinx.rapidwright.edif.EDIFHierCellInst;
 
 /**
- * logicDiscoveryPolicy is a centralized, single source-of-truth utility for
+ * logicDiscoveryPolicy is a source-of-truth utility for
  * discovering logic-related properties in the EDIF/DCP domain.
- * 
- * There are many points in the code where we want to determine how many
- * LUTs there are. lutcount CLI and partitioner notably - this keeps 
- * that LUT count discovery centralized and easy to modify in one spot.
- *
+ * For example, determining if a cell is a look up table.
  */
 public final class logicDiscoveryPolicy {
+
+    // List of protected names that should be excluded from mapping generation. 
+    // GND and VCC will be re-created locally in the partition / module as needed,
+    // GND, VCC should not be results you see in mapping.txt
+    private static final java.util.LinkedHashSet<String> EXCLUSION_NAMES =
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(
+                    "VCC", "GND", "<const0>", "<const1>"
+            ));
 
     private logicDiscoveryPolicy() {
         // no instances
     }
-
-
 
 
     /**
@@ -49,21 +51,58 @@ public final class logicDiscoveryPolicy {
      * Treat any cell type whose name contains "LUT" as a logic LUT.
      * substring match to be consistent with legacy policy.
      * 
-     * TODO : probably a better implementation
+     * TODO : More concrete policy / fact-checked discovery policy?
+     * @param type_name The cell type name to check
+     * @return True if the type name contains "LUT"
      */
-    public static boolean is_logic_lut_type_name(String type_name) {
+    public static boolean isLogicLUT(String type_name) {
         if (type_name == null) return false;
         return type_name.contains("LUT");
     }
 
     /**
-     * Convenience helper: returns 1 if the given instance is a leaf and its type
-     * is a LUT.
+     * Returns 1 if the given instance is a leaf and its type is a LUT.
+     * @param inst The hierarchical cell instance to check
+     * @return 1 if leaf LUT, 0 otherwise
      */
-    public static int lut_count_for_leaf(EDIFHierCellInst inst) {
+    public static int leafLutCount(EDIFHierCellInst inst) {
         if (inst == null) return 0;
         if (!inst.getCellType().isLeafCellOrBlackBox()) return 0;
-        boolean is_lut = is_logic_lut_type_name(inst.getCellType().getName());
+        boolean is_lut = isLogicLUT(inst.getCellType().getName());
         return is_lut ? 1 : 0;
+    }
+
+    /**
+     * Checks if a token should be excluded from processing.
+     * @param s The token string to check
+     * @return True if token is VCC, GND, or similar
+     */
+    public static boolean isExcludedToken(String s) {
+        if (s == null) {
+            return false;
+        }
+        if (EXCLUSION_NAMES.contains(s)) {
+            return true;
+        }
+        String t = s.toLowerCase(java.util.Locale.ROOT);
+        return "vcc".equals(t) || "gnd".equals(t);
+    }
+
+    /**
+     * Checks if a hierarchical path contains any excluded segments.
+     * @param path The hierarchical path to check
+     * @return True if path contains excluded segments
+     */
+    public static boolean pathHasExcludedSegment(String path) {
+        if (path == null || path.isEmpty()) {
+            return false;
+        }
+        String[] segs = path.split("/");
+        for (String seg : segs) {
+            if (isExcludedToken(seg)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

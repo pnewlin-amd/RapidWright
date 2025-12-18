@@ -51,23 +51,64 @@ import com.xilinx.rapidwright.util.MessageGenerator;
  */
 public class Partitioner {
 
+    /**
+     * Logs current memory usage for debugging.
+     * @param label Description label for the audit point
+     */
     private static void memAudit(String label) {
         Runtime rt = Runtime.getRuntime();
         long total = rt.totalMemory();
         long free = rt.freeMemory();
         long used = total - free;
-        System.out.printf("PARTITIONER DEBUG: %s -> used=%d MB total=%d MB free=%d MB%n",
+        PartitionTools.logPartitionerDebug(
+                System.out,
+                "%s -> used=%d MB total=%d MB free=%d MB",
                 label, used / (1024 * 1024), total / (1024 * 1024), free / (1024 * 1024));
     }
 
+    /**
+     * Creates and returns the default partitioner instance.
+     * @return A new MtKaHyParPartitioner instance
+     */
     public static AbstractPartitioner getDefaultPartitioner() {
         MtKaHyParPartitioner p = new MtKaHyParPartitioner();
         return p;
     }
+
+    /**
+     * Prints command-line usage information to console.
+     */
+    private static void printUsage() {
+        System.out.println("===================================================================");
+        System.out.println("                       RAPIDWRIGHT PARTITIONER");
+        System.out.println("===================================================================");
+        System.out.println();
+        System.out.println("Usage:");
+        System.out.println("  <input.edf|input.dcp>");
+        System.out.println("  <# of partitions>");
+        System.out.println("  <leafLUTCountLimit>");
+        System.out.println();
+        System.out.println("Optional Flags:");
+        System.out.println("  --seed N                    Set seed");
+        System.out.println("  --epsilon E                 Set partition imbalance");
+        System.out.println("  --threads T                 Set number of threads");
+        System.out.println("  --partition_config TYPE     Set preset (default/deterministic)");
+        System.out.println("  --objective OBJ             Set objective (cut/km1/soed)");
+        System.out.println("  --part_dir DIR              Set output directory");
+        System.out.println("  --mapping_constraints PATH  Specify constraints file");
+        System.out.println("  --constraints_debug         Enable constraint debugging");
+        System.out.println("  --skip_detailed_reports     Skip detailed report generation");
+        System.out.println();
+        System.out.println("===================================================================");
+    }
     
+    /**
+     * Main entry point for the partitioner tool.
+     * @param args Command-line arguments for partitioning
+     */
     public static void main(String[] args) {
         if (args.length < 3) {
-            System.out.println("<input.edf|input.dcp> <# of partitions> <leafLUTCountLimit> [--seed N] [--epsilon E] [--threads T] [--partition_config default/deterministic] [--objective cut/km1/soed] [--part_dir DIR] [--mapping_constraints PATH] [--constraints_debug] [--bare_bones]");
+            printUsage();
             return;
         }
         Path inputPath = Paths.get(args[0]);
@@ -75,77 +116,102 @@ public class Partitioner {
         int leafLUTCountLimit = Integer.parseInt(args[2]);
         CodePerfTracker t = new CodePerfTracker("Partitioner");
         
-        boolean generate_edif_nets = false; //verbose information
-
-        Path constraints_file = null;
-        // enable extra logs for constraints
-
-        boolean constraints_debug = false;
-        boolean bare_bones = false;
+        boolean generateEdifNets = false; // Human readable hypergraph artifacts
+        Path constraintsFile = null;
+        boolean constraintsDebug = false;
+        boolean skipDetailedReports = false;
         
-        // establish default output directory next to input EDIF (or cwd if none)
+
+
+
+        // ============================================================================
+        // ARGUMENT PARSING & INITIALIZATION
+        // Parses command-line flags and sets up initial configuration variables.
+        // Establishes the output directory where all partition artifacts will be written.
+        // Determines whether to generate detailed reports based on the skip_detailed_reports flag.
+        // ============================================================================
         Path outDir = (inputPath.getParent() == null)
                 ? Paths.get(System.getProperty("user.dir"))
                 : inputPath.getParent();
         // parse early flags that affect artifact emission and locations
         for (int i = 3; i < args.length; i++) {
-            String a = args[i];
-            if ("--part_dir".equals(a) && i + 1 < args.length) {
+            String arg = args[i];
+            if ("--part_dir".equals(arg) && i + 1 < args.length) {
                 outDir = Paths.get(args[++i]);
-            } else if (a.startsWith("--part_dir=")) {
-                outDir = Paths.get(a.substring("--part_dir=".length()));
-            } else if ("--mapping_constraints".equals(a) && i + 1 < args.length) {
-                constraints_file = Paths.get(args[++i]);
-            } else if (a.startsWith("--mapping_constraints=")) {
-                constraints_file = Paths.get(a.substring("--mapping_constraints=".length()));
-            } else if ("--constraints_debug".equals(a)) {
-                constraints_debug = true;
-            } else if (a.startsWith("--constraints_debug=")) {
-                String v = a.substring("--constraints_debug=".length()).trim();
-                constraints_debug = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
-            } else if ("--bare_bones".equals(a)) {
-                bare_bones = true;
-            } else if (a.startsWith("--bare_bones=")) {
-                String v = a.substring("--bare_bones=".length()).trim();
-                bare_bones = "1".equals(v) || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v);
+            } else if (arg.startsWith("--part_dir=")) {
+                outDir = Paths.get(arg.substring("--part_dir=".length()));
+            } else if ("--mapping_constraints".equals(arg) && i + 1 < args.length) {
+                constraintsFile = Paths.get(args[++i]);
+            } else if (arg.startsWith("--mapping_constraints=")) {
+                constraintsFile = Paths.get(arg.substring("--mapping_constraints=".length()));
+            } else if ("--constraints_debug".equals(arg)) {
+                constraintsDebug = true;
+            } else if (arg.startsWith("--constraints_debug=")) {
+                String val = arg.substring("--constraints_debug=".length()).trim();
+                constraintsDebug = "1".equals(val) || "true".equalsIgnoreCase(val) ||
+                        "yes".equalsIgnoreCase(val);
+            } else if ("--skip_detailed_reports".equals(arg)) {
+                skipDetailedReports = true;
+            } else if (arg.startsWith("--skip_detailed_reports=")) {
+                String val = arg.substring("--skip_detailed_reports=".length()).trim();
+                skipDetailedReports = "1".equals(val) || "true".equalsIgnoreCase(val) ||
+                        "yes".equalsIgnoreCase(val);
             }
         }
-        generate_edif_nets = !bare_bones;
+        generateEdifNets = !skipDetailedReports;
         try {
             Files.createDirectories(outDir);
         } catch (IOException ioe) {
             throw new UncheckedIOException(ioe);
         }
 
+
+
+        // ============================================================================
+        // INPUT READING & VALIDATION
+        // Reads the input design from either a DCP or EDIF file.
+        // Validates that the design is not encrypted, which is unsupported.
+        // Extracts the netlist for partitioning and tracks memory usage.
+        // ============================================================================
         memAudit("rapidwright mem usg input before");
         t.start("Read Input");
-        EDIFNetlist n;
+        EDIFNetlist netlist;
         String inLower = inputPath.toString().toLowerCase();
         if (inLower.endsWith(".dcp")) {
-            Design d = Design.readCheckpoint(inputPath.toString());
-            n = d.getNetlist();
-            int encrypted_count = n.getEncryptedCells().size();
-            if (encrypted_count > 0) {
-                throw new RuntimeException("ERROR: Encrypted DCP detected (encryptedCells=" + encrypted_count + "). Encrypted DCPs are unsupported.");
+            Design design = Design.readCheckpoint(inputPath.toString());
+            netlist = design.getNetlist();
+            int encryptedCount = netlist.getEncryptedCells().size();
+            if (encryptedCount > 0) {
+                throw new RuntimeException("ERROR: Encrypted DCP detected (encryptedCells=" + 
+                        encryptedCount + "). Encrypted DCPs are unsupported.");
             }
         } else {
-            n = EDIFTools.readEdifFile(inputPath);
+            netlist = EDIFTools.readEdifFile(inputPath);
         }
         t.stop();
         memAudit("rapidwright mem usg input after");
 
+
+
+        // ============================================================================
+        // NETLIST COARSENING
+        // Identifies leaf instances in the netlist hierarchy based on the LUT count threshold.
+        // For DCP inputs, backfills missing LUT counts for hierarchical instances.
+        // Validates that the leaf LUT count limit is within acceptable bounds.
+        // ============================================================================
         t.start("Coarsen Netlist");
         Map<EDIFHierCellInst, Integer> instLutCountMap = new HashMap<>();
-        Map<EDIFHierCellInst, Integer> leafInsts = PartitionTools.identifyLeafInstances(n,
+        Map<EDIFHierCellInst, Integer> leafInsts = PartitionTools.identifyLeafInstances(netlist,
                 leafLUTCountLimit, instLutCountMap);
         System.out.println("Identified " + leafInsts.size() + " leaves");
         {
-            final int sampleTarget = 100_000;
-            final int step = Math.max(1, leafInsts.size() / sampleTarget);
-            long sampledHier = 0, missingHier = 0;
+            final int SAMPLE_TARGET = 100_000;
+            final int STEP = Math.max(1, leafInsts.size() / SAMPLE_TARGET);
+            long sampledHier = 0;
+            long missingHier = 0;
             int idx = 0;
             for (EDIFHierCellInst ci : leafInsts.keySet()) {
-                if ((idx++ % step) != 0) continue;
+                if ((idx++ % STEP) != 0) continue;
                 if (!ci.getCellType().isLeafCellOrBlackBox()) {
                     sampledHier++;
                     if (!instLutCountMap.containsKey(ci)) {
@@ -154,28 +220,43 @@ public class Partitioner {
                 }
             }
             double pct = sampledHier == 0 ? 0.0 : 100.0 * missingHier / sampledHier;
-            System.out.printf("PARTITIONER DEBUG: leafInsts coverage -> sampledHier=%d missingHier=%d pct=%.4f step=%d%n",
-                    sampledHier, missingHier, pct, step); // reports sampled coverage of missing lut counts among hierarchical leaves to confirm incomplete instance coverage
+            /* 
+             * Reports sampled coverage of missing lut counts among hierarchical 
+             * leaves to confirm incomplete instance coverage
+             */
+            PartitionTools.logPartitionerDebug(
+                    System.out,
+                    "leafInsts coverage -> sampledHier=%d missingHier=%d pct=%.4f step=%d",
+                    sampledHier, missingHier, pct, STEP); 
         }
         if (inLower.endsWith(".dcp")) {
-            System.err.printf("PARTITIONER DEBUG: DCP backfill start -> leafCount=%d%n", leafInsts.size());
+            PartitionTools.logPartitionerDebug(
+                    System.err,
+                    "DCP backfill start -> leafCount=%d",
+                    leafInsts.size());
             int backfillAttempts = 0;
             int backfillSuccess = 0;
             int backfillSkipped = 0;
-            java.util.Map<com.xilinx.rapidwright.edif.EDIFCell, java.lang.Integer> __p_cache = new java.util.HashMap<>();
+            java.util.Map<com.xilinx.rapidwright.edif.EDIFCell, java.lang.Integer> lutCountCache;
+            // Caches LUT counts to avoid expensive re-calculation during backfill process.
+            lutCountCache = new java.util.HashMap<>();
             for (EDIFHierCellInst leaf : leafInsts.keySet()) {
                 if (!leaf.getCellType().isLeafCellOrBlackBox()) {
                     if (instLutCountMap.get(leaf) == null) {
                         backfillAttempts++;
                         if (backfillAttempts <= 10) {
-                            System.err.printf("PARTITIONER DEBUG: DCP backfill attempt -> instPath=%s cellType=%s%n",
+                            PartitionTools.logPartitionerDebug(
+                                    System.err,
+                                    "DCP backfill attempt -> instPath=%s cellType=%s",
                                     leaf.toString(), leaf.getCellType().getName());
                         }
-                        PartitionTools.getLUTCount(leaf, __p_cache, instLutCountMap);
+                        PartitionTools.getLUTCount(leaf, lutCountCache, instLutCountMap);
                         if (instLutCountMap.get(leaf) != null) {
                             backfillSuccess++;
                             if (backfillSuccess <= 10) {
-                                System.err.printf("PARTITIONER DEBUG: DCP backfill success -> instPath=%s lutCount=%d%n",
+                                PartitionTools.logPartitionerDebug(
+                                        System.err,
+                                        "DCP backfill success -> instPath=%s lutCount=%d",
                                         leaf.toString(), instLutCountMap.get(leaf));
                             }
                         }
@@ -184,23 +265,38 @@ public class Partitioner {
                     }
                 }
             }
-            System.err.printf("PARTITIONER DEBUG: DCP backfill complete -> attempts=%d success=%d skipped=%d%n",
+            PartitionTools.logPartitionerDebug(
+                    System.err,
+                    "DCP backfill complete -> attempts=%d success=%d skipped=%d",
                     backfillAttempts, backfillSuccess, backfillSkipped);
         }
-        int totalLUTs = instLutCountMap.get(n.getTopHierCellInst());
+        int totalLUTs = instLutCountMap.get(netlist.getTopHierCellInst());
         if (leafLUTCountLimit >= totalLUTs || leafLUTCountLimit < 1) {
             throw new RuntimeException("ERROR: Invalid leafLUTCountLimit '" + leafLUTCountLimit
                     + "', must be less than total LUT count in netlist or 1 or greater.");
         }
         t.stop();
 
+
+
+        // ============================================================================
+        // EDGE DISCOVERY
+        // Builds a map of nets (edges) to the instances (vertices) they connect.
+        // Uses parent-level nets to avoid duplication and handle hierarchical connectivity.
+        // Creates the hypergraph structure that will be partitioned.
+        // ============================================================================
         t.start("Find Edges");
         Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap = new HashMap<>();
         for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
             for (EDIFHierPortInst pi : e.getKey().getHierPortInsts()) {
                 EDIFHierNet connectedNet = pi.getHierarchicalNet();
-                EDIFHierNet parentNet = null; //skip ambiguous nets, TODO : is there a better way to handle this edge case..?
-                try { parentNet = n.getParentNet(connectedNet); } catch (RuntimeException ex) { parentNet = null; } //skip ambiguous nets
+                // Skip ambiguous nets, TODO: better way to handle this edge case?
+                EDIFHierNet parentNet = null;
+                try {
+                    parentNet = netlist.getParentNet(connectedNet);
+                } catch (RuntimeException ex) {
+                    parentNet = null;
+                }
                 EDIFHierNet keyNet = (parentNet != null) ? parentNet : connectedNet;
                 if (edgesMap.containsKey(keyNet))
                     continue;
@@ -209,9 +305,17 @@ public class Partitioner {
         }
         t.stop();
 
+
+
+        // ============================================================================
+        // HYPERGRAPH FILE GENERATION
+        // Writes the hypergraph to a .hgr file in hMETIS format for the partitioner.
+        // Optionally generates a .eidmap file mapping edge IDs to net names.
+        // Frees the edge map memory to reduce memory footprint before partitioning.
+        // ============================================================================
         t.start("Write hMETIS File");
         Path hMetisFile = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
-        PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generate_edif_nets);
+        PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generateEdifNets);
         t.stop();
 
         //free edgesMap memory after .hgr file is written
@@ -219,58 +323,75 @@ public class Partitioner {
         edgesMap = null;
         System.gc();
 
-        // generate fixed vertices file if constraints were provided
-        Path fix_file = null;
-        if (constraints_file != null) {
+
+
+        // ============================================================================
+        // FIXED VERTICES COMPUTATION
+        // Processes user-provided mapping constraints to fix certain instances to
+        // specific partitions. Matches constraint paths against leaf instances and
+        // assigns partition IDs. Generates a .fix file that tells the partitioner
+        // which vertices are constrained.
+        // ============================================================================
+        Path fixedVertexFile = null; // generate fixed vertices file if constraints were provided
+        if (constraintsFile != null) {
             // build label->index map
-            java.util.Map<String, Integer> label_to_index = new java.util.HashMap<>();
+            java.util.Map<String, Integer> labelToIndex = new java.util.HashMap<>();
             for (int idx = 0; idx < k; idx++) {
                 String lbl = PartitionLabel.indexToFpgaLabel(idx);
-                label_to_index.put(lbl, Integer.valueOf(idx));
+                labelToIndex.put(lbl, Integer.valueOf(idx));
             }
             // init fix array (1-based vertex ids)
-            int num_vertices = leafInsts.size();
-            int[] fix_arr = new int[num_vertices + 1];
-            for (int i = 0; i <= num_vertices; i++) fix_arr[i] = -1;
-            int fixed_count = 0;
+            int numVertices = leafInsts.size();
+            int[] vertexPartitionAssignments = new int[numVertices + 1];
+            for (int i = 0; i <= numVertices; i++) vertexPartitionAssignments[i] = -1;
+            int numFixedVertices = 0;
 
             // parse mapping_constraints.txt and expand to vertices
-            try (BufferedReader cr = new BufferedReader(new FileReader(constraints_file.toFile()))) {
+            try (BufferedReader cr = new BufferedReader(new FileReader(constraintsFile.toFile()))) {
                 String cline;
                 while ((cline = cr.readLine()) != null) {
                     String orig = cline.trim();
                     if (orig.isEmpty() || orig.startsWith("#")) continue;
                     String[] toks = orig.split("\\s+");
                     if (toks.length != 2) {
-                        throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                        throw new RuntimeException(
+                                "constraint '" + orig + "' was not found valid in design");
                     }
                     String path = toks[0];
                     String label = toks[1];
-                    Integer block_idx = label_to_index.get(label);
-                    if (block_idx == null) {
-                        throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                    Integer blockIndex = labelToIndex.get(label);
+                    if (blockIndex == null) {
+                        throw new RuntimeException(
+                                "constraint '" + orig + "' was not found valid in design");
                     }
                     int matched = 0;
                     for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
                         String name = e.getKey().toString();
-                        int vid = e.getValue().intValue();
-                        boolean leaf_contains_path = path.equals(name) || path.startsWith(name + "/");
-                        boolean path_contains_leaf = name.equals(path) || name.startsWith(path + "/");
-                        if (leaf_contains_path || path_contains_leaf) {
-                            if (fix_arr[vid] == -1) {
-                                fix_arr[vid] = block_idx.intValue();
-                                fixed_count++;
-                            } else if (fix_arr[vid] != block_idx.intValue()) {
-                                throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                        int vertex_id = e.getValue().intValue();
+                        boolean leafContainsPath = path.equals(name) || 
+                                path.startsWith(name + "/");
+                        boolean pathContainsLeaf = name.equals(path) || 
+                                name.startsWith(path + "/");
+                        if (leafContainsPath || pathContainsLeaf) {
+                            if (vertexPartitionAssignments[vertex_id] == -1) {
+                                vertexPartitionAssignments[vertex_id] = blockIndex.intValue();
+                                numFixedVertices++;
+                            } else if (vertexPartitionAssignments[vertex_id] != 
+                                    blockIndex.intValue()) {
+                                throw new RuntimeException(
+                                        "constraint '" + orig + "' was not found valid in design");
                             }
                             matched++;
                         }
                     }
-                    if (constraints_debug) {
-                        System.out.printf("partitioner debug: constraint '%s' matched %d vertices%n", orig, matched);
+                    if (constraintsDebug) {
+                        System.out.printf(
+                                "partitioner debug: constraint '%s' matched %d vertices%n",
+                                orig, matched);
                     }
                     if (matched == 0) {
-                        throw new RuntimeException("constraint '" + orig + "' was not found valid in design");
+                        throw new RuntimeException(
+                                "constraint '" + orig + "' was not found valid in design");
                     }
                 }
             } catch (IOException e) {
@@ -278,243 +399,319 @@ public class Partitioner {
             }
 
             // derive fix file path from .hgr
-            String hgr_base = hMetisFile.toString();
-            if (hgr_base.endsWith(".hgr")) {
-                fix_file = Paths.get(hgr_base.substring(0, hgr_base.length() - 4) + ".fix");
+            String hypergraphBasePath = hMetisFile.toString();
+            if (hypergraphBasePath.endsWith(".hgr")) {
+                fixedVertexFile = Paths.get(
+                        hypergraphBasePath.substring(0, hypergraphBasePath.length() - 4) + ".fix");
             } else {
-                fix_file = Paths.get(hgr_base + ".fix");
+                fixedVertexFile = Paths.get(hypergraphBasePath + ".fix");
             }
-            try (BufferedWriter fw = new BufferedWriter(new FileWriter(fix_file.toFile()))) {
-                for (int vid = 1; vid <= num_vertices; vid++) {
-                    fw.write(Integer.toString(fix_arr[vid]));
+            try (BufferedWriter fw = new BufferedWriter(new FileWriter(fixedVertexFile.toFile()))) {
+                for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
+                    fw.write(Integer.toString(vertexPartitionAssignments[vertex_id]));
                     fw.write("\n");
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
             System.out.printf("partitioner debug: fix-file=%s vertices=%d fixed=%d%n",
-                    fix_file, leafInsts.size(), fixed_count);
+                    fixedVertexFile, leafInsts.size(), numFixedVertices);
         }
         
+
+
+
+        // ============================================================================
+        // PARTITIONER EXECUTION
+        // Configures the external MtKaHyPar partitioning tool with user-specified parameters.
+        // Sets options like seed, epsilon, threads, preset type, and objective function.
+        // Executes the partitioner and tracks memory usage before and after.
+        // ============================================================================
         t.start("Run Partitioner");
-        AbstractPartitioner p = getDefaultPartitioner();
-        p.setInputFile(hMetisFile);
-        p.setKPartitions(k);
+        AbstractPartitioner partitioner = getDefaultPartitioner();
+        partitioner.setInputFile(hMetisFile);
+        partitioner.setKPartitions(k);
         // optional args
-        if (p instanceof MtKaHyParPartitioner) {
-            MtKaHyParPartitioner mp = (MtKaHyParPartitioner) p;
+        if (partitioner instanceof MtKaHyParPartitioner) {
+            MtKaHyParPartitioner mtPartitioner = (MtKaHyParPartitioner) partitioner;
             // ensure external tool runs and writes outputs into outDir
-            mp.setOutputDir(outDir);
+            mtPartitioner.setOutputDir(outDir);
             // pass fixed vertices file if detected
-            if (fix_file != null) {
-                mp.setFixedVerticesFile(fix_file);
+            if (fixedVertexFile != null) {
+                mtPartitioner.setFixedVerticesFile(fixedVertexFile);
             }
             for (int i = 3; i < args.length; i++) {
-                String a = args[i];
-                if (a.equals("--seed") && i + 1 < args.length) {
-                    mp.setSeed(Integer.parseInt(args[++i]));
-                } else if (a.startsWith("--seed=")) {
-                    mp.setSeed(Integer.parseInt(a.substring("--seed=".length())));
-                } else if (a.equals("--epsilon") && i + 1 < args.length) {
-                    mp.setEpsilon(Double.parseDouble(args[++i]));
-                } else if (a.startsWith("--epsilon=")) {
-                    mp.setEpsilon(Double.parseDouble(a.substring("--epsilon=".length())));
-                } else if (a.equals("--threads") && i + 1 < args.length) {
-                    mp.setNumThreads(Integer.parseInt(args[++i]));
-                } else if (a.startsWith("--threads=")) {
-                    mp.setNumThreads(Integer.parseInt(a.substring("--threads=".length())));
-                } else if (a.equals("--partition_config") && i + 1 < args.length) {
-                    mp.setPresetType(args[++i]);
-                } else if (a.startsWith("--partition_config=")) {
-                    mp.setPresetType(a.substring("--partition_config=".length()));
-                } else if (a.equals("--objective") && i + 1 < args.length) {
-                    mp.setObjective(args[++i]);
-                } else if (a.startsWith("--objective=")) {
-                    mp.setObjective(a.substring("--objective=".length()));
+                String arg = args[i];
+                if (arg.equals("--seed") && i + 1 < args.length) {
+                    mtPartitioner.setSeed(Integer.parseInt(args[++i]));
+                } else if (arg.startsWith("--seed=")) {
+                    mtPartitioner.setSeed(Integer.parseInt(arg.substring("--seed=".length())));
+                } else if (arg.equals("--epsilon") && i + 1 < args.length) {
+                    mtPartitioner.setEpsilon(Double.parseDouble(args[++i]));
+                } else if (arg.startsWith("--epsilon=")) {
+                    mtPartitioner.setEpsilon(Double.parseDouble(
+                            arg.substring("--epsilon=".length())));
+                } else if (arg.equals("--threads") && i + 1 < args.length) {
+                    mtPartitioner.setNumThreads(Integer.parseInt(args[++i]));
+                } else if (arg.startsWith("--threads=")) {
+                    mtPartitioner.setNumThreads(Integer.parseInt(
+                            arg.substring("--threads=".length())));
+                } else if (arg.equals("--partition_config") && i + 1 < args.length) {
+                    mtPartitioner.setPresetType(args[++i]);
+                } else if (arg.startsWith("--partition_config=")) {
+                    mtPartitioner.setPresetType(arg.substring("--partition_config=".length()));
+                } else if (arg.equals("--objective") && i + 1 < args.length) {
+                    mtPartitioner.setObjective(args[++i]);
+                } else if (arg.startsWith("--objective=")) {
+                    mtPartitioner.setObjective(arg.substring("--objective=".length()));
                 }
             }
             // print user flags summary
-            System.out.printf("Partitioner flag: objective=%s%n", mp.getObjective());
+            System.out.printf("Partitioner flag: objective=%s%n", mtPartitioner.getObjective());
             System.out.printf("Partitioner flag: part_dir=%s%n", outDir);
-            System.out.printf("Partitioner flag: mapping_constraints=%s%n", constraints_file != null ? constraints_file.toString() : "none");
-            System.out.printf("Partitioner flag: bare_bones=%s%n", bare_bones ? "on" : "off");
+            System.out.printf("Partitioner flag: mapping_constraints=%s%n",
+                  constraintsFile != null ? constraintsFile.toString() : "none");
+            System.out.printf("Partitioner flag: skip_detailed_reports=%s%n",
+                    skipDetailedReports ? "on" : "off");
         }
         memAudit("rapidwright mem usg before partitioner run");
-        p.runPartitioner();
-        memAudit("rapidwright mem usg after partitioner run (java)");
+        partitioner.runPartitioner();
+        memAudit("rapidwright mem usg after partitioner run");
         t.stop();
         
+
+
+
+        // ============================================================================
+        // SOLUTION PROCESSING - BARE BONES MODE
+        // Reads the partition solution and computes per-partition LUT counts
+        // efficiently. Generates minimal output artifacts: io_cuts.txt,
+        // lut_report.txt, cells.txt, and mapping.txt. Skips detailed reports like
+        // .eidmap and .nets.txt to reduce artifact size.
+        // ============================================================================
         t.start("Read Partition Solution");
-        Path outputFile = p.getOutputFile();
+        Path outputFile = partitioner.getOutputFile();
         String[] instLookup = PartitionTools.createInstLookupArray(leafInsts);
-        Map<Integer, Set<String>> partitions = PartitionTools.readSolutionFile(outputFile, instLookup);
-        if (bare_bones) {
-            int num_vertices = instLookup.length - 1;
-            int[] v2p = new int[num_vertices + 1];
+        Map<Integer, Set<String>> partitions;
+        partitions = PartitionTools.readSolutionFile(outputFile, instLookup);
+        if (skipDetailedReports) {
+            int numVertices = instLookup.length - 1;
+            int[] vertexToPartition = new int[numVertices + 1];
             try (BufferedReader br = new BufferedReader(new FileReader(outputFile.toFile()))) {
                 String line = null;
                 int i = 1;
                 while ((line = br.readLine()) != null) {
                     int part = Integer.parseInt(line.trim());
-                    v2p[i++] = part;
+                    vertexToPartition[i++] = part;
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            EDIFHierCellInst[] inst_by_vid = new EDIFHierCellInst[num_vertices + 1];
+            EDIFHierCellInst[] instanceByVertexID = new EDIFHierCellInst[numVertices + 1];
             for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
-                int vid = e.getValue().intValue();
-                inst_by_vid[vid] = e.getKey();
+                int vertex_id = e.getValue().intValue();
+                instanceByVertexID[vertex_id] = e.getKey();
             }
-            int[] lut_by_vid = new int[num_vertices + 1];
+            int[] lutCountByVertexID = new int[numVertices + 1];
             int dbgLeafLUTs = 0;
             int dbgHierLUTs = 0;
             int dbgHierMissing = 0;
             int dbgHierFound = 0;
             java.util.Map<String, Integer> dbgMissingCellTypes = new java.util.HashMap<>();
             java.util.Map<String, Integer> dbgMissingParentTypes = new java.util.HashMap<>();
-            for (int vid = 1; vid <= num_vertices; vid++) {
-                EDIFHierCellInst inst = inst_by_vid[vid];
+            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
+                EDIFHierCellInst inst = instanceByVertexID[vertex_id];
                 if (inst == null) continue;
                 if (inst.getCellType().isLeafCellOrBlackBox()) {
-                    lut_by_vid[vid] = logicDiscoveryPolicy.lut_count_for_leaf(inst);
-                    dbgLeafLUTs += lut_by_vid[vid];
+                    lutCountByVertexID[vertex_id] = logicDiscoveryPolicy.leafLutCount(inst);
+                    dbgLeafLUTs += lutCountByVertexID[vertex_id];
                 } else {
                     Integer cnt = instLutCountMap.get(inst);
-                    lut_by_vid[vid] = (cnt == null) ? 0 : cnt.intValue();
-                    dbgHierLUTs += lut_by_vid[vid];
+                    lutCountByVertexID[vertex_id] = (cnt == null) ? 0 : cnt.intValue();
+                    dbgHierLUTs += lutCountByVertexID[vertex_id];
                     if (cnt == null) {
                         dbgHierMissing++;
                         String cellType = inst.getCellType().getName();
-                        dbgMissingCellTypes.put(cellType, dbgMissingCellTypes.getOrDefault(cellType, 0) + 1);
+                        dbgMissingCellTypes.put(cellType,
+                                dbgMissingCellTypes.getOrDefault(cellType, 0) + 1);
                         if (inst.getParent() != null) {
                             String parentType = inst.getParent().getCellType().getName();
-                            dbgMissingParentTypes.put(parentType, dbgMissingParentTypes.getOrDefault(parentType, 0) + 1);
+                            dbgMissingParentTypes.put(parentType,
+                                    dbgMissingParentTypes.getOrDefault(parentType, 0) + 1);
                         }
                         if (dbgHierMissing <= 10) {
-                            String parentInfo = (inst.getParent() != null) ? inst.getParent().getCellType().getName() : "null";
-                            System.err.printf("PARTITIONER DEBUG: bare_bones hier missing -> vid=%d instPath=%s cellType=%s parentType=%s lutCount=0 (missing)%n",
-                                    vid, inst.toString(), inst.getCellType().getName(), parentInfo);
+                            String parentInfo = (inst.getParent() != null) ?
+                                    inst.getParent().getCellType().getName() : "null";
+                            PartitionTools.logPartitionerDebug(
+                                    System.err,
+                                    "skip_detailed_reports hier missing -> vertex_id=%d " +
+                                    "instPath=%s cellType=%s parentType=%s lutCount=0 (missing)",
+                                    vertex_id, inst.toString(),
+                                    inst.getCellType().getName(), parentInfo);
                         }
                     } else {
                         dbgHierFound++;
                     }
                 }
             }
-            System.err.printf("PARTITIONER DEBUG: bare_bones lut_by_vid -> leafLUTs=%d hierLUTs=%d hierMissing=%d hierFound=%d%n",
+            PartitionTools.logPartitionerDebug(
+                    System.err,
+                    "skip_detailed_reports lutCountByVertexID -> leafLUTs=%d " +
+                            "hierLUTs=%d hierMissing=%d hierFound=%d",
                     dbgLeafLUTs, dbgHierLUTs, dbgHierMissing, dbgHierFound);
             if (!dbgMissingCellTypes.isEmpty()) {
-                System.err.printf("PARTITIONER DEBUG: bare_bones missing cell types -> uniqueTypes=%d%n", dbgMissingCellTypes.size());
-                java.util.List<java.util.Map.Entry<String, Integer>> sorted = new java.util.ArrayList<>(dbgMissingCellTypes.entrySet());
+                PartitionTools.logPartitionerDebug(
+                        System.err,
+                        "skip_detailed_reports missing cell types -> uniqueTypes=%d",
+                        dbgMissingCellTypes.size());
+                java.util.List<java.util.Map.Entry<String, Integer>> sorted;
+                sorted = new java.util.ArrayList<>(dbgMissingCellTypes.entrySet());
                 sorted.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
                 for (int i = 0; i < Math.min(10, sorted.size()); i++) {
-                    System.err.printf("PARTITIONER DEBUG: missing cell type -> type=%s count=%d%n",
+                    PartitionTools.logPartitionerDebug(
+                            System.err,
+                            "missing cell type -> type=%s count=%d",
                             sorted.get(i).getKey(), sorted.get(i).getValue());
                 }
             }
             if (!dbgMissingParentTypes.isEmpty()) {
-                System.err.printf("PARTITIONER DEBUG: missing instances parent types -> uniqueParents=%d%n", dbgMissingParentTypes.size());
-                java.util.List<java.util.Map.Entry<String, Integer>> sortedParents = new java.util.ArrayList<>(dbgMissingParentTypes.entrySet());
+                PartitionTools.logPartitionerDebug(
+                        System.err,
+                        "missing instances parent types -> uniqueParents=%d",
+                        dbgMissingParentTypes.size());
+                java.util.List<java.util.Map.Entry<String, Integer>> sortedParents;
+                sortedParents = new java.util.ArrayList<>(dbgMissingParentTypes.entrySet());
                 sortedParents.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
                 for (int i = 0; i < Math.min(10, sortedParents.size()); i++) {
-                    System.err.printf("PARTITIONER DEBUG: missing parent type -> type=%s childrenMissing=%d%n",
+                    PartitionTools.logPartitionerDebug(
+                            System.err,
+                            "missing parent type -> type=%s childrenMissing=%d",
                             sortedParents.get(i).getKey(), sortedParents.get(i).getValue());
                 }
             }
             Path hgr = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
-            Map<String, Integer> pair_counts = new java.util.LinkedHashMap<>();
-            try (BufferedReader hgr_br = new BufferedReader(new FileReader(hgr.toFile()))) {
-                String header = hgr_br.readLine();
+            Map<String, Integer> pairCounts = new java.util.LinkedHashMap<>();
+            try (BufferedReader hgrReader = new BufferedReader(new FileReader(hgr.toFile()))) {
+                String header = hgrReader.readLine();
                 String line = null;
-                while ((line = hgr_br.readLine()) != null) {
-                    String[] toks = line.trim().isEmpty() ? new String[0] : line.trim().split("\\s+");
-                    java.util.Set<Integer> parts_set = new java.util.HashSet<>();
+                while ((line = hgrReader.readLine()) != null) {
+                    String[] toks = line.trim().isEmpty() ?
+                            new String[0] : line.trim().split("\\s+");
+                    java.util.Set<Integer> partsSet = new java.util.HashSet<>();
                     for (String tkn : toks) {
                         if (tkn.isEmpty()) continue;
-                        int vid;
-                        try { vid = Integer.parseInt(tkn); } catch (NumberFormatException nfe) { continue; }
-                        int part_idx = (vid >= 1 && vid <= num_vertices) ? v2p[vid] : -1;
-                        if (part_idx >= 0) parts_set.add(part_idx);
+                        int vertex_id;
+                        try {
+                            vertex_id = Integer.parseInt(tkn);
+                        } catch (NumberFormatException nfe) {
+                            continue;
+                        }
+                        int partIndex = (vertex_id >= 1 && vertex_id <= numVertices) ?
+                                vertexToPartition[vertex_id] : -1;
+                        if (partIndex >= 0) partsSet.add(partIndex);
                     }
-                    if (parts_set.size() < 2) continue;
-                    java.util.List<Integer> plist = new java.util.ArrayList<>(parts_set);
+                    if (partsSet.size() < 2) continue;
+                    java.util.List<Integer> plist = new java.util.ArrayList<>(partsSet);
                     for (int i = 0; i < plist.size(); i++) {
                         for (int j = i + 1; j < plist.size(); j++) {
-                            String a = PartitionLabel.indexToFpgaLabel(plist.get(i));
-                            String b = PartitionLabel.indexToFpgaLabel(plist.get(j));
-                            String k1 = a + "," + b;
-                            String k2 = b + "," + a;
-                            pair_counts.put(k1, pair_counts.getOrDefault(k1, 0) + 1);
-                            pair_counts.put(k2, pair_counts.getOrDefault(k2, 0) + 1);
+                            String partitionLabelA = PartitionLabel.indexToFpgaLabel(plist.get(i));
+                            String partitionLabelB = PartitionLabel.indexToFpgaLabel(plist.get(j));
+                            String pairKeyForward = partitionLabelA + "," + partitionLabelB;
+                            String pairKeyBackward = partitionLabelB + "," + partitionLabelA;
+                            pairCounts.put(pairKeyForward,
+                                    pairCounts.getOrDefault(pairKeyForward, 0) + 1);
+                            pairCounts.put(pairKeyBackward,
+                                    pairCounts.getOrDefault(pairKeyBackward, 0) + 1);
                         }
                     }
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            java.util.List<String> keys = new java.util.ArrayList<>(pair_counts.keySet());
+            java.util.List<String> keys = new java.util.ArrayList<>(pairCounts.keySet());
             java.util.Collections.sort(keys);
             java.util.List<String> lines = new java.util.ArrayList<>(keys.size());
-            for (String key : keys) {
-                int sep = key.indexOf(',');
-                String a = key.substring(0, sep);
-                String b = key.substring(sep + 1);
-                int cnt = pair_counts.get(key);
-                lines.add(a + "--" + cnt + "--" + b);
+            for (String pairKey : keys) {
+                int sep = pairKey.indexOf(',');
+                String labelA = pairKey.substring(0, sep);
+                String labelB = pairKey.substring(sep + 1);
+                int pairCount = pairCounts.get(pairKey);
+                lines.add(labelA + "--" + pairCount + "--" + labelB);
             }
-            Path io_cuts = outDir.resolve("io_cuts.txt");
+            Path ioCutsFile = outDir.resolve("ioCutsFile.txt");
             try {
-                Files.write(io_cuts, lines, java.nio.charset.StandardCharsets.UTF_8);
-                System.out.println("Partitioner artifact written: " + io_cuts);
+                Files.write(ioCutsFile, lines, java.nio.charset.StandardCharsets.UTF_8);
+                System.out.println("Partitioner artifact written: " + ioCutsFile);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            java.util.ArrayList<Integer> lut_counts = new java.util.ArrayList<>();
-            int max_part = -1;
-            for (int vid = 1; vid <= num_vertices; vid++) {
-                int part_idx = v2p[vid];
-                if (part_idx > max_part) max_part = part_idx;
+            java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
+            int maxPart = -1;
+            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
+                int partIndex = vertexToPartition[vertex_id];
+                if (partIndex > maxPart) maxPart = partIndex;
             }
-            for (int i = 0; i <= max_part; i++) lut_counts.add(0);
-            for (int vid = 1; vid <= num_vertices; vid++) {
-                int part_idx = v2p[vid];
-                if (part_idx < 0) continue;
-                lut_counts.set(part_idx, lut_counts.get(part_idx) + lut_by_vid[vid]);
+            for (int i = 0; i <= maxPart; i++) lutCounts.add(0);
+            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
+                int partIndex = vertexToPartition[vertex_id];
+                if (partIndex < 0) continue;
+                lutCounts.set(partIndex, lutCounts.get(partIndex) + lutCountByVertexID[vertex_id]);
             }
-            long sum_luts = 0;
-            for (int c : lut_counts) sum_luts += c;
-            System.err.printf("PARTITIONER DEBUG: bare_bones partition sum -> sumLUTs=%d topLevelTotal=%d diff=%d%n",
-                    sum_luts, totalLUTs, (sum_luts - totalLUTs));
-            int mean_luts = (lut_counts.isEmpty()) ? 0 : (int) Math.ceil(sum_luts / (double) lut_counts.size());
-            Path lut_report = outDir.resolve("lut_report.txt");
-            try (BufferedWriter lw = new BufferedWriter(new FileWriter(lut_report.toFile()))) {
-                for (int idx = 0; idx < lut_counts.size(); idx++) {
+            long sumLuts = 0;
+            for (int c : lutCounts) sumLuts += c;
+            PartitionTools.logPartitionerDebug(
+                    System.err,
+                    "skip_detailed_reports partition sum -> sumLUTs=%d " +
+                            "topLevelTotal=%d diff=%d",
+                    sumLuts, totalLUTs, (sumLuts - totalLUTs));
+            int meanLuts = (lutCounts.isEmpty()) ?
+                    0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
+            Path lutReport = outDir.resolve("lut_report.txt");
+            try (BufferedWriter lw = new BufferedWriter(new FileWriter(lutReport.toFile()))) {
+                for (int idx = 0; idx < lutCounts.size(); idx++) {
                     String label = PartitionLabel.indexToFpgaLabel(idx);
-                    lw.write(lut_counts.get(idx) + "LUTS " + label);
+                    lw.write(lutCounts.get(idx) + "LUTS " + label);
                     lw.write("\n");
                 }
-                lw.write(mean_luts + "LUTS mean");
+                lw.write(meanLuts + "LUTS mean");
                 lw.write("\n");
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            System.out.println("Partitioner artifact written: " + lut_report);
-            if (sum_luts != totalLUTs) {
-                System.err.printf("ERROR: LUT count policy mismatch: per-partitions sum=%d, top-level total=%d%n", sum_luts, totalLUTs);
+            System.out.println("Partitioner artifact written: " + lutReport);
+            if (sumLuts != totalLUTs) {
+                System.err.printf("ERROR: LUT count policy mismatch: " + 
+                    "per-partitions sum=%d, top-level total=%d%n", sumLuts, totalLUTs);
             }
             try {
-                HierMappingWriter.write(outDir, n, partitions, instLutCountMap);
-                System.out.println("Partitioner artifact written: " + outDir.resolve("cells.txt"));
-                System.out.println("Partitioner artifact written: " + outDir.resolve("mapping.txt"));
+                HierMappingWriter.write(outDir, netlist, partitions, instLutCountMap);
+                System.out.println("Partitioner artifact written: " + 
+                    outDir.resolve("cells.txt"));
+                System.out.println("Partitioner artifact written: " + 
+                    outDir.resolve("mapping.txt"));
             } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write hierarchical mapping artifacts: " + ex.getMessage());
+                System.err.println("WARNING: failed to write hierarchical mapping artifacts: " + 
+                    ex.getMessage());
             }
         } else {
+
+
+
+            // ============================================================================
+            // SOLUTION PROCESSING - FULL MODE
+            // Reads the partition solution and writes detailed per-partition instance
+            // files. Computes LUT counts for each partition with fallback recomputation
+            // if needed. Generates comprehensive artifacts including io cuts, nets
+            // report, and hierarchical mappings.
+            // ============================================================================
             try {
-                IoCutWriter.write(outDir, inputPath, n, instLookup, partitions, generate_edif_nets);
+                IoCutWriter.write(outDir, inputPath, netlist, instLookup, partitions,
+                        generateEdifNets);
             } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write io cuts / nets artifacts: " + ex.getMessage());
+                System.err.println("WARNING: failed to write io cuts / nets artifacts: " +
+                        ex.getMessage());
             }
+            // Caches instance LUT counts to speed up report generation.
             java.util.Map<String, Integer> lutByName = new java.util.HashMap<>();
 
             {
@@ -523,14 +720,17 @@ public class Partitioner {
                 for (int j = 1; j <= maxCheck; j++) {
                     String nm = instLookup[j];
                     if (nm == null) continue;
-                    if (n.getHierCellInstFromName(nm) == null) {
+                    if (netlist.getHierCellInstFromName(nm) == null) {
                         mismatches++;
                     }
                 }
                 if (mismatches > 0) {
-                    System.err.printf("PARTITIONER DEBUG: name roundtrip -> mismatches=%d checked=%d%n", mismatches, maxCheck);
+                    PartitionTools.logPartitionerDebug(
+                            System.err,
+                            "name roundtrip -> mismatches=%d checked=%d",
+                            mismatches, maxCheck);
                 } else {
-                    System.out.println("PARTITIONER DEBUG: name roundtrip -> ok");
+                    PartitionTools.logPartitionerDebug(System.out, "name roundtrip -> ok");
                 }
             }
             MessageGenerator.printHeader("Partition Solution Report");
@@ -549,46 +749,52 @@ public class Partitioner {
                 int partHierLUTs = 0;
                 Set<String> names = partitions.get(i);
                 String partLabel = PartitionLabel.indexToFpgaLabel(i);
-                Path partitionFile = outDir.resolve(inputPath.getFileName().toString() + "." + partLabel);
-                try (BufferedWriter bw = new BufferedWriter(new FileWriter(partitionFile.toFile()))) {
+                Path partitionFile = outDir.resolve(
+                        inputPath.getFileName().toString() + "." + partLabel);
+                try (BufferedWriter bw = new BufferedWriter(
+                        new FileWriter(partitionFile.toFile()))) {
                     for (String name : names) {
                         bw.write(name + "\n");
-                        EDIFHierCellInst inst = n.getHierCellInstFromName(name);
+                        EDIFHierCellInst inst = netlist.getHierCellInstFromName(name);
                         if (inst.getCellType().isLeafCellOrBlackBox()) {
-                            int leafLUTs = logicDiscoveryPolicy.lut_count_for_leaf(inst);
+                            int leafLUTs = logicDiscoveryPolicy.leafLutCount(inst);
                             lutCount += leafLUTs;
                             partLeafLUTs += leafLUTs;
                         } else {
-                            Integer cnt = instLutCountMap.get(inst);
-                            if (cnt == null) {
+                            Integer hierLutCount = instLutCountMap.get(inst);
+                            if (hierLutCount == null) {
                                 Integer cached = lutByName.get(name);
                                 if (cached != null) {
-                                    cnt = cached;
+                                    hierLutCount = cached;
                                     dbgCachedByName++;
                                 }
                             }
-                            if (cnt == null) {
+                            if (hierLutCount == null) {
                                 dbgMissingLUTCountTotal++;
                                 if (dbgMissingLUTCountPrinted < DBG_MAX_MISS_LOGS) {
-                                    System.err.printf(
-                                            "PARTITIONER DEBUG: missing lut count -> name=%s instPath=%s type=%s depth=%d isLeafOrBB=%s%n",
-                                            name, inst.toString(), inst.getCellType().getName(), inst.getDepth(),
+                                    PartitionTools.logPartitionerDebug(
+                                            System.err,
+                                            "missing lut count -> name=%s instPath=%s type=%s " +
+                                                    "depth=%d isLeafOrBB=%s",
+                                            name, inst.toString(), inst.getCellType().getName(),
+                                            inst.getDepth(),
                                             inst.getCellType().isLeafCellOrBlackBox());
                                     dbgMissingLUTCountPrinted++;
                                 }
                                 dbgRecomputeAttempts++;
-                                Integer recomputed = PartitionTools.getLUTCount(inst, new java.util.HashMap<>(), instLutCountMap);
+                                Integer recomputed = PartitionTools.getLUTCount(inst,
+                                        new java.util.HashMap<>(), instLutCountMap);
                                 if (recomputed != null) {
-                                    cnt = recomputed;
-                                    lutByName.put(name, cnt);
+                                    hierLutCount = recomputed;
+                                    lutByName.put(name, hierLutCount);
                                     dbgRecomputeSuccess++;
                                 }
                             }
-                            if (cnt == null) {
-                                cnt = 0;
+                            if (hierLutCount == null) {
+                                hierLutCount = 0;
                             }
-                            lutCount += cnt.intValue();
-                            partHierLUTs += cnt.intValue();
+                            lutCount += hierLutCount.intValue();
+                            partHierLUTs += hierLutCount.intValue();
                         }
                     }
                     dbgLeafLUTsTotal += partLeafLUTs;
@@ -599,13 +805,22 @@ public class Partitioner {
                     throw new UncheckedIOException(e);
                 }
             }
-            System.err.printf("PARTITIONER DEBUG: all partitions -> leafLUTsTotal=%d hierLUTsTotal=%d cachedByName=%d recomputeAttempts=%d recomputeSuccess=%d%n",
-                    dbgLeafLUTsTotal, dbgHierLUTsTotal, dbgCachedByName, dbgRecomputeAttempts, dbgRecomputeSuccess);
+            PartitionTools.logPartitionerDebug(
+                    System.err,
+                    "all partitions -> leafLUTsTotal=%d hierLUTsTotal=%d " +
+                            "cachedByName=%d recomputeAttempts=%d recomputeSuccess=%d",
+                    dbgLeafLUTsTotal, dbgHierLUTsTotal, dbgCachedByName,
+                    dbgRecomputeAttempts, dbgRecomputeSuccess);
             long sumLuts = 0;
             for (int c : lutCounts) sumLuts += c;
-            System.err.printf("PARTITIONER DEBUG: non-bare-bones partition sum -> sumLUTs=%d topLevelTotal=%d diff=%d%n",
-                    sumLuts, totalLUTs, (sumLuts - totalLUTs));
-            int meanLuts = (lutCounts.isEmpty()) ? 0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
+            PartitionTools.logPartitionerDebug(
+                    System.err,
+                    "non-skip_detailed_reports partition sum -> " + 
+                        "sumLUTs=%d topLevelTotal=%d diff=%d",
+                        sumLuts, totalLUTs, (sumLuts - totalLUTs));
+
+            int meanLuts = (lutCounts.isEmpty()) ?
+                    0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
             Path lutReport = outDir.resolve("lut_report.txt");
             try (BufferedWriter lw = new BufferedWriter(new FileWriter(lutReport.toFile()))) {
                 for (int idx = 0; idx < lutCounts.size(); idx++) {
@@ -620,19 +835,27 @@ public class Partitioner {
             }
             System.out.println("Partitioner artifact written: " + lutReport);
             if (sumLuts != totalLUTs) {
-                System.err.printf("ERROR: LUT count policy mismatch: per-partitions sum=%d, top-level total=%d%n", sumLuts, totalLUTs);
+                System.err.printf(
+                        "ERROR: LUT count policy mismatch: per-partitions sum=%d, " +
+                                "top-level total=%d%n",
+                        sumLuts, totalLUTs);
             }
-            System.out.printf("PARTITIONER DEBUG: missing lut count summary -> total=%d printed=%d limit=%d%n",
+            PartitionTools.logPartitionerDebug(
+                    System.out,
+                    "missing lut count summary -> total=%d printed=%d limit=%d",
                     dbgMissingLUTCountTotal, dbgMissingLUTCountPrinted, DBG_MAX_MISS_LOGS);
             System.out.println("-----------------------------------------------------------");
             System.out.printf("        Total : %10d LUTs\n\n\n", totalLUTs);
 
             try {
-                HierMappingWriter.write(outDir, n, partitions, instLutCountMap);
-                System.out.println("Partitioner artifact written: " + outDir.resolve("cells.txt"));
-                System.out.println("Partitioner artifact written: " + outDir.resolve("mapping.txt"));
+                HierMappingWriter.write(outDir, netlist, partitions, instLutCountMap);
+                System.out.println("Partitioner artifact written: " +
+                        outDir.resolve("cells.txt"));
+                System.out.println("Partitioner artifact written: " +
+                        outDir.resolve("mapping.txt"));
             } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write hierarchical mapping artifacts: " + ex.getMessage());
+                System.err.println("WARNING: failed to write hierarchical " +
+                        "mapping artifacts: " + ex.getMessage());
             }
         }
 

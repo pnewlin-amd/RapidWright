@@ -39,8 +39,13 @@ import com.xilinx.rapidwright.edif.partition.PartitionTools;
  */
 public final class LUTCount {
 
-    private LUTCount() {}
+    private LUTCount() {
+        // no instances
+    }
 
+    /**
+     * Prints usage information.
+     */
     private static void usage() {
         System.out.println("Usage:");
         System.out.println("  LUTCount <input.edf|input.dcp>");
@@ -50,41 +55,45 @@ public final class LUTCount {
         System.out.println("  rapidwright LUTCount design.dcp");
     }
 
+    /**
+     * Main entry point.
+     *
+     * @param args Command line arguments.
+     */
     public static void main(String[] args) {
         if (args.length != 1) {
             usage();
             return;
         }
 
-        Path input_path = Paths.get(args[0]);
+        Path inputPath = Paths.get(args[0]);
 
         // read netlist (EDIF or DCP)
         EDIFNetlist netlist;
-        boolean is_dcp = input_path.toString().toLowerCase().endsWith(".dcp");
-        if (is_dcp) {
-            Design d = Design.readCheckpoint(input_path.toString());
-            netlist = d.getNetlist();
-            int enc = netlist.getEncryptedCells().size();
-            if (enc > 0) {
-                System.err.println("ERROR: Encrypted DCP detected (encryptedCells=" + enc + "). Encrypted DCPs are unsupported.");
+        boolean isDcp = inputPath.toString().toLowerCase().endsWith(".dcp");
+        if (isDcp) {
+            Design design = Design.readCheckpoint(inputPath.toString());
+            netlist = design.getNetlist();
+            int encryptedCount = netlist.getEncryptedCells().size();
+            if (encryptedCount > 0) {
+                System.err.println("ERROR: Encrypted DCP detected (encryptedCells="
+                        + encryptedCount + "). Encrypted DCPs are unsupported.");
                 System.exit(1);
             }
         } else {
-            netlist = EDIFTools.readEdifFile(input_path);
+            netlist = EDIFTools.readEdifFile(inputPath);
         }
 
         // compute logic-only LUT count via PartitionTools aggregation
-        EDIFHierCellInst top_inst = netlist.getTopHierCellInst();
-        Map<EDIFCell, Integer> lut_cache = new HashMap<>();
-        int logic_luts = PartitionTools.getLUTCount(top_inst, lut_cache, null);
+        EDIFHierCellInst topInst = netlist.getTopHierCellInst();
+        Map<EDIFCell, Integer> lutCache = new HashMap<>();
+        int logicLuts = PartitionTools.getLUTCount(topInst, lutCache, null);
 
         System.out.println("-----------------------------------------------------------");
         System.out.println("LUT Count Report");
-        System.out.println("Input     : " + input_path);
+        System.out.println("Input     : " + inputPath);
         System.out.println("-----------------------------------------------------------");
-        System.out.printf("Logic LUTs: %d%n", logic_luts);
+        System.out.printf("Logic LUTs: %d%n", logicLuts);
     }
-
-
 
 }

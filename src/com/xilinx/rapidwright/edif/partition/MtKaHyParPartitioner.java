@@ -42,31 +42,30 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
 
     private int numOfThreads = 2;
 
-    // controls allowed partition imbalance; smaller = more balance
-    private double epsilon = 0.03;
+    private double epsilon = 0.03; // goal imbalance for partition
     
-    private String objective = "cut";
+    private String objective = "cut"; // Cost function 
     
     private String presetType = "default";
     
-    // use current working directory
-    private Path outputDir = null;
+    private Path outputDir = null; // Use current working directory
 
     private int seed = 0;
 
-    // fixed vertices file passed to mtkahypar with -f (mapping constraints)
-    private Path fixed_vertices_file = null;
+    private Path fixedVerticesFile = null; // Manual partition constraints
 
-
+    /**
+     * Executes the MtKaHyPar partitioning tool with configured parameters.
+     * @return Exit code from the partitioner execution
+     */
     @Override
     public Integer runPartitioner() {
-        //--verbose=true                 -> displays detailed information on the partitioning process
-        //--show-detailed-timings=true   -> shows detailed sub-timings of each phase of the algorithm at the end of partitioning
-        // compute effective preset; if fixed vertices are present, override incompatible presets
+        // If fixed vertices are present, override incompatible presets
         String effectivePreset = presetType;
-        if (fixed_vertices_file != null) {
+        if (fixedVerticesFile != null) {
             if ("deterministic".equals(effectivePreset) || "large_k".equals(effectivePreset)) {
-                System.out.println("partitioner debug: fixed vertices present; overriding preset to 'quality'");
+                System.out.println("partitioner debug: fixed vertices present; " +
+                   "overriding preset to quality");
                 effectivePreset = "quality";
             }
         }
@@ -79,11 +78,10 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
                 + " --epsilon " + epsilon
                 + " --objective "+ objective
                 + " --write-partition-file=true"
-                + " --verbose=true"
-                + " --show-detailed-timings=true";
-        // append fixed vertices file if provided
-        if (fixed_vertices_file != null) {
-            cmd += " -f " + fixed_vertices_file;
+                + " --verbose=true" // Displays detailed information on the partitioning process
+                + " --show-detailed-timings=true"; //  sub-timings of each phase of partitioning
+        if (fixedVerticesFile != null) {
+            cmd += " -f " + fixedVerticesFile;
         }
 
         
@@ -93,35 +91,62 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
         return FileTools.runCommand(cmd, true, environ, runDir);
     }
 
+    /**
+     * Gets the name of this partitioner.
+     * @return The partitioner name "MtKaHyPar"
+     */
     @Override
     public String Name() {
         return name;
     }
 
+    /**
+     * Sets the number of partitions to create.
+     * @param k The number of partitions
+     */
     @Override
     public void setKPartitions(int k) {
         this.k = k;
     }
 
+    /**
+     * Sets the input hypergraph file path.
+     * @param filePath Path to the input .hgr file
+     */
     @Override
     public void setInputFile(Path filePath) {
         this.inputFile = filePath;
     }
 
+    /**
+     * Gets the input hypergraph file path.
+     * @return Path to the input file
+     */
     @Override
     public Path getInputFile() {
         return inputFile;
     }
 
+    /**
+     * Gets the output directory for partition results.
+     * @return Path to output directory
+     */
     public Path getOutputDir() {
         return outputDir == null ? Paths.get(System.getProperty("user.dir")) : outputDir;
     }
 
-    // allow caller to override where external tool runs and writes outputs
+    /**
+     * Sets the output directory for partition results.
+     * @param d Path to output directory
+     */
     public void setOutputDir(Path d) {
         this.outputDir = d;
     }
 
+    /**
+     * Gets the expected output partition file path.
+     * @return Path to the partition solution file
+     */
     @Override
     public Path getOutputFile() {
         Path outputFile = getOutputDir()
@@ -130,49 +155,79 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
         return outputFile;
     }
 
+    /**
+     * Gets the number of partitions configured.
+     * @return The number of partitions
+     */
     @Override
     public Integer getKPartitions() {
         return k;
     }
 
-    // set threads
+    /**
+     * Sets the number of threads for partitioning.
+     * @param t Number of threads to use
+     */
     public void setNumThreads(int t) {
         this.numOfThreads = t;
     }
 
-    // set epsilon
+    /**
+     * Sets the partition imbalance tolerance.
+     * @param e Epsilon value for imbalance
+     */
     public void setEpsilon(double e) {
         this.epsilon = e;
     }
 
-    // set seed
+    /**
+     * Sets the random seed for partitioning.
+     * @param s Seed value for reproducibility
+     */
     public void setSeed(int s) {
         this.seed = s;
     }
 
+    /**
+     * Sets the partitioner preset configuration type.
+     * @param p Preset type like "default" or "deterministic"
+     */
     public void setPresetType(String p) {
         this.presetType = p;
     }
 
-    // set objective (defaults to "cut" if not set by user)
+    /**
+     * Sets the partitioning objective function.
+     * @param o Objective like "cut", "km1", or "soed"
+     */
     public void setObjective(String o) {
         if (o != null && !o.isEmpty()) {
             this.objective = o;
         }
     }
 
+    /**
+     * Gets the current partitioning objective function.
+     * @return The objective function name
+     */
     public String getObjective() {
         return this.objective;
     }
 
-    // setter for fixed vertices file
+    /**
+     * Sets the fixed vertices constraint file path.
+     * @param p Path to the .fix file
+     */
     public void setFixedVerticesFile(Path p) {
-        this.fixed_vertices_file = p;
+        this.fixedVerticesFile = p;
     }
 
-    // getter for fixed vertices file
+    /**
+     * Gets the fixed vertices constraint file path.
+     * @return Path to the .fix file or null
+     */
     public Path getFixedVerticesFile() {
-        return this.fixed_vertices_file;
+        return this.fixedVerticesFile;
     }
 
 

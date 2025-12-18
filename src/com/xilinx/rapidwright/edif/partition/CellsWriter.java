@@ -32,16 +32,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * writes cells.txt (one partition name per line) into the output directory.
- * 
+ * Writes cells.txt (one partition name per line) into the output directory.
+ *
  * Simply displays the name of the partitions:
  *   Line 1: FPGA_A
  *   Line 2: FPGA_B
  *   Line 3: FPGA_C
- *   Line 4: FPGA_D 
+ *   Line 4: FPGA_D
  *   etc.....
- * 
- * TODO: likely not needed for final version of regroup instances, might be redudant artifact
+ *
+ * TODO: likely not needed for final version of regroup instances, might be redundant artifact
  */
 public final class CellsWriter {
 
@@ -50,74 +50,93 @@ public final class CellsWriter {
     }
 
     /**
-     * writes cells.txt using the provided list of names (one per line, in order).
+     * Writes cells.txt using the provided list of names (one per line, in order).
+     *
+     * @param outputDirectory The output directory.
+     * @param partitionNames The list of partition names.
      */
-    public static void write(Path outDir, List<String> partitionNames) {
+    public static void write(Path outputDirectory, List<String> partitionNames) {
         if (partitionNames == null) {
             throw new IllegalArgumentException("partitionNames is null");
         }
         try {
-            if (outDir != null) {
-                Files.createDirectories(outDir);
+            if (outputDirectory != null) {
+                Files.createDirectories(outputDirectory);
             }
-            Path cellsFile = outDir.resolve("cells.txt");
-            Files.write(cellsFile, partitionNames, StandardCharsets.UTF_8);
+            Path cellsFilePath = outputDirectory.resolve("cells.txt");
+            Files.write(cellsFilePath, partitionNames, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * writes cells.txt for a given number of partitions, generating names using partitionlabel.
+     * Writes cells.txt for a given number of partitions, generating names using partitionlabel.
+     *
+     * @param outputDirectory The output directory.
+     * @param numPartitions The number of partitions.
      */
-    public static void write(Path outDir, int numPartitions) {
-        write(outDir, generateNames(numPartitions));
+    public static void write(Path outputDirectory, int numPartitions) {
+        write(outputDirectory, generateNames(numPartitions));
     }
 
     /**
-     * writes cells.txt from an index->name map and fills any missing indices with generated labels.
+     * Writes cells.txt from an index->name map and fills any missing indices with generated labels.
+     *
+     * @param outputDirectory The output directory.
+     * @param indexToName A map of partition indices to names.
      */
-    public static void write(Path outDir, Map<Integer, String> indexToName) {
+    public static void write(Path outputDirectory, Map<Integer, String> indexToName) {
         if (indexToName == null || indexToName.isEmpty()) {
-            write(outDir, Collections.emptyList());
+            write(outputDirectory, Collections.emptyList());
             return;
         }
         int maxIdx = -1;
         for (Integer idx : indexToName.keySet()) {
-            if (idx != null && idx > maxIdx) maxIdx = idx;
+            if (idx != null && idx > maxIdx) {
+                maxIdx = idx;
+            }
         }
         if (maxIdx < 0) {
-            write(outDir, Collections.emptyList());
+            write(outputDirectory, Collections.emptyList());
             return;
         }
-        List<String> names = new ArrayList<>(maxIdx + 1);
+        List<String> partitionNames = new ArrayList<>(maxIdx + 1);
         for (int i = 0; i <= maxIdx; i++) {
             String name = indexToName.get(i);
             if (name == null || name.trim().isEmpty()) {
                 name = generateName(i);
             }
-            names.add(name);
+            partitionNames.add(name);
         }
-        write(outDir, names);
+        write(outputDirectory, partitionNames);
     }
 
     /**
-     * generates a list of canonical partition names ["fpga_a","fpga_b",...] using partitionlabel.
+     * Generates a list of canonical partition names ["fpga_a","fpga_b",...] using partitionlabel.
+     *
+     * @param partitionCount The number of partitions.
+     * @return A list of generated partition names.
      */
-    public static List<String> generateNames(int count) {
-        if (count <= 0) return Collections.emptyList();
-        List<String> names = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            names.add(PartitionLabel.indexToFpgaLabel(i));
+    public static List<String> generateNames(int partitionCount) {
+        if (partitionCount <= 0) {
+            return Collections.emptyList();
         }
-        return names;
+        List<String> partitionNames = new ArrayList<>(partitionCount);
+        for (int i = 0; i < partitionCount; i++) {
+            partitionNames.add(PartitionLabel.indexToFpgaLabel(i));
+        }
+        return partitionNames;
     }
 
     /**
-     * generates a single canonical partition name "fpga_*" via partitionlabel.
+     * Generates a single canonical partition name "fpga_*" via partitionlabel.
+     *
+     * @param partitionIndex The partition index.
+     * @return The generated partition name.
      */
-    public static String generateName(int index) {
-        return PartitionLabel.indexToFpgaLabel(index);
+    public static String generateName(int partitionIndex) {
+        return PartitionLabel.indexToFpgaLabel(partitionIndex);
     }
 
 }
