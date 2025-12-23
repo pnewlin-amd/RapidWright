@@ -38,7 +38,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Counts partition pairs from hypergraph files.
+ * Counts how many nets connect between each pair of partitions. 
+ * If a net (hyperedge) touches more than two partitions, it increments 
+ * a counter for every partition pair (A,B) that the net spans.
+ * 
+ * Implementation consideres both partition orderings,
+ * a net that connects FPGA_A and FPGA_B is the same connection as FPGA_B and FPGA_A.
  */
 public final class PartitionPairCounter {
 
@@ -58,12 +63,18 @@ public final class PartitionPairCounter {
         Map<String, Integer> pairCounts = new LinkedHashMap<>();
         try (BufferedReader hgrReader = new BufferedReader(
                 new FileReader(hgrFile.toFile()))) {
+            // skip header line (contains edge count and vertex count).
             String header = hgrReader.readLine();
+            
+            // process each net (hyperedge) in the hypergraph file.
+            // each line after the header represents one net and 
+            // contains space-separated vertex IDs.
             String line;
             while ((line = hgrReader.readLine()) != null) {
                 String[] tokens = line.trim().isEmpty() ?
                         new String[0] : line.trim().split("\\s+");
                 Set<Integer> partitionIds = new HashSet<>();
+                // for each vertex ID determine which partition it belongs to.
                 for (String t : tokens) {
                     if (t.isEmpty()) {
                         continue;
@@ -74,26 +85,39 @@ public final class PartitionPairCounter {
                     } catch (NumberFormatException nfe) {
                         continue;
                     }
+                    // look up instance name for this vertex ID.
                     String instanceName = (vertexId >= 0 && vertexId < instLookup.length)
                             ? instLookup[vertexId] : null;
+                    // look up partition ID for this instance.
                     Integer part = (instanceName == null) ?
                             null : nameToPart.get(instanceName);
+                    
+                    // add partition to the set if found.
                     if (part != null) {
                         partitionIds.add(part.intValue());
                     }
                 }
+                
+                // skip nets that don't span multiple partitions (internal nets).
                 if (partitionIds.size() < 2) {
                     continue;
                 }
                 List<Integer> partitionIdList = new ArrayList<>(partitionIds);
+                // for each unique pair of partitions touched by this net, increment the count.
                 for (int i = 0; i < partitionIdList.size(); i++) {
                     for (int j = i + 1; j < partitionIdList.size(); j++) {
+                        // Convert partition indices to letter based labels
                         String partitionLabelA =
                                 PartitionLabel.indexToFpgaLabel(partitionIdList.get(i));
                         String partitionLabelB =
                                 PartitionLabel.indexToFpgaLabel(partitionIdList.get(j));
+                        
+                        // create keys for both orderings of this partition pair.
+                        // We store counts in both directions (A,B) 
+                        // and (B,A) so lookups work regardless of order
                         String pairKeyForward = partitionLabelA + "," + partitionLabelB;
                         String pairKeyBackward = partitionLabelB + "," + partitionLabelA;
+                        // increment count for both orderings.
                         pairCounts.put(pairKeyForward,
                                 pairCounts.getOrDefault(pairKeyForward, 0) + 1);
                         pairCounts.put(pairKeyBackward,
@@ -123,6 +147,8 @@ public final class PartitionPairCounter {
             String partitionLabelA = pairKey.substring(0, separatorIndex);
             String partitionLabelB = pairKey.substring(separatorIndex + 1);
             int pairCount = pairCounts.get(pairKey);
+            
+            //format will be "FPGA_A--count--FPGA_B".
             lines.add(partitionLabelA + "--" + pairCount + "--" + partitionLabelB);
         }
         try {

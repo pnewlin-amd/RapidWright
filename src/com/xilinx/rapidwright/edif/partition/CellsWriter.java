@@ -34,14 +34,11 @@ import java.util.Map;
 /**
  * Writes cells.txt (one partition name per line) into the output directory.
  *
- * Simply displays the name of the partitions:
+ * Simply displays the name of the partitions ex:
  *   Line 1: FPGA_A
  *   Line 2: FPGA_B
  *   Line 3: FPGA_C
  *   Line 4: FPGA_D
- *   etc.....
- *
- * TODO: likely not needed for final version of regroup instances, might be redundant artifact
  */
 public final class CellsWriter {
 

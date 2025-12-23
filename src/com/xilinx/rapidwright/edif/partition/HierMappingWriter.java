@@ -42,13 +42,17 @@ import com.xilinx.rapidwright.edif.EDIFNetlist;
 import com.xilinx.rapidwright.util.FileTools;
 
 /**
- * Generates mapping.txt for the wrap/add-cells/regroup flow (wrap the top cell, add new cells
- * per partition, regroup instances).
+ * Generates mapping.txt containing a hierarchy aware 
+ * mapping of instances to partitions post-MtKaHyPar partitioning.
  *
- * - The goal is to produce "<instance_path> <partition_label>"
- *
- * If fft_top/stage_16 is wholly contained into FPGA_B partition then only one line should be
- * written which references stage_16 explicitly, fft_top/stage_16 FPGA_B and then stop.
+ * Example,
+ * If fft_top/stage_16 is wholly contained into partition 1 'FPGA_B' 
+ * then only one line should be written which references stage_16, "fft_top/stage_16 FPGA_B"
+ * 
+ * If stage_16 is not wholly contained we go one level deeper until wholly contained 
+ * or we reach leaf instances.
+ * "fft_top/stage_16/butterfly_0 FPGA_A"
+ * "fft_top/stage_16/butterfly_1 FPGA_B"
  */
 public final class HierMappingWriter {
 

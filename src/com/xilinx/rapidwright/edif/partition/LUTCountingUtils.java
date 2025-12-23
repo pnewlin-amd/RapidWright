@@ -29,7 +29,8 @@ import com.xilinx.rapidwright.edif.EDIFCellInst;
 import com.xilinx.rapidwright.edif.EDIFHierCellInst;
 
 /**
- * LUT counting utilities for partition analysis.
+ * LUT counting utilities for partition, allows us to traverse monolithic netlists
+ * and count LUTs per hierarchical instance, with caching to avoid recomputation.
  */
 public final class LUTCountingUtils {
 

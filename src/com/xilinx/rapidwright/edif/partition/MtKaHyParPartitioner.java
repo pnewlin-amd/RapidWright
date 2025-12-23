@@ -79,7 +79,7 @@ public class MtKaHyParPartitioner implements AbstractPartitioner {
                 + " --objective "+ objective
                 + " --write-partition-file=true"
                 + " --verbose=true" // Displays detailed information on the partitioning process
-                + " --show-detailed-timings=true"; //  sub-timings of each phase of partitioning
+                + " --show-detailed-timings=true"; // sub-timings of each phase of partitioning
         if (fixedVerticesFile != null) {
             cmd += " -f " + fixedVerticesFile;
         }

@@ -148,10 +148,11 @@ public class Partitioner {
             } else if ("--constraints_debug".equals(arg)) {
                 constraintsDebug = true;
             } else if (arg.startsWith("--constraints_debug=")) {
+                //used for debugging constrained partition mode.
                 String val = arg.substring("--constraints_debug=".length()).trim();
                 constraintsDebug = "1".equals(val) || "true".equalsIgnoreCase(val) ||
                         "yes".equalsIgnoreCase(val);
-            } else if ("--skip_detailed_reports".equals(arg)) {
+            } else if ("--skip_detailed_reports".equals(arg)) { //human-readable partition outputs
                 skipDetailedReports = true;
             } else if (arg.startsWith("--skip_detailed_reports=")) {
                 String val = arg.substring("--skip_detailed_reports=".length()).trim();
@@ -352,7 +353,7 @@ public class Partitioner {
                 String cline;
                 while ((cline = cr.readLine()) != null) {
                     String orig = cline.trim();
-                    if (orig.isEmpty() || orig.startsWith("#")) continue;
+                    if (orig.isEmpty() || orig.startsWith("#")) continue; //comments and blankline
                     String[] toks = orig.split("\\s+");
                     if (toks.length != 2) {
                         throw new RuntimeException(
@@ -386,6 +387,8 @@ public class Partitioner {
                         }
                     }
                     if (constraintsDebug) {
+                        //vertex (LEAF) matches when constraint path is inside leaf
+                        // or leaf is inside the constrained subtree.
                         System.out.printf(
                                 "partitioner debug: constraint '%s' matched %d vertices%n",
                                 orig, matched);
@@ -400,6 +403,8 @@ public class Partitioner {
             }
 
             // derive fix file path from .hgr
+            // will show constrained modules to MtKahyPar,
+            // -1 values for unconstrained vertices
             String hypergraphBasePath = hMetisFile.toString();
             if (hypergraphBasePath.endsWith(".hgr")) {
                 fixedVertexFile = Paths.get(

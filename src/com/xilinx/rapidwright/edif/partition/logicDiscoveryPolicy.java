@@ -51,7 +51,7 @@ public final class logicDiscoveryPolicy {
      * Treat any cell type whose name contains "LUT" as a logic LUT.
      * substring match to be consistent with legacy policy.
      * 
-     * TODO : More concrete policy / fact-checked discovery policy?
+     * TODO : More concrete & fact-checked discovery policy?
      * @param type_name The cell type name to check
      * @return True if the type name contains "LUT"
      */

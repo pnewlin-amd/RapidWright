@@ -119,8 +119,14 @@ public class PartitionTools {
         instQueue.add(topInst);
         while (!instQueue.isEmpty()) {
             EDIFHierCellInst currentInst = instQueue.poll();
+
+            //A null here means LUTCounting did not populate instMap for this instance
+            //we MUST still make a coarsening decision, log and treat as eligible 
+            //leaf vertex.
             Integer lutSize = instMap.get(currentInst);
             if (lutSize == null) {
+                //debug only, track case where LUT size is missing
+                //but we had to decide if leaf or to descend
                 dbgNullLUTCountDecisions++;
                 if (currentInst.getCellType().isLeafCellOrBlackBox()) {
                     dbgNullButLeaf++;
@@ -130,6 +136,8 @@ public class PartitionTools {
                             currentInst.toString(), currentInst.getCellType().getName(), 
                             currentInst.getCellType().isLeafCellOrBlackBox());
                     }
+                //split up debug logs so we can see if missing LUT counts are on primitive leaf cells 
+                //or on hierarchical (Which is not a leaf) cell.
                 } else {
                     dbgNullButHier++;
                     if (dbgNullButHier <= 10) {

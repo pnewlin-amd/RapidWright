@@ -34,7 +34,8 @@ import java.util.Set;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 
 /**
- * Writes io_cuts.txt (direction-agnostic summary with both permutations).
+ * Writes io_cuts.txt (direction-agnostic connection summary).
+ * Optionally writes detailed human-readable hypergraph nets.txt report.
  */
 public final class IoCutWriter {
 

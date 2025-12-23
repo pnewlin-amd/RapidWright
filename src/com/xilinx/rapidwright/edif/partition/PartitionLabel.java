@@ -23,7 +23,7 @@
 package com.xilinx.rapidwright.edif.partition;
 
 /**
- * Facilitates conversion from partition index 
+ * Logic to convert from partition index 
  * to FPGA partition label using the following
  * naming scheme:
  *   0..25  -> A..Z
