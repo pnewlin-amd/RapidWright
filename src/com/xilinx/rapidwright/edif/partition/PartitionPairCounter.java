@@ -38,12 +38,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Counts how many nets connect between each pair of partitions. 
- * If a net (hyperedge) touches more than two partitions, it increments 
- * a counter for every partition pair (A,B) that the net spans.
- * 
- * Implementation consideres both partition orderings,
- * a net that connects FPGA_A and FPGA_B is the same connection as FPGA_B and FPGA_A.
+* Reports the number of nets shared by both partition A and partition B. 
+* For every net if it touches partition A and partition B increment the A-B count. 
+* This is a undirected and topology-agnostic report.
+*
+* TODO: ‘IO Cut’ maybe a misleading title for this output.
+* 
+* TODO: Perhaps name output to something more accurate; “Undirected Pairwise Net Sharing”.
+* Introduce a io cut reporter with directionality considered and have this be your “IO Cuts” report.
  */
 public final class PartitionPairCounter {
 
