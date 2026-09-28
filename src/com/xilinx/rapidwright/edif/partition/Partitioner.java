@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.xilinx.rapidwright.edif.EDIFHierCellInst;
 import com.xilinx.rapidwright.edif.EDIFHierNet;
@@ -350,7 +352,17 @@ public class Partitioner {
             for (int i = 0; i <= numVertices; i++) vertexPartitionAssignments[i] = -1;
             int numFixedVertices = 0;
 
-            // parse mapping_constraints.txt and expand to vertices
+            // Parse hierarchy constraints before expanding them to vertices.  This
+            // allows a broad module assignment to define the default placement
+            // while a deeper child path overrides it.  For example:
+            //   soc FPGA_C
+            //   soc/simpleuart FPGA_B
+            // puts the entire SoC on FPGA_C except the UART subtree.
+            //
+            // This is essential for hierarchical partitioning: a parent default
+            // and a child exception are not contradictory.  Only equally-specific
+            // matching constraints with different destinations are an error.
+            Map<String, Integer> constraintByPath = new HashMap<>();
             try (BufferedReader cr = new BufferedReader(new FileReader(constraintsFile.toFile()))) {
                 String cline;
                 while ((cline = cr.readLine()) != null) {
@@ -368,40 +380,70 @@ public class Partitioner {
                         throw new RuntimeException(
                                 "constraint '" + orig + "' was not found valid in design");
                     }
-                    int matched = 0;
-                    for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
-                        String name = e.getKey().toString();
-                        int vertex_id = e.getValue().intValue();
-                        boolean leafContainsPath = path.equals(name) || 
-                                path.startsWith(name + "/");
-                        boolean pathContainsLeaf = name.equals(path) || 
-                                name.startsWith(path + "/");
-                        if (leafContainsPath || pathContainsLeaf) {
-                            if (vertexPartitionAssignments[vertex_id] == -1) {
-                                vertexPartitionAssignments[vertex_id] = blockIndex.intValue();
-                                numFixedVertices++;
-                            } else if (vertexPartitionAssignments[vertex_id] != 
-                                    blockIndex.intValue()) {
-                                throw new RuntimeException(
-                                        "constraint '" + orig + "' was not found valid in design");
-                            }
-                            matched++;
-                        }
-                    }
-                    if (constraintsDebug) {
-                        //vertex (LEAF) matches when constraint path is inside leaf
-                        // or leaf is inside the constrained subtree.
-                        System.out.printf(
-                                "partitioner debug: constraint '%s' matched %d vertices%n",
-                                orig, matched);
-                    }
-                    if (matched == 0) {
+                    Integer prior = constraintByPath.put(path, blockIndex);
+                    if (prior != null && prior.intValue() != blockIndex.intValue()) {
                         throw new RuntimeException(
-                                "constraint '" + orig + "' was not found valid in design");
+                                "conflicting constraints for hierarchy path '" + path + "'");
                     }
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
+            }
+
+            Map<String, Integer> matchedByConstraint = new HashMap<>();
+            for (String path : constraintByPath.keySet()) {
+                matchedByConstraint.put(path, Integer.valueOf(0));
+            }
+            for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
+                String name = e.getKey().toString();
+                int vertexId = e.getValue().intValue();
+                int bestSpecificity = -1;
+                Integer bestPartition = null;
+                List<String> bestPaths = new ArrayList<>();
+
+                for (Entry<String, Integer> constraint : constraintByPath.entrySet()) {
+                    String path = constraint.getKey();
+                    boolean leafContainsPath = path.equals(name) || path.startsWith(name + "/");
+                    boolean pathContainsLeaf = name.equals(path) || name.startsWith(path + "/");
+                    if (!leafContainsPath && !pathContainsLeaf) {
+                        continue;
+                    }
+
+                    matchedByConstraint.put(path,
+                            Integer.valueOf(matchedByConstraint.get(path).intValue() + 1));
+                    int specificity = path.split("/").length;
+                    if (specificity > bestSpecificity) {
+                        bestSpecificity = specificity;
+                        bestPartition = constraint.getValue();
+                        bestPaths.clear();
+                        bestPaths.add(path);
+                    } else if (specificity == bestSpecificity) {
+                        bestPaths.add(path);
+                        if (bestPartition.intValue() != constraint.getValue().intValue()) {
+                            throw new RuntimeException(
+                                    "equally-specific conflicting constraints for vertex '" +
+                                    name + "': " + bestPaths);
+                        }
+                    }
+                }
+
+                if (bestPartition != null) {
+                    vertexPartitionAssignments[vertexId] = bestPartition.intValue();
+                    numFixedVertices++;
+                }
+            }
+
+            for (Entry<String, Integer> match : matchedByConstraint.entrySet()) {
+                if (constraintsDebug) {
+                    System.out.printf(
+                            "partitioner debug: constraint '%s' matched %d vertices%n",
+                            match.getKey(), match.getValue());
+                }
+                if (match.getValue().intValue() == 0) {
+                    throw new RuntimeException(
+                            "constraint hierarchy path was not found valid in design: '" +
+                            match.getKey() + "'");
+                }
             }
 
             // derive fix file path from .hgr

@@ -85,6 +85,46 @@ public final class HierMappingWriter {
     }
 
     /**
+     * Returns true if a trie-leaf node name looks like a synthesized implementation
+     * primitive (flip-flop, LUT cell, bit-indexed instance) rather than a user-defined
+     * module boundary.
+     *
+     * only meaningful when the node has no children in the trie. for generate-block
+     * style names like "gen_foo[0].u_bar", only the portion after the last dot is
+     * tested so "u_bar" is evaluated (not suppressed) while for "gen_normal_case.arb_req__0"
+     * "arb_req__0" is evaluated and is suppressed.
+     *
+     * patterns matched (any single match is sufficient):
+     *   '[' in name  : bit-indexed instance, e.g. foo[0], bar[31]
+     *   '_i_' in name: Vivado LUT naming, e.g. foo_i_1, bar_i_12
+     *   '_reg' suffix: Vivado flip-flop, e.g. foo_reg
+     *   '_reg_' sub  : Vivado FF with qualifier, e.g. foo_reg_0
+     *   '.*__\d+$'   : double-underscore digit suffix, e.g. arb_req__0
+     *   'data_\w+\d+': data port pattern, e.g. data_o1, data_i13
+     *
+     * @param name the trie node name (the last '/' segment of the hierarchy path)
+     * @return true if this node should be treated as a flat implementation primitive
+     */
+    private static boolean isLeafPrimitiveName(String name) {
+        if (name == null || name.isEmpty()) return false;
+        // use only the part after the last '.' to handle gen-block.module patterns:
+        // "gen_foo[0].u_hostfifo" -> tests "u_hostfifo" (not suppressed)
+        // "gen_normal_case.arb_req__0" -> tests "arb_req__0" (suppressed)
+        String effective = name;
+        int dotPos = name.lastIndexOf('.');
+        if (dotPos >= 0 && dotPos + 1 < name.length()) {
+            effective = name.substring(dotPos + 1);
+        }
+        if (effective.contains("[")) return true;
+        if (effective.contains("_i_")) return true;
+        if (effective.endsWith("_reg")) return true;
+        if (effective.contains("_reg_")) return true;
+        if (effective.matches(".*__\\d+$")) return true;
+        if (effective.matches("data_[a-zA-Z]*\\d+(_+\\d+)?$")) return true;
+        return false;
+    }
+
+    /**
      * Emits mapping lines only when the partition assignment changes from the parent.
      * @param node The current node.
      * @param parentPartition The partition assigned to the parent node.
@@ -103,10 +143,14 @@ public final class HierMappingWriter {
         boolean isDifferent = isRoot || (node.assignedPartition != null && !node.assignedPartition.equals(parentPartition));
 
         if (isDifferent && node.assignedPartition != null) {
-            // Emit line
             if (!currentPath.isEmpty()) {
                 if (!logicDiscoveryPolicy.pathHasExcludedSegment(currentPath)) {
-                    out.add(currentPath + " " + node.assignedPartition);
+                    // suppress trie-leaf nodes whose names match flat primitive patterns;
+                    // they inherit the assignment from their nearest non-primitive ancestor,
+                    // keeping mapping.txt concise without losing module-level cut information.
+                    if (!node.children.isEmpty() || !isLeafPrimitiveName(node.name)) {
+                        out.add(currentPath + " " + node.assignedPartition);
+                    }
                 }
             }
         }
@@ -732,6 +776,10 @@ public final class HierMappingWriter {
         }
 
         if (isWhollyContained(node.counts) && !currentPath.isEmpty()) {
+            // suppress trie-leaf primitives; return empty so the parent emits for them
+            if (node.children.isEmpty() && isLeafPrimitiveName(node.name)) {
+                return new LinkedHashMap<>();
+            }
             String p = singlePartition(node.counts);
             if (!logicDiscoveryPolicy.pathHasExcludedSegment(currentPath)) {
                 out.add(currentPath + " " + p);
