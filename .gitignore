@@ -2,6 +2,7 @@
 /data/
 /jars/
 /build/
+/.preserveBin/
 /.gradle/
 .pydevproject
 /.settings/
