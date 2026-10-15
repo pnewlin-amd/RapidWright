@@ -1,0 +1,5 @@
+#!/bin/sh
+# Run from any working directory; Python dependencies are standard-library only.
+set -eu
+partitioner_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec "${PYTHON:-python3}" "$partitioner_dir/scripts/partition/partitioner.py" "$@"

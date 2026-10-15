@@ -1,0 +1,34 @@
+{
+  "schema": "c/1",
+  "board": "j4.phd",
+  "note": "vertex = physical FPGA, edge = pair is physically connected, weight = lane count. Absent pair = NOT connected: traffic between it must relay through a third FPGA, costing an extra DUT_CLK cycle and a full socket delay.",
+  "fpga_count": 4,
+  "possible_pairs": 6,
+  "connected_pairs": 6,
+  "connectivity_fraction": 1.0000,
+  "lane_min": 16,
+  "lane_max": 16,
+  "lane_uniform": true,
+  "complete_graph": true,
+  "wires_per_lane_at_min_compression": 64,
+  "fpgas": [
+    {"id": 0, "path": "C01/S01/E", "chassis": "C01", "slot": "S01", "position": "E", "degree": 3},
+    {"id": 1, "path": "C01/S01/F", "chassis": "C01", "slot": "S01", "position": "F", "degree": 3},
+    {"id": 2, "path": "C01/S01/G", "chassis": "C01", "slot": "S01", "position": "G", "degree": 3},
+    {"id": 3, "path": "C01/S01/H", "chassis": "C01", "slot": "S01", "position": "H", "degree": 3}
+  ],
+  "edges": [
+    {"a": "C01/S01/E", "b": "C01/S01/F", "a_id": 0, "b_id": 1, "lanes": 16, "wires_at_min_compression": 1024, "cross_slot": false},
+    {"a": "C01/S01/E", "b": "C01/S01/G", "a_id": 0, "b_id": 2, "lanes": 16, "wires_at_min_compression": 1024, "cross_slot": false},
+    {"a": "C01/S01/E", "b": "C01/S01/H", "a_id": 0, "b_id": 3, "lanes": 16, "wires_at_min_compression": 1024, "cross_slot": false},
+    {"a": "C01/S01/F", "b": "C01/S01/G", "a_id": 1, "b_id": 2, "lanes": 16, "wires_at_min_compression": 1024, "cross_slot": false},
+    {"a": "C01/S01/F", "b": "C01/S01/H", "a_id": 1, "b_id": 3, "lanes": 16, "wires_at_min_compression": 1024, "cross_slot": false},
+    {"a": "C01/S01/G", "b": "C01/S01/H", "a_id": 2, "b_id": 3, "lanes": 16, "wires_at_min_compression": 1024, "cross_slot": false}
+  ],
+  "adjacency": {
+    "C01/S01/E": {"C01/S01/F": 16, "C01/S01/G": 16, "C01/S01/H": 16},
+    "C01/S01/F": {"C01/S01/E": 16, "C01/S01/G": 16, "C01/S01/H": 16},
+    "C01/S01/G": {"C01/S01/E": 16, "C01/S01/F": 16, "C01/S01/H": 16},
+    "C01/S01/H": {"C01/S01/E": 16, "C01/S01/F": 16, "C01/S01/G": 16}
+  }
+}

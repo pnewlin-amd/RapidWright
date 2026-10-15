@@ -1,0 +1,8 @@
+# Preserve native-export and regression-fixture bytes on every host. Their
+# recorded SHA-256 digests include the original line endings.
+/scripts/partition/part_catalog/*.tsv -text
+/test/resources/partition/topologies/*.json -text
+
+# Launchers must retain the line endings expected by their host shells.
+/partitioner text eol=lf
+/partitioner.cmd text eol=crlf

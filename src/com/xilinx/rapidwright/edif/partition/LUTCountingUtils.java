@@ -87,7 +87,7 @@ public final class LUTCountingUtils {
         Integer totalLUTs = 0;
         for (EDIFCellInst childInst : hierInst.getCellType().getCellInsts()) {
             if (childInst.getCellType().isLeafCellOrBlackBox()) {
-                int lutVal = logicDiscoveryPolicy.isLogicLUT(
+                int lutVal = childInst.getCellType().isPrimitive() && logicDiscoveryPolicy.isLogicLUT(
                         childInst.getCellType().getName()) ? 1 : 0;
                 totalLUTs += lutVal;
             } else if (cellTypeCache.containsKey(childInst.getCellType())) {

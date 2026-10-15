@@ -1,0 +1,53 @@
+{
+  "schema": "vivado_lut_elements_catalog_v1",
+  "quantity": "LUT_ELEMENTS",
+  "catalog_sha256": "a402de944fbd660743f6a7ff12403060e886627439826186600da78618e6a1fe",
+  "native_query_version": "2025.1",
+  "native_query_completed": true,
+  "part_variants": 5566,
+  "source": "Installed Vivado get_parts/get_property LUT_ELEMENTS all-part export",
+  "original_all_part_controller_exit": 1,
+  "original_all_part_limitation": "Native export PASS; controller postprocessor assumed exactly two aliases and rejected same-capacity CIV third alias. Preserved trace is not a clean whole-controller receipt.",
+  "all_part_native_export_marker": "PART_CAPACITY_QUERY_PASS version=2025.1 parts=5566",
+  "fresh_VP1902_VU19P_confirmation_receipt": {
+    "status": "PASS_NATIVE_READ_ONLY_PART_CAPACITY_CONFIRMATION",
+    "actual_owned_launcher_pid": 30068,
+    "actual_owned_launcher_exit_code": 0,
+    "source_sha256": "2ff64736cf1d6a4c33616e2de3023ab46822ce3b28af214a070c2709f2ebe3aa",
+    "command": [
+      "C:\\Xilinx\\2025.1\\Vivado\\bin\\vivado.bat",
+      "-mode",
+      "batch",
+      "-source",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\part_capacity_confirmation_20261014\\query_parts.tcl",
+      "-log",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\part_capacity_confirmation_20261014\\vivado.log",
+      "-journal",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\part_capacity_confirmation_20261014\\vivado.jou"
+    ],
+    "all_part_export_sha256": "a402de944fbd660743f6a7ff12403060e886627439826186600da78618e6a1fe",
+    "fresh_capacity_export_sha256": "47fddde4370b68bfeb66c85623c41b82cbcd825270203e663e27de8c57e0d4e9",
+    "devices": {
+      "xcvp1902": {
+        "lut_elements": 8460288,
+        "cap75": 6345216
+      },
+      "xcvu19p": {
+        "lut_elements": 4085760,
+        "cap75": 3064320
+      },
+      "xcvu19p_CIV": {
+        "lut_elements": 4085760,
+        "cap75": 3064320
+      }
+    },
+    "all_part_variants": 5566,
+    "original_all_part_query_controller_exit": 1,
+    "original_all_part_query_limitation": "Native export completed; postprocessing incorrectly required exactlytwo devicealiases, while xcvu19p_CIV has same capacity. Original evidence preserved.",
+    "source_design_loaded": false,
+    "synthesis_or_solver_invoked": false,
+    "default_utilization": "User75% engineering policy"
+  },
+  "fresh_confirmation_receipt_sha256": "6d28008b034138605336f4a56f551421c3253f5c016709a1c82b92529b382dbb",
+  "scope": "All 5566 variants native exported; fresh actual launcher0 selected-device confirmation compared exactly with catalog; no source design/synth/solver/route loaded"
+}

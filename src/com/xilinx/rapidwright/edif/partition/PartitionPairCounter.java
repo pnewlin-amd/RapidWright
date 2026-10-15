@@ -65,28 +65,34 @@ public final class PartitionPairCounter {
         Map<String, Integer> pairCounts = new LinkedHashMap<>();
         try (BufferedReader hgrReader = new BufferedReader(
                 new FileReader(hgrFile.toFile()))) {
-            // skip header line (contains edge count and vertex count).
             String header = hgrReader.readLine();
-            
-            // process each net (hyperedge) in the hypergraph file.
-            // each line after the header represents one net and 
-            // contains space-separated vertex IDs.
+            if (header == null) throw new IllegalArgumentException("Empty hypergraph: " + hgrFile);
+            String[] fields = header.trim().split("\\s+");
+            if (fields.length < 2) throw new IllegalArgumentException("Invalid hMETIS header: " + header);
+            int edgeCount = Integer.parseInt(fields[0]);
+            int vertexCount = Integer.parseInt(fields[1]);
+            int format = fields.length > 2 ? Integer.parseInt(fields[2]) : 0;
+            if (format != 0 && format != 1 && format != 10 && format != 11) {
+                throw new IllegalArgumentException("Unsupported hMETIS format " + format);
+            }
+            if (vertexCount != instLookup.length - 1) throw new IllegalArgumentException("Hypergraph/instance vertex count mismatch");
+            // Consume exactly the edge section. Vertex weights are not nets,
+            // and an edge weight (fmt 1/11) is not a vertex ID.
             String line;
-            while ((line = hgrReader.readLine()) != null) {
+            for (int edge = 0; edge < edgeCount; edge++) {
+                line = hgrReader.readLine();
+                if (line == null) throw new IllegalArgumentException("Truncated hypergraph edge section");
                 String[] tokens = line.trim().isEmpty() ?
                         new String[0] : line.trim().split("\\s+");
                 Set<Integer> partitionIds = new HashSet<>();
-                // for each vertex ID determine which partition it belongs to.
-                for (String t : tokens) {
+                for (int tokenIndex = format % 10 == 1 ? 1 : 0; tokenIndex < tokens.length; tokenIndex++) {
+                    String t = tokens[tokenIndex];
                     if (t.isEmpty()) {
                         continue;
                     }
                     int vertexId;
-                    try {
-                        vertexId = Integer.parseInt(t);
-                    } catch (NumberFormatException nfe) {
-                        continue;
-                    }
+                    vertexId = Integer.parseInt(t);
+                    if (vertexId < 1 || vertexId > vertexCount) throw new IllegalArgumentException("Invalid hypergraph vertex " + vertexId);
                     // look up instance name for this vertex ID.
                     String instanceName = (vertexId >= 0 && vertexId < instLookup.length)
                             ? instLookup[vertexId] : null;
@@ -97,7 +103,7 @@ public final class PartitionPairCounter {
                     // add partition to the set if found.
                     if (part != null) {
                         partitionIds.add(part.intValue());
-                    }
+                    } else throw new IllegalArgumentException("Unmapped hypergraph instance " + instanceName);
                 }
                 
                 // skip nets that don't span multiple partitions (internal nets).

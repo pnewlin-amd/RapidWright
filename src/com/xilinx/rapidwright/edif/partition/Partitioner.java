@@ -53,6 +53,83 @@ import com.xilinx.rapidwright.util.MessageGenerator;
  */
 public class Partitioner {
 
+    private static final class RunContext {
+        Path statusFile;
+    }
+
+    private static void writeStatus(RunContext context, String status) {
+        if (context.statusFile == null) { return; }
+        try {
+            Files.write(context.statusFile, java.util.Collections.singletonList(status));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public static void main(String[] args) {
+        RunContext context = new RunContext();
+        try {
+            run(args, context);
+        } catch (RuntimeException | Error failure) {
+            try { writeStatus(context, "FAIL"); } catch (RuntimeException ignored) {
+                System.err.println("Unable to write failure status: " + ignored.getMessage());
+            }
+            throw failure;
+        }
+    }
+
+    private static String sha256(Path file) throws IOException {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            try (java.io.InputStream input = Files.newInputStream(file)) {
+                byte[] buffer = new byte[65536];
+                int count;
+                while ((count = input.read(buffer)) != -1) { digest.update(buffer, 0, count); }
+            }
+            StringBuilder result = new StringBuilder();
+            for (byte value : digest.digest()) { result.append(String.format("%02x", value & 255)); }
+            return result.toString();
+        } catch (java.security.NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
+    }
+
+    static int[] primaryBalanceWeights(HardwarePartitionGraph graph, int[] configured) {
+        if (configured != null) return configured;
+        int[] result = new int[graph.resources.length];
+        for (int v = 1; v < result.length; v++) result[v] = Math.toIntExact(graph.resources[v][0]);
+        return result;
+    }
+
+    private static void validateOptions(String[] args) {
+        Set<String> switches = new java.util.HashSet<>(java.util.Arrays.asList(
+                "constraints_debug", "skip_detailed_reports", "optimized", "verbose_mapping"));
+        Set<String> valued = new java.util.HashSet<>(java.util.Arrays.asList(
+                "seed", "epsilon", "threads", "partition_config", "objective", "part_dir",
+                "mapping_constraints", "target_graph", "resource_capacities", "refine_passes",
+                "starts", "snake_weight", "cut_budget", "mtkahypar_bin", "wsl", "mtkahypar_lib",
+                "num_vcycles", "weight_model", "vertex_weight_file", "scalar_capacities", "logical_epsilon",
+                "timing_paths", "timing_weight", "extra_delay_ns", "quality_anchor", "quality_guard", "capture_cohorts"));
+        for (int i = 3; i < args.length; i++) {
+            String arg = args[i];
+            if (!arg.startsWith("--")) { throw new IllegalArgumentException("Unexpected argument: " + arg); }
+            String[] fields = arg.substring(2).split("=", 2);
+            if (switches.contains(fields[0])) {
+                if (fields.length == 2 && !("true".equalsIgnoreCase(fields[1])
+                        || "false".equalsIgnoreCase(fields[1]) || "1".equals(fields[1])
+                        || "0".equals(fields[1]) || "yes".equalsIgnoreCase(fields[1])
+                        || "no".equalsIgnoreCase(fields[1]))) {
+                    throw new IllegalArgumentException("Invalid boolean option: " + arg);
+                }
+                continue;
+            }
+            if (!valued.contains(fields[0])) { throw new IllegalArgumentException("Unknown option: " + arg); }
+            if (fields.length == 2) {
+                if (fields[1].isEmpty()) { throw new IllegalArgumentException("Missing value: " + arg); }
+            } else if (++i >= args.length || args[i].startsWith("--")) {
+                throw new IllegalArgumentException("Missing value: " + arg);
+            }
+        }
+    }
+
     /**
      * Logs current memory usage for debugging.
      * @param label Description label for the audit point
@@ -88,7 +165,7 @@ public class Partitioner {
         System.out.println("Usage:");
         System.out.println("  <input.edf|input.dcp>");
         System.out.println("  <# of partitions>");
-        System.out.println("  <leafLUTCountLimit>");
+        System.out.println("  <leafLUTCountLimit|auto>");
         System.out.println();
         System.out.println("Optional Flags:");
         System.out.println("  --seed N                    Set seed");
@@ -96,6 +173,26 @@ public class Partitioner {
         System.out.println("  --threads T                 Set number of threads");
         System.out.println("  --partition_config TYPE     Set preset (default/deterministic)");
         System.out.println("  --objective OBJ             Set objective (cut/km1/soed)");
+        System.out.println("  --target_graph FILE         Weighted METIS FPGA topology; enables Steiner objective");
+        System.out.println("  --resource_capacities FILE  Hard per-FPGA logical-resource capacities");
+        System.out.println("  --refine_passes N           Directed path refinement passes (default 3; 0 audits baseline)");
+        System.out.println("  --capture_cohorts MODE      Bounded whole-frontier capture cleanup: off (default), or explicit auto; pass0/k1 disable");
+        System.out.println("  --starts N                  Native candidate seeds to audit (default 3)");
+        System.out.println("  --weight_model FILE         Optional calibrated scalar REF_NAME weights; estimates only");
+        System.out.println("  --vertex_weight_file FILE   Source/frontier-bound scalar weights from native feedback");
+        System.out.println("  --quality_guard POLICY    ranked (default) or conservative componentwise structural/STA guard");
+        System.out.println("  --quality_anchor FILE      Prior accepted assignment; preserve its quality and original cut budget");
+        System.out.println("  --timing_paths FILE         Source-bound sampled Vivado STA paths for timing guidance");
+        System.out.println("  --timing_weight W           Timing guidance weight (default 8; zero disables)");
+        System.out.println("  --extra_delay_ns D          Explicit modeled transport delay per FPGA crossing");
+        System.out.println("  --verbose_mapping          Emit individual frontier rules (default: compact hierarchy)");
+        System.out.println("  --logical_epsilon E         Separate raw LUT imbalance when scalar weights are calibrated");
+        System.out.println("  --snake_weight W            Excess crossing/reentry penalty (default 8)");
+        System.out.println("  --cut_budget E              Allowed transfer growth fraction (default 0.10)");
+        System.out.println("  --mtkahypar_bin PATH        v1.6.2 executable; version is checked");
+        System.out.println("  --wsl DISTRO                Run the v1.6.2 backend in this WSL distribution");
+        System.out.println("  --mtkahypar_lib PATH        WSL shared-library directory");
+        System.out.println("  --num_vcycles N             Mt-KaHyPar improvement cycles (default 1)");
         System.out.println("  --part_dir DIR              Set output directory");
         System.out.println("  --mapping_constraints PATH  Specify constraints file");
         System.out.println("  --constraints_debug         Enable constraint debugging");
@@ -109,21 +206,43 @@ public class Partitioner {
      * Main entry point for the partitioner tool.
      * @param args Command-line arguments for partitioning
      */
-    public static void main(String[] args) {
+    private static void run(String[] args, RunContext context) {
         if (args.length < 3) {
             printUsage();
             return;
         }
+        validateOptions(args);
         Path inputPath = Paths.get(args[0]);
         int k = Integer.parseInt(args[1]);
-        int leafLUTCountLimit = Integer.parseInt(args[2]);
+        boolean autoFrontier = "auto".equalsIgnoreCase(args[2]);
+        int leafLUTCountLimit = autoFrontier ? 1 : Integer.parseInt(args[2]);
+        if (k < 1 || leafLUTCountLimit < 1) {
+            throw new IllegalArgumentException("k must be >=1 and leafLUTCountLimit must be >=1");
+        }
         CodePerfTracker t = new CodePerfTracker("Partitioner");
         
         boolean generateEdifNets = false; // Human readable hypergraph artifacts
         Path constraintsFile = null;
         boolean constraintsDebug = false;
         boolean skipDetailedReports = false;
-        boolean optimizeMapping = false;
+        boolean optimizeMapping = true;
+        Path targetGraph = null;
+        Path resourceCapacities = null;
+        int refinementPasses = 3;
+        String captureCohortMode = "off"; // Opt-in until actual source pilots demonstrate accepted cohort gains.
+        int starts = 3;
+        Path weightModelFile = null;
+        Path vertexWeightFile = null;
+        Path scalarCapacityFile = null;
+        long[] scalarCapacities = null;
+        Path timingPathFile = null;
+        Path qualityAnchorFile = null;
+        String qualityGuardPolicy = "ranked";
+        double timingWeight = 8.0;
+        Double extraDelayNs = null;
+        Double logicalEpsilon = null;
+        double snakeWeight = 8.0;
+        double cutBudget = 0.10;
 
 
 
@@ -162,11 +281,122 @@ public class Partitioner {
                         "yes".equalsIgnoreCase(val);
             } else if ("--optimized".equals(arg)) {
                 optimizeMapping = true;
+            } else if ("--verbose_mapping".equals(arg)) {
+                optimizeMapping = false;
+            } else if (arg.startsWith("--verbose_mapping=")) {
+                String value = arg.substring("--verbose_mapping=".length());
+                optimizeMapping = !("true".equalsIgnoreCase(value) || "1".equals(value)
+                        || "yes".equalsIgnoreCase(value));
+            } else if (arg.startsWith("--optimized=")) {
+                String value = arg.substring("--optimized=".length());
+                optimizeMapping = "true".equalsIgnoreCase(value) || "1".equals(value)
+                        || "yes".equalsIgnoreCase(value);
+            } else if ("--target_graph".equals(arg) && i + 1 < args.length) {
+                targetGraph = Paths.get(args[++i]);
+            } else if (arg.startsWith("--target_graph=")) {
+                targetGraph = Paths.get(arg.substring("--target_graph=".length()));
+            } else if ("--resource_capacities".equals(arg) && i + 1 < args.length) {
+                resourceCapacities = Paths.get(args[++i]);
+            } else if (arg.startsWith("--resource_capacities=")) {
+                resourceCapacities = Paths.get(arg.substring("--resource_capacities=".length()));
+            } else if ("--capture_cohorts".equals(arg) && i + 1 < args.length) {
+                captureCohortMode = CohortCleanupPolicy.validateMode(args[++i]);
+            } else if (arg.startsWith("--capture_cohorts=")) {
+                captureCohortMode = CohortCleanupPolicy.validateMode(arg.substring("--capture_cohorts=".length()));
+            } else if ("--refine_passes".equals(arg) && i + 1 < args.length) {
+                refinementPasses = Integer.parseInt(args[++i]);
+            } else if (arg.startsWith("--refine_passes=")) {
+                refinementPasses = Integer.parseInt(arg.substring("--refine_passes=".length()));
+            } else if ("--starts".equals(arg) && i + 1 < args.length) {
+                starts = Integer.parseInt(args[++i]);
+            } else if (arg.startsWith("--starts=")) {
+                starts = Integer.parseInt(arg.substring("--starts=".length()));
+            } else if ("--weight_model".equals(arg) && i + 1 < args.length) {
+                weightModelFile = Paths.get(args[++i]);
+            } else if (arg.startsWith("--weight_model=")) {
+                weightModelFile = Paths.get(arg.substring("--weight_model=".length()));
+            } else if ("--vertex_weight_file".equals(arg) && i + 1 < args.length) {
+                vertexWeightFile = Paths.get(args[++i]);
+            } else if (arg.startsWith("--vertex_weight_file=")) {
+                vertexWeightFile = Paths.get(arg.substring("--vertex_weight_file=".length()));
+            } else if ("--scalar_capacities".equals(arg) && i + 1 < args.length) {
+                scalarCapacityFile = Paths.get(args[++i]);
+            } else if (arg.startsWith("--scalar_capacities=")) {
+                scalarCapacityFile = Paths.get(arg.substring("--scalar_capacities=".length()));
+            } else if ("--quality_guard".equals(arg) && i + 1 < args.length) {
+                qualityGuardPolicy = HardwareMappingRefiner.validateQualityGuardPolicy(args[++i]);
+            } else if (arg.startsWith("--quality_guard=")) {
+                qualityGuardPolicy = HardwareMappingRefiner.validateQualityGuardPolicy(arg.substring("--quality_guard=".length()));
+            } else if ("--quality_anchor".equals(arg) && i + 1 < args.length) {
+                qualityAnchorFile = Paths.get(args[++i]);
+            } else if (arg.startsWith("--quality_anchor=")) {
+                qualityAnchorFile = Paths.get(arg.substring("--quality_anchor=".length()));
+            } else if ("--timing_paths".equals(arg) && i + 1 < args.length) {
+                timingPathFile = Paths.get(args[++i]);
+            } else if (arg.startsWith("--timing_paths=")) {
+                timingPathFile = Paths.get(arg.substring("--timing_paths=".length()));
+            } else if ("--timing_weight".equals(arg) && i + 1 < args.length) {
+                timingWeight = Double.parseDouble(args[++i]);
+            } else if (arg.startsWith("--timing_weight=")) {
+                timingWeight = Double.parseDouble(arg.substring("--timing_weight=".length()));
+            } else if ("--extra_delay_ns".equals(arg) && i + 1 < args.length) {
+                extraDelayNs = Double.parseDouble(args[++i]);
+            } else if (arg.startsWith("--extra_delay_ns=")) {
+                extraDelayNs = Double.parseDouble(arg.substring("--extra_delay_ns=".length()));
+            } else if ("--logical_epsilon".equals(arg) && i + 1 < args.length) {
+                logicalEpsilon = Double.parseDouble(args[++i]);
+            } else if (arg.startsWith("--logical_epsilon=")) {
+                logicalEpsilon = Double.parseDouble(arg.substring("--logical_epsilon=".length()));
+            } else if ("--snake_weight".equals(arg) && i + 1 < args.length) {
+                snakeWeight = Double.parseDouble(args[++i]);
+            } else if (arg.startsWith("--snake_weight=")) {
+                snakeWeight = Double.parseDouble(arg.substring("--snake_weight=".length()));
+            } else if ("--cut_budget".equals(arg) && i + 1 < args.length) {
+                cutBudget = Double.parseDouble(args[++i]);
+            } else if (arg.startsWith("--cut_budget=")) {
+                cutBudget = Double.parseDouble(arg.substring("--cut_budget=".length()));
             }
+        }
+        if (refinementPasses < 0 || starts < 1 || !Double.isFinite(snakeWeight) || snakeWeight < 0
+                || !Double.isFinite(cutBudget) || cutBudget < 0
+                || !Double.isFinite(timingWeight) || timingWeight < 0
+                || (extraDelayNs != null && (!Double.isFinite(extraDelayNs) || extraDelayNs < 0))
+                || (logicalEpsilon != null && (!Double.isFinite(logicalEpsilon) || logicalEpsilon < 0))) {
+            throw new IllegalArgumentException("Refinement options must be finite and nonnegative");
+        }
+        if (weightModelFile != null && vertexWeightFile != null) {
+            throw new IllegalArgumentException("Choose one scalar weight model");
+        }
+        if (extraDelayNs != null && (timingPathFile == null || timingWeight == 0)) {
+            throw new IllegalArgumentException("Explicit transport delay requires enabled source timing paths");
+        }
+        Map<Path, String> dependencyHashes = new java.util.LinkedHashMap<>();
+        for (Path dependency : new Path[] {targetGraph, resourceCapacities, constraintsFile,
+                weightModelFile, vertexWeightFile, scalarCapacityFile, timingPathFile, qualityAnchorFile}) {
+            if (dependency != null) {
+                try { dependencyHashes.put(dependency, sha256(dependency)); }
+                catch (IOException e) { throw new UncheckedIOException(e); }
+            }
+        }
+        if (scalarCapacityFile != null) {
+            try {
+                List<String> capacities = Files.readAllLines(scalarCapacityFile);
+                List<Long> values = new ArrayList<>();
+                for (String line : capacities) {
+                    if (!line.trim().isEmpty() && !line.trim().startsWith("#")) values.add(Long.parseLong(line.trim()));
+                }
+                if (values.size() != k) throw new IllegalArgumentException("Scalar capacities must define all FPGAs");
+                scalarCapacities = new long[k];
+                for (int p = 0; p < k; p++) scalarCapacities[p] = values.get(p);
+            } catch (IOException e) { throw new UncheckedIOException(e); }
         }
         generateEdifNets = !skipDetailedReports;
         try {
             Files.createDirectories(outDir);
+            context.statusFile = outDir.resolve("RUN_STATUS.txt");
+            writeStatus(context, "RUNNING");
+            Files.deleteIfExists(outDir.resolve("cohort_refinement_passes.tsv"));
+            Files.deleteIfExists(outDir.resolve(EndpointKindDiagnosticReport.FILE_NAME));
         } catch (IOException ioe) {
             throw new UncheckedIOException(ioe);
         }
@@ -181,6 +411,8 @@ public class Partitioner {
         // ============================================================================
         memAudit("rapidwright mem usg input before");
         t.start("Read Input");
+        String loadedInputHash;
+        try { loadedInputHash = sha256(inputPath); } catch (IOException e) { throw new UncheckedIOException(e); }
         EDIFNetlist netlist;
         String inLower = inputPath.toString().toLowerCase();
         if (inLower.endsWith(".dcp")) {
@@ -206,10 +438,21 @@ public class Partitioner {
         // Validates that the leaf LUT count limit is within acceptable bounds.
         // ============================================================================
         t.start("Coarsen Netlist");
+        if (autoFrontier) {
+            long logicalLuts = new LogicalResourceCounts().count(netlist).logicLuts;
+            leafLUTCountLimit = (int) Math.max(1, Math.min(Math.max(1, logicalLuts - 1),
+                    Math.min(10000, Math.max(100, logicalLuts / (k * 64L)))));
+            System.out.println("Automatic hierarchy frontier LUT limit: " + leafLUTCountLimit);
+        }
         Map<EDIFHierCellInst, Integer> instLutCountMap = new HashMap<>();
         Map<EDIFHierCellInst, Integer> leafInsts = PartitionTools.identifyLeafInstances(netlist,
                 leafLUTCountLimit, instLutCountMap);
+        leafInsts = PartitionTools.alignFrontierToConstraints(netlist, leafInsts, constraintsFile);
+        CohortCleanupPolicy.Prepared cohortCaller = CohortCleanupPolicy.prepare(captureCohortMode,k,refinementPasses,leafInsts);
         System.out.println("Identified " + leafInsts.size() + " leaves");
+        if (k > leafInsts.size()) {
+            throw new IllegalArgumentException("More FPGAs than movable vertices; lower leafLUTCountLimit");
+        }
         {
             final int SAMPLE_TARGET = 100_000;
             final int STEP = Math.max(1, leafInsts.size() / SAMPLE_TARGET);
@@ -277,7 +520,7 @@ public class Partitioner {
                     backfillAttempts, backfillSuccess, backfillSkipped);
         }
         int totalLUTs = instLutCountMap.get(netlist.getTopHierCellInst());
-        if (leafLUTCountLimit >= totalLUTs || leafLUTCountLimit < 1) {
+        if ((totalLUTs > 1 && leafLUTCountLimit >= totalLUTs) || leafLUTCountLimit < 1) {
             throw new RuntimeException("ERROR: Invalid leafLUTCountLimit '" + leafLUTCountLimit
                     + "', must be less than total LUT count in netlist or 1 or greater.");
         }
@@ -292,23 +535,61 @@ public class Partitioner {
         // Creates the hypergraph structure that will be partitioned.
         // ============================================================================
         t.start("Find Edges");
-        Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap = new HashMap<>();
-        for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
-            for (EDIFHierPortInst pi : e.getKey().getHierPortInsts()) {
-                EDIFHierNet connectedNet = pi.getHierarchicalNet();
-                // Skip ambiguous nets, TODO: better way to handle this edge case?
-                EDIFHierNet parentNet = null;
-                try {
-                    parentNet = netlist.getParentNet(connectedNet);
-                } catch (RuntimeException ex) {
-                    parentNet = null;
+        HardwarePartitionGraph hardwareGraph = HardwarePartitionGraph.build(netlist, leafInsts);
+        Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap = hardwareGraph.hyperedges;
+        String[] instLookup = PartitionTools.createInstLookupArray(leafInsts);
+        int[] calibratedWeights = null;
+        if (vertexWeightFile != null) {
+            try { calibratedWeights = FrontierWeightModel.read(vertexWeightFile, loadedInputHash, instLookup); }
+            catch (IOException e) { throw new UncheckedIOException(e); }
+        } else if (weightModelFile != null) {
+            try {
+                VertexWeightModel weightModel = VertexWeightModel.read(weightModelFile, loadedInputHash);
+                calibratedWeights = new int[leafInsts.size() + 1];
+                for (Entry<EDIFHierCellInst, Integer> entry : leafInsts.entrySet()) {
+                    calibratedWeights[entry.getValue()] = weightModel.weight(entry.getKey().getCellType());
                 }
-                EDIFHierNet keyNet = (parentNet != null) ? parentNet : connectedNet;
-                if (edgesMap.containsKey(keyNet))
-                    continue;
-                edgesMap.put(keyNet, connectedNet.getConnectedInsts(leafInsts.keySet())); 
+            } catch (IOException e) { throw new UncheckedIOException(e); }
+        } else if (totalLUTs == 0) {
+            calibratedWeights = new int[leafInsts.size() + 1];
+            java.util.Arrays.fill(calibratedWeights, 1);
+            calibratedWeights[0] = 0;
+        }
+        if (scalarCapacities != null && calibratedWeights == null) {
+            calibratedWeights = new int[leafInsts.size() + 1];
+            for (int v = 1; v < calibratedWeights.length; v++) calibratedWeights[v] = Math.toIntExact(hardwareGraph.resources[v][0]);
+        }
+        int[] enforcedPrimaryWeights = primaryBalanceWeights(hardwareGraph, calibratedWeights);
+        TimingPathModel timingModel = null;
+        int[] timingEdgeWeights = null;
+        if (timingPathFile != null && timingWeight > 0) {
+            try { timingModel = TimingPathModel.read(timingPathFile, loadedInputHash, instLookup,
+                    netlist.getTopCell().getName()); }
+            catch (IOException e) { throw new UncheckedIOException(e); }
+            if (timingModel.scoredPathCount() == 0) throw new IllegalArgumentException("Timing guidance has no finite constrained source paths");
+            Map<Long, Double> criticalPairs = timingModel.directedOwnerPairCriticalities();
+            double criticalityScale = timingModel.maxSourceCriticality();
+            if (hardwareGraph.nets.size() != edgesMap.size()) throw new IllegalStateException("Directed/hyperedge order mismatch");
+            timingEdgeWeights = new int[edgesMap.size()];
+            int edge = 0;
+            for (HardwarePartitionGraph.Net net : hardwareGraph.nets) {
+                double importance = 0;
+                for (int sink : net.sinks) {
+                    long pair = ((long) net.driver << 32) | (sink & 0xffffffffL);
+                    importance = Math.max(importance, criticalPairs.getOrDefault(pair, 0.0));
+                }
+                double normalized = criticalityScale == 0 ? 0 : importance / criticalityScale;
+                timingEdgeWeights[edge++] = 1 + (int) Math.min(1000000, Math.round(timingWeight * normalized));
             }
         }
+        List<String> frontier = new ArrayList<>();
+        frontier.add("vertex\tpath\tlogical_luts\tprimary_weight");
+        for (int v = 1; v < instLookup.length; v++) {
+            frontier.add(v + "\t" + instLookup[v] + "\t" + hardwareGraph.resources[v][0]
+                    + "\t" + (calibratedWeights == null ? hardwareGraph.resources[v][0] : calibratedWeights[v]));
+        }
+        try { Files.write(outDir.resolve("frontier.tsv"), frontier); }
+        catch (IOException e) { throw new UncheckedIOException(e); }
         t.stop();
 
 
@@ -321,7 +602,8 @@ public class Partitioner {
         // ============================================================================
         t.start("Write hMETIS File");
         Path hMetisFile = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
-        PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generateEdifNets, instLutCountMap);
+        PartitionTools.writeHMetisFile(hMetisFile, edgesMap, leafInsts, generateEdifNets,
+                instLutCountMap, calibratedWeights, timingEdgeWeights);
         t.stop();
 
         //free edgesMap memory after .hgr file is written
@@ -373,7 +655,7 @@ public class Partitioner {
                         throw new RuntimeException(
                                 "constraint '" + orig + "' was not found valid in design");
                     }
-                    String path = toks[0];
+                    String path = PartitionTools.normalizeConstraintPath(netlist, toks[0]);
                     String label = toks[1];
                     Integer blockIndex = labelToIndex.get(label);
                     if (blockIndex == null) {
@@ -390,48 +672,18 @@ public class Partitioner {
                 throw new UncheckedIOException(e);
             }
 
-            Map<String, Integer> matchedByConstraint = new HashMap<>();
-            for (String path : constraintByPath.keySet()) {
-                matchedByConstraint.put(path, Integer.valueOf(0));
-            }
+            HierarchyConstraintIndex constraintIndex =
+                    HierarchyConstraintIndex.assignments(constraintByPath);
             for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
                 String name = e.getKey().toString();
                 int vertexId = e.getValue().intValue();
-                int bestSpecificity = -1;
-                Integer bestPartition = null;
-                List<String> bestPaths = new ArrayList<>();
-
-                for (Entry<String, Integer> constraint : constraintByPath.entrySet()) {
-                    String path = constraint.getKey();
-                    boolean leafContainsPath = path.equals(name) || path.startsWith(name + "/");
-                    boolean pathContainsLeaf = name.equals(path) || name.startsWith(path + "/");
-                    if (!leafContainsPath && !pathContainsLeaf) {
-                        continue;
-                    }
-
-                    matchedByConstraint.put(path,
-                            Integer.valueOf(matchedByConstraint.get(path).intValue() + 1));
-                    int specificity = path.split("/").length;
-                    if (specificity > bestSpecificity) {
-                        bestSpecificity = specificity;
-                        bestPartition = constraint.getValue();
-                        bestPaths.clear();
-                        bestPaths.add(path);
-                    } else if (specificity == bestSpecificity) {
-                        bestPaths.add(path);
-                        if (bestPartition.intValue() != constraint.getValue().intValue()) {
-                            throw new RuntimeException(
-                                    "equally-specific conflicting constraints for vertex '" +
-                                    name + "': " + bestPaths);
-                        }
-                    }
-                }
-
-                if (bestPartition != null) {
-                    vertexPartitionAssignments[vertexId] = bestPartition.intValue();
+                HierarchyConstraintIndex.Choice choice = constraintIndex.selectRelatedAndCount(name);
+                if (choice.partition != null) {
+                    vertexPartitionAssignments[vertexId] = choice.partition.intValue();
                     numFixedVertices++;
                 }
             }
+            Map<String, Integer> matchedByConstraint = constraintIndex.matchedCounts();
 
             for (Entry<String, Integer> match : matchedByConstraint.entrySet()) {
                 if (constraintsDebug) {
@@ -514,7 +766,29 @@ public class Partitioner {
                     mtPartitioner.setObjective(args[++i]);
                 } else if (arg.startsWith("--objective=")) {
                     mtPartitioner.setObjective(arg.substring("--objective=".length()));
+                } else if (arg.equals("--mtkahypar_bin") && i + 1 < args.length) {
+                    mtPartitioner.setExecutable(args[++i]);
+                } else if (arg.startsWith("--mtkahypar_bin=")) {
+                    mtPartitioner.setExecutable(arg.substring("--mtkahypar_bin=".length()));
+                } else if (arg.equals("--wsl") && i + 1 < args.length) {
+                    mtPartitioner.setWslDistribution(args[++i]);
+                } else if (arg.startsWith("--wsl=")) {
+                    mtPartitioner.setWslDistribution(arg.substring("--wsl=".length()));
+                } else if (arg.equals("--mtkahypar_lib") && i + 1 < args.length) {
+                    mtPartitioner.setLibraryPath(args[++i]);
+                } else if (arg.startsWith("--mtkahypar_lib=")) {
+                    mtPartitioner.setLibraryPath(arg.substring("--mtkahypar_lib=".length()));
+                } else if (arg.equals("--num_vcycles") && i + 1 < args.length) {
+                    mtPartitioner.setVcycles(Integer.parseInt(args[++i]));
+                } else if (arg.startsWith("--num_vcycles=")) {
+                    mtPartitioner.setVcycles(Integer.parseInt(arg.substring("--num_vcycles=".length())));
                 }
+            }
+            if (targetGraph != null) {
+                if (k > 64) {
+                    throw new IllegalArgumentException("Mt-KaHyPar v1.6.2 Steiner mapping supports <=64 FPGAs");
+                }
+                mtPartitioner.setTargetGraph(targetGraph);
             }
             // print user flags summary
             System.out.printf("Partitioner flag: objective=%s%n", mtPartitioner.getObjective());
@@ -525,7 +799,9 @@ public class Partitioner {
                     skipDetailedReports ? "on" : "off");
         }
         memAudit("rapidwright mem usg before partitioner run");
-        partitioner.runPartitioner();
+        ((MtKaHyParPartitioner) partitioner).setIndividualPartWeights(scalarCapacities);
+        if (k > 1) partitioner.runPartitioner();
+        else System.out.println("Single FPGA: assigning all logic directly; native partition solver is unnecessary");
         memAudit("rapidwright mem usg after partitioner run");
         t.stop();
         
@@ -540,364 +816,220 @@ public class Partitioner {
         // .eidmap and .nets.txt to reduce artifact size.
         // ============================================================================
         t.start("Read Partition Solution");
-        Path outputFile = partitioner.getOutputFile();
-        String[] instLookup = PartitionTools.createInstLookupArray(leafInsts);
-        Map<Integer, Set<String>> partitions;
-        partitions = PartitionTools.readSolutionFile(outputFile, instLookup);
-        if (skipDetailedReports) {
-            int numVertices = instLookup.length - 1;
-            int[] vertexToPartition = new int[numVertices + 1];
-            try (BufferedReader br = new BufferedReader(new FileReader(outputFile.toFile()))) {
-                String line = null;
-                int i = 1;
-                while ((line = br.readLine()) != null) {
-                    int part = Integer.parseInt(line.trim());
-                    vertexToPartition[i++] = part;
+        Path outputFile = k == 1 ? null : partitioner.getOutputFile();
+        try {
+            int[] nativeAssignment;
+            if (k == 1) {
+                nativeAssignment = new int[leafInsts.size() + 1];
+                nativeAssignment[0] = -1;
+            } else nativeAssignment = HardwareMappingRefiner.readSolution(outputFile, leafInsts.size(), k);
+            int[] fixed = HardwareMappingRefiner.readFixed(fixedVertexFile, leafInsts.size(), k);
+            double epsilon = ((MtKaHyParPartitioner) partitioner).getEpsilon();
+            PartitionTopology topology = targetGraph == null ? PartitionTopology.complete(k)
+                    : PartitionTopology.read(targetGraph, k);
+            HardwareMappingRefiner refiner = new HardwareMappingRefiner(hardwareGraph,
+                    topology, k, logicalEpsilon == null ? epsilon : logicalEpsilon,
+                    fixed, snakeWeight, cutBudget, resourceCapacities);
+            refiner.configureQualityGuard(qualityGuardPolicy);
+            if (scalarCapacities != null) refiner.configureBalanceWeights(enforcedPrimaryWeights, scalarCapacities);
+            else refiner.configureBalanceWeights(enforcedPrimaryWeights, epsilon);
+            if (timingModel != null) refiner.configureTimingPaths(timingModel, timingWeight, extraDelayNs);
+            if (cohortCaller.enabled) refiner.configureCaptureCohorts(CohortCleanupPolicy.limits(hardwareGraph,refinementPasses),cohortCaller.protectedOwners(fixed));
+            if (qualityAnchorFile != null) {
+                AcceptedQualityAnchor anchor = AcceptedQualityAnchor.read(qualityAnchorFile,
+                        loadedInputHash, instLookup, k);
+                anchor.validateQualityGuardPolicy(qualityGuardPolicy);
+                refiner.configureQualityAnchor(anchor.assignment(), anchor.transferGrowthReference,
+                        anchor.topologyGrowthReference, anchor.metadata().get("quality_guard_policy"));
+            }
+            List<int[]> candidates = new ArrayList<>();
+            candidates.add(nativeAssignment);
+            MtKaHyParPartitioner mt = (MtKaHyParPartitioner) partitioner;
+            int firstSeed = mt.getSeed();
+            for (int attempt = 1; k > 1 && attempt < starts; attempt++) {
+                mt.setSeed(firstSeed + attempt);
+                mt.runPartitioner();
+                candidates.add(HardwareMappingRefiner.readSolution(mt.getOutputFile(), leafInsts.size(), k));
+            }
+            nativeAssignment = refiner.selectCandidate(candidates);
+            List<String> candidateReport = new ArrayList<>();
+            candidateReport.add("seed\ttransfers\ttopology_distance\tmax_crossings\tendpoint_excess\ttransit_primitives\tcomplete\tselected\ttiming_cost\tmodeled_worst_slack_ns\tminimum_link_hop_analysis_available\tmax_minimum_link_hops\tmax_minimum_relay_traversals");
+            CombinationalPathAnalyzer candidateAnalyzer = new CombinationalPathAnalyzer(
+                    hardwareGraph.ownerVertex, hardwareGraph.sequential, hardwareGraph.successors);
+            int[][] candidateHopMatrix = topology.hasDeclaredPhysicalAdjacency() ? topology.minimumHopMatrix() : null;
+            for (int attempt = 0; attempt < candidates.size(); attempt++) {
+                CombinationalPathAnalyzer.Analysis audit = candidateAnalyzer.analyze(candidates.get(attempt), candidateHopMatrix);
+                TimingPathModel.Evaluation timing = refiner.timingEvaluation(candidates.get(attempt));
+                candidateReport.add((firstSeed + attempt) + "\t" + refiner.transfers(candidates.get(attempt))
+                        + "\t" + refiner.topologyCost(candidates.get(attempt)) + "\t" + audit.maxCrossings
+                        + "\t" + audit.excessCrossings + "\t" + audit.transitCount + "\t" + audit.complete
+                        + "\t" + (candidates.get(attempt) == nativeAssignment)
+                        + "\t" + (timing == null ? "NA" : Double.toString(timing.timingCost))
+                        + "\t" + (timing == null || timing.modeledWorstSlackNs == null ? "NA" : timing.modeledWorstSlackNs.toString())
+                        + "\t" + audit.minimumLinkHopAnalysisAvailable + "\t" + audit.maxMinimumLinkHops
+                        + "\t" + audit.maxMinimumRelayTraversals);
+            }
+            Files.write(outDir.resolve("native_candidates.tsv"), candidateReport);
+            List<String> selectedNative = new ArrayList<>();
+            for (int v = 1; v < nativeAssignment.length; v++) {
+                selectedNative.add(Integer.toString(nativeAssignment[v]));
+            }
+            Files.write(outDir.resolve("initial_assignment.part"), selectedNative);
+            int[] finalAssignment = refiner.refine(nativeAssignment, refinementPasses, outDir);
+            List<String> finalLines = new ArrayList<>();
+            Map<Integer, Set<String>> partitions = new java.util.TreeMap<>();
+            Map<String, Integer> nameToPartMap = new java.util.LinkedHashMap<>();
+            for (int p = 0; p < k; p++) { partitions.put(p, new java.util.TreeSet<>()); }
+            for (int v = 1; v < finalAssignment.length; v++) {
+                finalLines.add(Integer.toString(finalAssignment[v]));
+                partitions.get(finalAssignment[v]).add(instLookup[v]);
+                nameToPartMap.put(instLookup[v], finalAssignment[v]);
+            }
+            Files.write(outDir.resolve("final_assignment.part"), finalLines);
+            long[][] load = new long[k][6];
+            long[] usefulLogicLoad = new long[k];
+            for (int v = 1; v < finalAssignment.length; v++) {
+                for (int r = 0; r < 6; r++) {
+                    load[finalAssignment[v]][r] += hardwareGraph.resources[v][r];
                 }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                usefulLogicLoad[finalAssignment[v]] = Math.addExact(
+                        usefulLogicLoad[finalAssignment[v]], hardwareGraph.realLogic[v]);
             }
-            EDIFHierCellInst[] instanceByVertexID = new EDIFHierCellInst[numVertices + 1];
-            for (Entry<EDIFHierCellInst, Integer> e : leafInsts.entrySet()) {
-                int vertex_id = e.getValue().intValue();
-                instanceByVertexID[vertex_id] = e.getKey();
+            for (int p = 0; p < k; p++) {
+                if (usefulLogicLoad[p] <= 0) {
+                    throw new IllegalStateException("Final partition has no useful design logic: "
+                            + PartitionLabel.indexToFpgaLabel(p));
+                }
             }
-            int[] lutCountByVertexID = new int[numVertices + 1];
-            int dbgLeafLUTs = 0;
-            int dbgHierLUTs = 0;
-            int dbgHierMissing = 0;
-            int dbgHierFound = 0;
-            java.util.Map<String, Integer> dbgMissingCellTypes = new java.util.HashMap<>();
-            java.util.Map<String, Integer> dbgMissingParentTypes = new java.util.HashMap<>();
-            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
-                EDIFHierCellInst inst = instanceByVertexID[vertex_id];
-                if (inst == null) continue;
-                if (inst.getCellType().isLeafCellOrBlackBox()) {
-                    lutCountByVertexID[vertex_id] = logicDiscoveryPolicy.leafLutCount(inst);
-                    dbgLeafLUTs += lutCountByVertexID[vertex_id];
-                } else {
-                    Integer cnt = instLutCountMap.get(inst);
-                    lutCountByVertexID[vertex_id] = (cnt == null) ? 0 : cnt.intValue();
-                    dbgHierLUTs += lutCountByVertexID[vertex_id];
-                    if (cnt == null) {
-                        dbgHierMissing++;
-                        String cellType = inst.getCellType().getName();
-                        dbgMissingCellTypes.put(cellType,
-                                dbgMissingCellTypes.getOrDefault(cellType, 0) + 1);
-                        if (inst.getParent() != null) {
-                            String parentType = inst.getParent().getCellType().getName();
-                            dbgMissingParentTypes.put(parentType,
-                                    dbgMissingParentTypes.getOrDefault(parentType, 0) + 1);
-                        }
-                        if (dbgHierMissing <= 10) {
-                            String parentInfo = (inst.getParent() != null) ?
-                                    inst.getParent().getCellType().getName() : "null";
-                            PartitionTools.logPartitionerDebug(
-                                    System.err,
-                                    "skip_detailed_reports hier missing -> vertex_id=%d " +
-                                    "instPath=%s cellType=%s parentType=%s lutCount=0 (missing)",
-                                    vertex_id, inst.toString(),
-                                    inst.getCellType().getName(), parentInfo);
-                        }
-                    } else {
-                        dbgHierFound++;
+            List<String> lutReport = new ArrayList<>();
+            List<String> resourceReport = new ArrayList<>();
+            resourceReport.add("partition\tlogical_lut_primitives\tff_and_latches\tbram18_equivalent\tdsp\turam\tlutram_srl_primitives");
+            long sum = 0;
+            for (int p = 0; p < k; p++) {
+                String label = PartitionLabel.indexToFpgaLabel(p);
+                lutReport.add(load[p][0] + "LUTS " + label);
+                resourceReport.add(label + "\t" + load[p][0] + "\t" + load[p][1] + "\t"
+                        + load[p][2] + "\t" + load[p][3] + "\t" + load[p][4] + "\t" + load[p][5]);
+                sum += load[p][0];
+                if (!skipDetailedReports) {
+                    Files.write(outDir.resolve(inputPath.getFileName() + "." + label), partitions.get(p));
+                }
+            }
+            if (sum != totalLUTs) { throw new IllegalStateException("Logical LUT accounting mismatch"); }
+            lutReport.add((long) Math.ceil(sum / (double) k) + "LUTS mean");
+            Files.write(outDir.resolve("lut_report.txt"), lutReport);
+            Files.write(outDir.resolve("logical_lut_report.txt"), lutReport);
+            Files.write(outDir.resolve("logical_resources.tsv"), resourceReport);
+            LogicalResourceCounts.Counts inventory = new LogicalResourceCounts().count(netlist);
+            List<String> histogram = new ArrayList<>();
+            histogram.add("REF_NAME\tCOUNT");
+            for (Map.Entry<String, Long> entry : inventory.primitiveHistogram().entrySet()) {
+                histogram.add(entry.getKey() + "\t" + entry.getValue());
+            }
+            Files.write(outDir.resolve("primitive_counts.tsv"), histogram);
+            HierMappingWriter.write(outDir, netlist, partitions, instLutCountMap, optimizeMapping);
+            Integer topIoPartition = null;
+            String topName = netlist.getTopCell().getName();
+            for (String line : Files.readAllLines(outDir.resolve("mapping.txt"))) {
+                String[] fields = line.trim().split("\\s+");
+                if (fields.length == 2 && fields[0].equals(topName)) {
+                    for (int p = 0; p < k; p++) {
+                        if (fields[1].equals(PartitionLabel.indexToFpgaLabel(p))) { topIoPartition = p; }
                     }
                 }
             }
-            PartitionTools.logPartitionerDebug(
-                    System.err,
-                    "skip_detailed_reports lutCountByVertexID -> leafLUTs=%d " +
-                            "hierLUTs=%d hierMissing=%d hierFound=%d",
-                    dbgLeafLUTs, dbgHierLUTs, dbgHierMissing, dbgHierFound);
-            if (!dbgMissingCellTypes.isEmpty()) {
-                PartitionTools.logPartitionerDebug(
-                        System.err,
-                        "skip_detailed_reports missing cell types -> uniqueTypes=%d",
-                        dbgMissingCellTypes.size());
-                java.util.List<java.util.Map.Entry<String, Integer>> sorted;
-                sorted = new java.util.ArrayList<>(dbgMissingCellTypes.entrySet());
-                sorted.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
-                for (int i = 0; i < Math.min(10, sorted.size()); i++) {
-                    PartitionTools.logPartitionerDebug(
-                            System.err,
-                            "missing cell type -> type=%s count=%d",
-                            sorted.get(i).getKey(), sorted.get(i).getValue());
+            FpgaIoCutAnalyzer.writeReport(outDir,
+                    FpgaIoCutAnalyzer.analyze(netlist, leafInsts, nameToPartMap, topIoPartition));
+            PartitionPairCounter.writePairCountsToFile(outDir.resolve("io_cuts.txt"),
+                    PartitionPairCounter.countPartitionPairs(hMetisFile, instLookup, nameToPartMap));
+            Files.write(outDir.resolve("metric_definitions.txt"), java.util.Arrays.asList(
+                    "lut_report.txt and logical_resources.tsv count exact logical primitive instances.",
+                    "They are NOT packed CLB LUT utilization: use tools/report_partition_resources.tcl on the original checkpoint and FINAL mapping.",
+                    "fpga_io_cuts.txt counts canonical directed logical net destinations; clock/reset-only nets are classified separately.",
+                    "io_cuts.txt is undirected hyperedge partition pairs, NOT package ports or physical links.",
+                    "No wrapping, replication, transport insertion or physical link compression is modeled.",
+                    "Topology costs are weighted shortest paths/Steiner routing costs, not measured link bandwidth or achieved DUT clock.",
+                    "Path analysis is conservative primitive connectivity, not Vivado timing slack or a proof of Boolean sensitization."));
+            org.json.JSONObject provenance = new org.json.JSONObject();
+            provenance.put("backend_version", k == 1 ? org.json.JSONObject.NULL : "1.6.2");
+            provenance.put("native_backend_invoked", k > 1);
+            provenance.put("source_input", inputPath.toAbsolutePath().normalize().toString());
+            if (!loadedInputHash.equals(sha256(inputPath))) {
+                throw new IllegalStateException("Input changed during partitioning; discard this run and use a stable checkpoint/export");
+            }
+            org.json.JSONObject dependencies = new org.json.JSONObject();
+            for (Entry<Path, String> dependency : dependencyHashes.entrySet()) {
+                if (!dependency.getValue().equals(sha256(dependency.getKey()))) {
+                    throw new IllegalStateException("Partition dependency changed during run: " + dependency.getKey());
                 }
+                dependencies.put(dependency.getKey().toAbsolutePath().normalize().toString(), dependency.getValue());
             }
-            if (!dbgMissingParentTypes.isEmpty()) {
-                PartitionTools.logPartitionerDebug(
-                        System.err,
-                        "missing instances parent types -> uniqueParents=%d",
-                        dbgMissingParentTypes.size());
-                java.util.List<java.util.Map.Entry<String, Integer>> sortedParents;
-                sortedParents = new java.util.ArrayList<>(dbgMissingParentTypes.entrySet());
-                sortedParents.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
-                for (int i = 0; i < Math.min(10, sortedParents.size()); i++) {
-                    PartitionTools.logPartitionerDebug(
-                            System.err,
-                            "missing parent type -> type=%s childrenMissing=%d",
-                            sortedParents.get(i).getKey(), sortedParents.get(i).getValue());
-                }
+            provenance.put("dependency_sha256", dependencies);
+            provenance.put("input_sha256", loadedInputHash);
+            provenance.put("hypergraph_sha256", sha256(hMetisFile));
+            provenance.put("mapping_sha256", sha256(outDir.resolve("mapping.txt")));
+            provenance.put("partitions", k);
+            org.json.JSONObject usefulLogicByPartition = new org.json.JSONObject();
+            for (int p = 0; p < k; p++) {
+                usefulLogicByPartition.put(PartitionLabel.indexToFpgaLabel(p), usefulLogicLoad[p]);
             }
-            Path hgr = outDir.resolve(inputPath.getFileName().toString() + ".hgr");
-            java.util.Map<String, Integer> nameToPartMap = new java.util.LinkedHashMap<>();
-            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
-                String instanceName = instLookup[vertex_id];
-                if (instanceName != null) {
-                    nameToPartMap.put(instanceName,
-                            Integer.valueOf(vertexToPartition[vertex_id]));
-                }
+            provenance.put("useful_logic_occupancy_version", 1);
+            provenance.put("useful_logic_by_partition", usefulLogicByPartition);
+            provenance.put("useful_logic_occupancy_pass", true);
+            provenance.put("useful_logic_occupancy_status", "PASS");
+            provenance.put("useful_logic_definition", "Sum of HardwarePartitionGraph.realLogic over final frontier assignments; "
+                    + "excludes trusted constant/clock/I/O infrastructure and synthetic capture endpoints; "
+                    + "not LUT count or packed area");
+            provenance.put("leaf_lut_limit", leafLUTCountLimit);
+            provenance.put("starts", starts);
+            provenance.put("quality_guard_policy_version", 1);
+            provenance.put("quality_guard_policy", refiner.qualityGuardPolicy());
+            provenance.put("capture_cohort_mode_requested",captureCohortMode);
+            provenance.put("capture_cohort_caller_enabled",cohortCaller.enabled);
+            provenance.put("capture_cohort_caller_reason",cohortCaller.reason);
+            provenance.put("capture_cohort_protection_scope",CohortCleanupPolicy.SCOPE);
+            provenance.put("capture_cohort_source_protected_owners",cohortCaller.sourceProtectedCount);
+            provenance.put("quality_guard_anchor_policy_metadata", refiner.qualityGuardAnchorPolicyMetadata());
+            provenance.put("quality_guard_reference", qualityAnchorFile == null
+                    ? "current_native_baseline" : "prior_native_accepted_assignment");
+            provenance.put("minimum_link_hop_analysis_version", 1);
+            provenance.put("minimum_link_hop_analysis_available", topology.hasDeclaredPhysicalAdjacency());
+            provenance.put("minimum_link_hop_scope", "Lower bounds on declared selected adjacency; not actual transport routing, congestion or nanoseconds");
+            if (qualityAnchorFile != null) provenance.put("quality_anchor_sha256", sha256(qualityAnchorFile));
+            provenance.put("timing_guidance", timingModel == null ? "structural_only" : "sampled_source_STA_paths");
+            if (timingModel != null) {
+                provenance.put("timing_paths_sha256", sha256(timingPathFile));
+                provenance.put("timing_weight", timingWeight);
+                provenance.put("extra_delay_ns_per_crossing", extraDelayNs == null ? org.json.JSONObject.NULL : extraDelayNs);
+                provenance.put("timing_edge_weights", "1+round(weight*max source owner-pair criticality/max sampled source criticality), increment capped at 1000000");
+                provenance.put("timing_net_identity_scope", "Cell-pair guidance applies to all parallel matching hyperedges; not exact pin-arc identification");
             }
-            Map<String, Integer> pairCounts = PartitionPairCounter.countPartitionPairs(
-                    hgr, instLookup, nameToPartMap);
-            Path ioCutsFile = outDir.resolve("io_cuts.txt");
-            PartitionPairCounter.writePairCountsToFile(ioCutsFile, pairCounts);
-            java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
-            int maxPart = -1;
-            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
-                int partIndex = vertexToPartition[vertex_id];
-                if (partIndex > maxPart) maxPart = partIndex;
+            provenance.put("args", new org.json.JSONArray(args));
+            provenance.put("known_logical_resource_constraints_pass", true);
+            provenance.put("resource_coverage_complete", hardwareGraph.opaquePrimitives == 0);
+            provenance.put("primary_weight_scheme", vertexWeightFile != null ? "native_feedback_proxy" : weightModelFile != null ? "calibrated_proxy"
+                    : (totalLUTs == 0 ? "unit_fallback" : "logical_lut_primitives"));
+            if (weightModelFile != null) {
+                provenance.put("scalar_weight_model", weightModelFile.toAbsolutePath().toString());
+                provenance.put("scalar_weight_model_sha256", sha256(weightModelFile));
+                provenance.put("scalar_weight_model_is_physical_authority", false);
             }
-            for (int i = 0; i <= maxPart; i++) lutCounts.add(0);
-            for (int vertex_id = 1; vertex_id <= numVertices; vertex_id++) {
-                int partIndex = vertexToPartition[vertex_id];
-                if (partIndex < 0) continue;
-                lutCounts.set(partIndex, lutCounts.get(partIndex) + lutCountByVertexID[vertex_id]);
+            if (vertexWeightFile != null) {
+                provenance.put("vertex_weight_file", vertexWeightFile.toAbsolutePath().toString());
+                provenance.put("vertex_weight_sha256", sha256(vertexWeightFile));
+                provenance.put("scalar_weight_model_is_physical_authority", false);
             }
-            long sumLuts = 0;
-            for (int c : lutCounts) sumLuts += c;
-            PartitionTools.logPartitionerDebug(
-                    System.err,
-                    "skip_detailed_reports partition sum -> sumLUTs=%d " +
-                            "topLevelTotal=%d diff=%d",
-                    sumLuts, totalLUTs, (sumLuts - totalLUTs));
-            int meanLuts = (lutCounts.isEmpty()) ?
-                    0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
-            Path lutReport = outDir.resolve("lut_report.txt");
-            try (BufferedWriter lw = new BufferedWriter(new FileWriter(lutReport.toFile()))) {
-                for (int idx = 0; idx < lutCounts.size(); idx++) {
-                    String label = PartitionLabel.indexToFpgaLabel(idx);
-                    lw.write(lutCounts.get(idx) + "LUTS " + label);
-                    lw.write("\n");
-                }
-                lw.write(meanLuts + "LUTS mean");
-                lw.write("\n");
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            System.out.println("Partitioner artifact written: " + lutReport);
-            if (sumLuts != totalLUTs) {
-                System.err.printf("ERROR: LUT count policy mismatch: " + 
-                    "per-partitions sum=%d, top-level total=%d%n", sumLuts, totalLUTs);
-            }
-            try {
-                HierMappingWriter.write(outDir, netlist, partitions, instLutCountMap, optimizeMapping);
-                System.out.println("Partitioner artifact written: " + 
-                    outDir.resolve("cells.txt"));
-                System.out.println("Partitioner artifact written: " + 
-                    outDir.resolve("mapping.txt"));
-            } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write hierarchical mapping artifacts: " + 
-                    ex.getMessage());
-            }
-            
-            // Generate FPGA-level direction-aware IO cut report
-            try {
-                FpgaIoCutAnalyzer.FpgaIoCutResult fpgaIoCutResult = 
-                    FpgaIoCutAnalyzer.analyze(netlist, leafInsts, nameToPartMap);
-                FpgaIoCutAnalyzer.writeReport(outDir, fpgaIoCutResult);
-                System.out.println("Partitioner artifact written: " + 
-                    outDir.resolve("fpga_io_cuts.txt"));
-            } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write FPGA IO cut analysis: " + 
-                    ex.getMessage());
-            }
-        } else {
-
-
-
-            // ============================================================================
-            // SOLUTION PROCESSING - FULL MODE
-            // Reads the partition solution and writes detailed per-partition instance
-            // files. Computes LUT counts for each partition with fallback recomputation
-            // if needed. Generates comprehensive artifacts including io cuts, nets
-            // report, and hierarchical mappings.
-            // ============================================================================
-            try {
-                IoCutWriter.write(outDir, inputPath, netlist, instLookup, partitions,
-                        generateEdifNets);
-            } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write io cuts / nets artifacts: " +
-                        ex.getMessage());
-            }
-            // Caches instance LUT counts to speed up report generation.
-            java.util.Map<String, Integer> lutByName = new java.util.HashMap<>();
-
-            {
-                int mismatches = 0;
-                int maxCheck = Math.min(1000, instLookup.length - 1);
-                for (int j = 1; j <= maxCheck; j++) {
-                    String nm = instLookup[j];
-                    if (nm == null) continue;
-                    if (netlist.getHierCellInstFromName(nm) == null) {
-                        mismatches++;
-                    }
-                }
-                if (mismatches > 0) {
-                    PartitionTools.logPartitionerDebug(
-                            System.err,
-                            "name roundtrip -> mismatches=%d checked=%d",
-                            mismatches, maxCheck);
-                } else {
-                    PartitionTools.logPartitionerDebug(System.out, "name roundtrip -> ok");
-                }
-            }
-            MessageGenerator.printHeader("Partition Solution Report");
-            final int DBG_MAX_MISS_LOGS = 100;
-            int dbgMissingLUTCountTotal = 0;
-            int dbgMissingLUTCountPrinted = 0;
-            int dbgLeafLUTsTotal = 0;
-            int dbgHierLUTsTotal = 0;
-            int dbgRecomputeAttempts = 0;
-            int dbgRecomputeSuccess = 0;
-            int dbgCachedByName = 0;
-            java.util.ArrayList<Integer> lutCounts = new java.util.ArrayList<>();
-            for (int i = 0; i < partitions.size(); i++) {
-                int lutCount = 0;
-                int partLeafLUTs = 0;
-                int partHierLUTs = 0;
-                Set<String> names = partitions.get(i);
-                String partLabel = PartitionLabel.indexToFpgaLabel(i);
-                Path partitionFile = outDir.resolve(
-                        inputPath.getFileName().toString() + "." + partLabel);
-                try (BufferedWriter bw = new BufferedWriter(
-                        new FileWriter(partitionFile.toFile()))) {
-                    for (String name : names) {
-                        bw.write(name + "\n");
-                        EDIFHierCellInst inst = netlist.getHierCellInstFromName(name);
-                        if (inst.getCellType().isLeafCellOrBlackBox()) {
-                            int leafLUTs = logicDiscoveryPolicy.leafLutCount(inst);
-                            lutCount += leafLUTs;
-                            partLeafLUTs += leafLUTs;
-                        } else {
-                            Integer hierLutCount = instLutCountMap.get(inst);
-                            if (hierLutCount == null) {
-                                Integer cached = lutByName.get(name);
-                                if (cached != null) {
-                                    hierLutCount = cached;
-                                    dbgCachedByName++;
-                                }
-                            }
-                            if (hierLutCount == null) {
-                                dbgMissingLUTCountTotal++;
-                                if (dbgMissingLUTCountPrinted < DBG_MAX_MISS_LOGS) {
-                                    PartitionTools.logPartitionerDebug(
-                                            System.err,
-                                            "missing lut count -> name=%s instPath=%s type=%s " +
-                                                    "depth=%d isLeafOrBB=%s",
-                                            name, inst.toString(), inst.getCellType().getName(),
-                                            inst.getDepth(),
-                                            inst.getCellType().isLeafCellOrBlackBox());
-                                    dbgMissingLUTCountPrinted++;
-                                }
-                                dbgRecomputeAttempts++;
-                                Integer recomputed = PartitionTools.getLUTCount(inst,
-                                        new java.util.HashMap<>(), instLutCountMap);
-                                if (recomputed != null) {
-                                    hierLutCount = recomputed;
-                                    lutByName.put(name, hierLutCount);
-                                    dbgRecomputeSuccess++;
-                                }
-                            }
-                            if (hierLutCount == null) {
-                                hierLutCount = 0;
-                            }
-                            lutCount += hierLutCount.intValue();
-                            partHierLUTs += hierLutCount.intValue();
-                        }
-                    }
-                    dbgLeafLUTsTotal += partLeafLUTs;
-                    dbgHierLUTsTotal += partHierLUTs;
-                    System.out.printf("  Partition %3d %10d LUTs %s\n", i, lutCount, partitionFile);
-                    lutCounts.add(Integer.valueOf(lutCount));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-            PartitionTools.logPartitionerDebug(
-                    System.err,
-                    "all partitions -> leafLUTsTotal=%d hierLUTsTotal=%d " +
-                            "cachedByName=%d recomputeAttempts=%d recomputeSuccess=%d",
-                    dbgLeafLUTsTotal, dbgHierLUTsTotal, dbgCachedByName,
-                    dbgRecomputeAttempts, dbgRecomputeSuccess);
-            long sumLuts = 0;
-            for (int c : lutCounts) sumLuts += c;
-            PartitionTools.logPartitionerDebug(
-                    System.err,
-                    "non-skip_detailed_reports partition sum -> " + 
-                        "sumLUTs=%d topLevelTotal=%d diff=%d",
-                        sumLuts, totalLUTs, (sumLuts - totalLUTs));
-
-            int meanLuts = (lutCounts.isEmpty()) ?
-                    0 : (int) Math.ceil(sumLuts / (double) lutCounts.size());
-            Path lutReport = outDir.resolve("lut_report.txt");
-            try (BufferedWriter lw = new BufferedWriter(new FileWriter(lutReport.toFile()))) {
-                for (int idx = 0; idx < lutCounts.size(); idx++) {
-                    String label = PartitionLabel.indexToFpgaLabel(idx);
-                    lw.write(lutCounts.get(idx) + "LUTS " + label);
-                    lw.write("\n");
-                }
-                lw.write(meanLuts + "LUTS mean");
-                lw.write("\n");
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            System.out.println("Partitioner artifact written: " + lutReport);
-            if (sumLuts != totalLUTs) {
-                System.err.printf(
-                        "ERROR: LUT count policy mismatch: per-partitions sum=%d, " +
-                                "top-level total=%d%n",
-                        sumLuts, totalLUTs);
-            }
-            PartitionTools.logPartitionerDebug(
-                    System.out,
-                    "missing lut count summary -> total=%d printed=%d limit=%d",
-                    dbgMissingLUTCountTotal, dbgMissingLUTCountPrinted, DBG_MAX_MISS_LOGS);
-            System.out.println("-----------------------------------------------------------");
-            System.out.printf("        Total : %10d LUTs\n\n\n", totalLUTs);
-
-            try {
-                HierMappingWriter.write(outDir, netlist, partitions, instLutCountMap, optimizeMapping);
-                System.out.println("Partitioner artifact written: " +
-                        outDir.resolve("cells.txt"));
-                System.out.println("Partitioner artifact written: " +
-                        outDir.resolve("mapping.txt"));
-            } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write hierarchical " +
-                        "mapping artifacts: " + ex.getMessage());
-            }
-            
-            // Generate FPGA-level direction-aware IO cut report
-            // Build name->partition map for the analyzer
-            java.util.Map<String, Integer> nameToPartMapFull = new java.util.LinkedHashMap<>();
-            for (Map.Entry<Integer, Set<String>> partEntry : partitions.entrySet()) {
-                int partIdx = partEntry.getKey();
-                for (String instName : partEntry.getValue()) {
-                    nameToPartMapFull.put(instName, partIdx);
-                }
-            }
-            try {
-                FpgaIoCutAnalyzer.FpgaIoCutResult fpgaIoCutResult = 
-                    FpgaIoCutAnalyzer.analyze(netlist, leafInsts, nameToPartMapFull);
-                FpgaIoCutAnalyzer.writeReport(outDir, fpgaIoCutResult);
-                System.out.println("Partitioner artifact written: " + 
-                    outDir.resolve("fpga_io_cuts.txt"));
-            } catch (RuntimeException ex) {
-                System.err.println("WARNING: failed to write FPGA IO cut analysis: " + 
-                    ex.getMessage());
-            }
+            provenance.put("physical_utilization_authority", "Native Vivado subset report required separately");
+            EndpointKindDiagnosticReport.write(outDir, refiner.retainedEndpointAnalysis(finalAssignment),
+                    loadedInputHash, provenance.getString("mapping_sha256"),
+                    sha256(outDir.resolve("final_assignment.part")));
+            Files.write(outDir.resolve("run_provenance.json"),
+                    java.util.Collections.singletonList(provenance.toString(2)));
+            writeStatus(context, "PASS");
+            System.out.println("Partitioner final mapping: " + outDir.resolve("mapping.txt"));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-
         t.stop();
         t.printSummary();
     }

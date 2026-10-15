@@ -1,0 +1,93 @@
+{
+  "schema": "c/1",
+  "fpga_count": 4,
+  "wires_per_lane_at_min_compression": 64,
+  "fpgas": [
+    {
+      "id": 0,
+      "path": "EXAMPLE/S01/A",
+      "chassis": "EXAMPLE",
+      "slot": "S01",
+      "position": "A",
+      "part": "xcvp1902",
+      "degree": 3
+    },
+    {
+      "id": 1,
+      "path": "EXAMPLE/S01/B",
+      "chassis": "EXAMPLE",
+      "slot": "S01",
+      "position": "B",
+      "part": "xcvp1902",
+      "degree": 3
+    },
+    {
+      "id": 2,
+      "path": "EXAMPLE/S01/C",
+      "chassis": "EXAMPLE",
+      "slot": "S01",
+      "position": "C",
+      "part": "xcvp1902",
+      "degree": 3
+    },
+    {
+      "id": 3,
+      "path": "EXAMPLE/S01/D",
+      "chassis": "EXAMPLE",
+      "slot": "S01",
+      "position": "D",
+      "part": "xcvp1902",
+      "degree": 3
+    }
+  ],
+  "edges": [
+    {
+      "a_id": 0,
+      "b_id": 1,
+      "a": "EXAMPLE/S01/A",
+      "b": "EXAMPLE/S01/B",
+      "lanes": 16,
+      "wires_at_min_compression": 1024
+    },
+    {
+      "a_id": 0,
+      "b_id": 2,
+      "a": "EXAMPLE/S01/A",
+      "b": "EXAMPLE/S01/C",
+      "lanes": 16,
+      "wires_at_min_compression": 1024
+    },
+    {
+      "a_id": 0,
+      "b_id": 3,
+      "a": "EXAMPLE/S01/A",
+      "b": "EXAMPLE/S01/D",
+      "lanes": 16,
+      "wires_at_min_compression": 1024
+    },
+    {
+      "a_id": 1,
+      "b_id": 2,
+      "a": "EXAMPLE/S01/B",
+      "b": "EXAMPLE/S01/C",
+      "lanes": 16,
+      "wires_at_min_compression": 1024
+    },
+    {
+      "a_id": 1,
+      "b_id": 3,
+      "a": "EXAMPLE/S01/B",
+      "b": "EXAMPLE/S01/D",
+      "lanes": 16,
+      "wires_at_min_compression": 1024
+    },
+    {
+      "a_id": 2,
+      "b_id": 3,
+      "a": "EXAMPLE/S01/C",
+      "b": "EXAMPLE/S01/D",
+      "lanes": 16,
+      "wires_at_min_compression": 1024
+    }
+  ]
+}

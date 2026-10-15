@@ -13,3 +13,7 @@
 /designs/
 interchange/schema/capnp/java.capnp
 *.orig
+__pycache__/
+*.py[cod]
+/partition_results/
+/dfx_runtime.txt

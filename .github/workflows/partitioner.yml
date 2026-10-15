@@ -1,0 +1,39 @@
+name: Hardware-aware partitioner
+
+on:
+  push:
+    paths: ['scripts/partition/**', 'tools/**', 'test/resources/partition/**', 'src/com/xilinx/rapidwright/edif/partition/**', 'test/src/com/xilinx/rapidwright/edif/partition/**', '.github/workflows/partitioner.yml']
+  pull_request:
+    paths: ['scripts/partition/**', 'tools/**', 'test/resources/partition/**', 'src/com/xilinx/rapidwright/edif/partition/**', 'test/src/com/xilinx/rapidwright/edif/partition/**', '.github/workflows/partitioner.yml']
+
+jobs:
+  portable-python:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Tcl runtime on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y tk
+      - name: Verify headless Tcl parser
+        run: python -c "import tkinter; print(tkinter.Tcl().call('info', 'patchlevel'))"
+      - name: Frontend, topology, capacity and tool discovery tests
+        run: python -m unittest discover -s scripts/partition -p 'test_*.py'
+      - name: Independent native-reference helper tests
+        run: python -m unittest discover -s tools -p 'test_*.py'
+  java-partitioner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Build and test self-contained partitioner fixtures
+        run: ./gradlew compileJava testJava --tests 'com.xilinx.rapidwright.edif.partition.*' -x initSubmodules --console=plain

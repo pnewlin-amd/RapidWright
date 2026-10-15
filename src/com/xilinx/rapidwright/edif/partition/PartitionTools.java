@@ -52,6 +52,57 @@ import com.xilinx.rapidwright.edif.EDIFNetlist;
  */
 public class PartitionTools {
 
+    /** Normalize the optional emitted top-cell prefix to RapidWright's relative path. */
+    public static String normalizeConstraintPath(EDIFNetlist netlist, String path) {
+        String top = netlist.getTopCell().getName();
+        if (path.equals(top)) { return ""; }
+        return path.startsWith(top + "/") ? path.substring(top.length() + 1) : path;
+    }
+
+    /** Split any coarse vertex containing a deeper fixed constraint, then assign stable IDs.
+     * A constraint on one child must never silently fix all its unconstrained siblings.
+     */
+    public static Map<EDIFHierCellInst, Integer> alignFrontierToConstraints(EDIFNetlist netlist,
+            Map<EDIFHierCellInst, Integer> frontier, Path constraintsFile) {
+        Set<String> paths = new HashSet<>();
+        SourceConstraintPrefixes sourcePrefixes = new SourceConstraintPrefixes(netlist);
+        if (constraintsFile != null) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(constraintsFile.toFile()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty() || line.trim().startsWith("#")) { continue; }
+                    String[] fields = line.trim().split("\\s+");
+                    if (fields.length != 2) { throw new IllegalArgumentException("Invalid constraint: " + line); }
+                    String path = normalizeConstraintPath(netlist, fields[0]);
+                    if (!path.isEmpty() && !sourcePrefixes.exists(path)) {
+                        throw new IllegalArgumentException("Unknown constraint hierarchy path: " + fields[0]);
+                    }
+                    paths.add(path);
+                }
+            } catch (IOException e) { throw new UncheckedIOException(e); }
+        }
+        HierarchyConstraintIndex constraintIndex = HierarchyConstraintIndex.paths(paths);
+        Queue<EDIFHierCellInst> queue = new LinkedList<>(frontier.keySet());
+        java.util.TreeMap<String, EDIFHierCellInst> ordered = new java.util.TreeMap<>();
+        while (!queue.isEmpty()) {
+            EDIFHierCellInst inst = queue.remove();
+            String name = inst.toString();
+            boolean split = constraintIndex.hasStrictDescendant(name);
+            if (split && !inst.getCellType().getLibrary().isHDIPrimitivesLibrary()
+                    && !inst.getCellType().isLeafCellOrBlackBox()) {
+                for (EDIFCellInst child : inst.getCellType().getCellInsts()) { queue.add(inst.getChild(child)); }
+            } else {
+                EDIFHierCellInst prior = ordered.put(name, inst);
+                if (prior != null && !prior.equals(inst)) {
+                    throw new IllegalArgumentException("Ambiguous source hierarchy path: " + name);
+                }
+            }
+        }
+        Map<EDIFHierCellInst, Integer> result = new java.util.LinkedHashMap<>();
+        for (EDIFHierCellInst inst : ordered.values()) { result.put(inst, result.size() + 1); }
+        return result;
+    }
+
 
     /**
      * Helper to print partitioner debug messages with a consistent prefix.
@@ -150,11 +201,16 @@ public class PartitionTools {
                     }
                 }
             }
-            if (lutSize == null || lutSize <= lutCount) {
+            // Zero-LUT hierarchy may contain thousands of FFs or RAMs. Descend
+            // instead of treating it as a free, indivisible resource bundle.
+            if (currentInst.getCellType().isLeafCellOrBlackBox()
+                    || (lutSize != null && lutSize > 0 && lutSize <= lutCount)) {
                 leafInsts.put(currentInst, leafInsts.size() + 1);
                 continue;
             }
-            assert (lutSize > lutCount);
+            if (lutSize == null) {
+                throw new IllegalStateException("Missing hierarchical LUT count: " + currentInst);
+            }
             for (EDIFCellInst childInst : currentInst.getCellType().getCellInsts()) {
                 instQueue.add(currentInst.getChild(childInst));
             }
@@ -237,6 +293,33 @@ public class PartitionTools {
             Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap, 
             Map<EDIFHierCellInst, Integer> leafInsts, boolean writeEidmap,
             Map<EDIFHierCellInst, Integer> instLutCountMap) {
+        writeHMetisFile(filePath, edgesMap, leafInsts, writeEidmap, instLutCountMap, null);
+    }
+
+    /** Optional calibrated scalar weights do not change the logical resource census. */
+    public static void writeHMetisFile(Path filePath,
+            Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap,
+            Map<EDIFHierCellInst, Integer> leafInsts, boolean writeEidmap,
+            Map<EDIFHierCellInst, Integer> instLutCountMap, int[] vertexWeights) {
+        writeHMetisFile(filePath, edgesMap, leafInsts, writeEidmap, instLutCountMap, vertexWeights, null);
+    }
+
+    /** Edge weights follow edgesMap iteration order and never change census/cut counts. */
+    public static void writeHMetisFile(Path filePath,
+            Map<EDIFHierNet, Set<EDIFHierCellInst>> edgesMap,
+            Map<EDIFHierCellInst, Integer> leafInsts, boolean writeEidmap,
+            Map<EDIFHierCellInst, Integer> instLutCountMap, int[] vertexWeights, int[] edgeWeights) {
+        if (edgeWeights != null && edgeWeights.length != edgesMap.size()) {
+            throw new IllegalArgumentException("Edge weight count differs from hypergraph");
+        }
+        if (edgeWeights != null) {
+            for (int weight : edgeWeights) {
+                if (weight <= 0) throw new IllegalArgumentException("Hyperedge weights must be positive");
+            }
+        }
+        if (vertexWeights != null && vertexWeights.length != leafInsts.size() + 1) {
+            throw new IllegalArgumentException("Vertex weight count differs from frontier");
+        }
         // Derive .eidmap path alongside .hgr (replace .hgr suffix if present)
         Path eidmapPath;
         String base = filePath.toString();
@@ -246,7 +329,22 @@ public class PartitionTools {
             eidmapPath = Paths.get(base + ".eidmap");
         }
         
-        boolean useWeights = instLutCountMap != null;
+        boolean useWeights = instLutCountMap != null || vertexWeights != null;
+        long totalWeight = 0;
+        if (useWeights) {
+            for (Entry<EDIFHierCellInst, Integer> entry : leafInsts.entrySet()) {
+                EDIFHierCellInst inst = entry.getKey();
+                int weight = vertexWeights == null ? (inst.getCellType().isLeafCellOrBlackBox()
+                        ? logicDiscoveryPolicy.leafLutCount(inst)
+                        : instLutCountMap.getOrDefault(inst, 0)) : vertexWeights[entry.getValue()];
+                if (weight < 0) { throw new IllegalArgumentException("Negative vertex weight"); }
+                totalWeight += weight;
+            }
+        }
+        if (vertexWeights != null && totalWeight == 0) {
+            throw new IllegalArgumentException("Custom vertex weights have zero total");
+        }
+        boolean unitWeightFallback = useWeights && totalWeight == 0;
         
         try (BufferedWriter hgrWriter = new BufferedWriter(new FileWriter(filePath.toFile()));
              BufferedWriter eidmapWriter = writeEidmap ? new BufferedWriter(
@@ -262,14 +360,17 @@ public class PartitionTools {
              * partitions at the scale which routing no longer becomes possible. Changing 
              * the header to include fmt=10 allows partitioning to factor in vertex weights.
              */
-            if (useWeights) {
-                hgrWriter.write(edgesMap.size() + " " + leafInsts.size() + " 10\n");
+            if (useWeights || edgeWeights != null) {
+                hgrWriter.write(edgesMap.size() + " " + leafInsts.size() + " "
+                        + ((useWeights ? 10 : 0) + (edgeWeights == null ? 0 : 1)) + "\n");
             } else {
                 hgrWriter.write(edgesMap.size() + " " + leafInsts.size() + "\n");
             }
             
             int unnamedCounter = 0; // assign unique ids for unnamed nets
+            int edgeIndex = 0;
             for (Entry<EDIFHierNet, Set<EDIFHierCellInst>> entry : edgesMap.entrySet()) {
+                if (edgeWeights != null) hgrWriter.write(edgeWeights[edgeIndex++] + " ");
                 if (writeEidmap) {
                     // Write net name safely even if key is null
                     // Might be a better way to resolve this?
@@ -300,16 +401,18 @@ public class PartitionTools {
                 for (int i = 1; i <= leafInsts.size(); i++) {
                     EDIFHierCellInst inst = orderedInsts[i];
                     Integer weight = null;
-                    if (inst.getCellType().isLeafCellOrBlackBox()) {
+                    if (vertexWeights != null) {
+                        weight = vertexWeights[i];
+                    } else if (inst.getCellType().isLeafCellOrBlackBox()) {
                         weight = logicDiscoveryPolicy.leafLutCount(inst);
                     } else {
                         weight = instLutCountMap.get(inst);
                     }
                     
-                    // Default to 1 if weight is missing or 0, to ensure non-empty partitions
-                    // unless it's strictly 0 logic. But for partitioning balance, 
-                    // 1 is safer than 0 to avoid degenerate cases.
-                    int w = (weight == null) ? 1 : weight.intValue();
+                    // Keep genuine zero LUT weights. Use units only when the entire
+                    // design has no LUTs, avoiding a zero-total-weight backend problem.
+                    int w = vertexWeights != null ? vertexWeights[i]
+                            : (unitWeightFallback ? 1 : (weight == null ? 0 : weight.intValue()));
                     hgrWriter.write(w + "\n");
                 }
             }
@@ -379,12 +482,22 @@ public class PartitionTools {
                 netNames.add(line);
             }
 
-            // Read header line from .hgr
-            String header = hgrReader.readLine(); // may be "E V" or "E V fmt"
-            int edgeIdx = 0;
-
-            while ((line = hgrReader.readLine()) != null) {
-                edgeIdx++;
+            // Only the edge section describes nets. In fmt1/11 the first
+            // integer is an edge weight; fmt10/11 vertex weights follow E edges.
+            String header = readHypergraphRecord(hgrReader);
+            if (header == null) throw new IllegalArgumentException("Empty hypergraph");
+            String[] fields = header.trim().split("\\s+");
+            if (fields.length < 2) throw new IllegalArgumentException("Invalid hMETIS header");
+            int edgeCount = Integer.parseInt(fields[0]);
+            int vertexCount = Integer.parseInt(fields[1]);
+            int format = fields.length > 2 ? Integer.parseInt(fields[2]) : 0;
+            if (edgeCount < 0 || vertexCount != instLookup.length - 1
+                    || (format != 0 && format != 1 && format != 10 && format != 11)) {
+                throw new IllegalArgumentException("Invalid/unsupported hypergraph dimensions or format");
+            }
+            for (int edgeIdx = 1; edgeIdx <= edgeCount; edgeIdx++) {
+                line = readHypergraphRecord(hgrReader);
+                if (line == null) throw new IllegalArgumentException("Truncated hypergraph edge section");
                 String netName = edgeIdx <= netNames.size() ? netNames.get(edgeIdx - 1)
                         : ("<edge_" + edgeIdx + ">");
 
@@ -392,19 +505,21 @@ public class PartitionTools {
                     new String[0] : line.trim().split("\\s+");
                 Map<Integer, Integer> partCounts = new HashMap<>();
                 ArrayList<String> members = new ArrayList<>();
-
-                for (String token : tokens) {
-                    if (token.isEmpty()) continue;
-                    int vertexId;
-                    try {
-                        vertexId = Integer.parseInt(token);
-                    } catch (NumberFormatException numberFormatException) {
-                        continue;
+                int firstVertex = format % 10 == 1 ? 1 : 0;
+                int edgeWeight = firstVertex == 1 ? Integer.parseInt(tokens[0]) : 1;
+                if (edgeWeight <= 0) throw new IllegalArgumentException("Nonpositive hyperedge weight");
+                Set<Integer> seenVertices = new HashSet<>();
+                for (int token = firstVertex; token < tokens.length; token++) {
+                    int vertexId = Integer.parseInt(tokens[token]);
+                    if (vertexId < 1 || vertexId > vertexCount || !seenVertices.add(vertexId)) {
+                        throw new IllegalArgumentException("Invalid/duplicate hypergraph vertex " + vertexId);
                     }
-                    String instName = (vertexId >= 0 && vertexId < instLookup.length) ? 
-                        instLookup[vertexId] : null;
-                    Integer partition = (instName == null) ? null : nameToPart.get(instName);
-                    int partitionId = (partition == null) ? -1 : partition.intValue();
+                    String instName = instLookup[vertexId];
+                    Integer partition = instName == null ? null : nameToPart.get(instName);
+                    if (partition == null || partition < 0) {
+                        throw new IllegalArgumentException("Unmapped hypergraph instance " + instName);
+                    }
+                    int partitionId = partition;
                     partCounts.put(partitionId, partCounts.getOrDefault(partitionId, 0) + 1);
                     String partitionLabel = (partitionId >= 0) ? 
                         PartitionLabel.indexToFpgaLabel(partitionId) : "UNASSIGNED";
@@ -414,6 +529,7 @@ public class PartitionTools {
                 boolean cut = partCounts.size() > 1;
 
                 reportWriter.write(String.format("Net %d: %s%n", edgeIdx, netName));
+                if (firstVertex == 1) reportWriter.write("  edge_weight=" + edgeWeight + "\n");
                 // Print blocks with pin counts
                 StringBuilder description = new StringBuilder();
                 description.append("  cut=").append(cut ? "true" : "false").append(" blocks: ");
@@ -448,5 +564,13 @@ public class PartitionTools {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static String readHypergraphRecord(BufferedReader reader) throws IOException {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (!line.trim().isEmpty() && !line.trim().startsWith("%")) return line;
+        }
+        return null;
     }
 }

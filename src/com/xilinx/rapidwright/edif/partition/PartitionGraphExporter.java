@@ -32,7 +32,10 @@ public final class PartitionGraphExporter {
         long[] value = new long[RESOURCES.length];
         if (cell.isLeafCellOrBlackBox()) {
             String type = cell.getName().toUpperCase(Locale.ROOT);
-            if (logicDiscoveryPolicy.isLogicLUT(type)) value[0] = 1;
+            if (!cell.isPrimitive()) {
+                value[5] = 1;
+                unknownTypes.add(type);
+            } else if (logicDiscoveryPolicy.isLogicLUT(type)) value[0] = 1;
             else if (type.startsWith("FD") || type.startsWith("LD")) value[1] = 1;
             else if (type.startsWith("RAMB18")) value[2] = 1;
             else if (type.startsWith("RAMB36")) value[2] = 2;
@@ -107,8 +110,7 @@ public final class PartitionGraphExporter {
             EDIFHierCellInst inst = entry.getValue();
             // Static sources are regenerated per FPGA by regroup and are not
             // placement variables. Their nets cannot be snake dependencies.
-            if (inst.getCellType().isLeafCellOrBlackBox()
-                    && logicDiscoveryPolicy.isExcludedToken(inst.getCellType().getName())) continue;
+            if (inst.getCellType().isStaticSource()) continue;
             int id = vertices.size() + 1;
             vertices.put(inst, id);
             JSONObject row = new JSONObject();
@@ -118,6 +120,18 @@ public final class PartitionGraphExporter {
         }
         Map<EDIFHierNet, Set<EDIFHierCellInst>> edges = new TreeMap<>();
         Map<EDIFHierNet, Set<String>> aliases = new HashMap<>();
+        // Only actual HDI constant OUTPUT drivers prove a static net. Net
+        // names such as <const0> and work-library cells named GND are not proof.
+        Set<EDIFHierNet> constantNets = new HashSet<>();
+        for (EDIFHierCellInst leaf : netlist.getAllLeafHierCellInstances(true)) {
+            if (!leaf.getCellType().isStaticSource()) continue;
+            for (EDIFHierPortInst port : leaf.getHierPortInsts()) {
+                if (!port.isOutput() || port.getHierarchicalNet() == null) continue;
+                EDIFHierNet attached = port.getHierarchicalNet();
+                EDIFHierNet canonical = netlist.getParentNet(attached);
+                constantNets.add(canonical == null ? attached : canonical);
+            }
+        }
         // Top-level I/O is routed through the root mapping's FPGA. Preserve
         // these otherwise single-vertex nets using one fixed virtual terminal;
         // it is a placement constraint, never a new netlist instance.
@@ -140,7 +154,7 @@ public final class PartitionGraphExporter {
                 EDIFHierNet canonical = netlist.getParentNet(attached);
                 if (canonical == null) canonical = attached;
                 aliases.computeIfAbsent(canonical, n -> new TreeSet<>()).add(attached.toString());
-                if (!visited.add(canonical) || canonical.getNet().isGND() || canonical.getNet().isVCC()) continue;
+                if (!visited.add(canonical) || constantNets.contains(canonical)) continue;
                 Set<EDIFHierCellInst> connected = canonical.getConnectedInsts(vertices.keySet());
                 if (connected.size() > 1 || (!connected.isEmpty() && topPorts.containsKey(canonical))) {
                     edges.put(canonical, connected);

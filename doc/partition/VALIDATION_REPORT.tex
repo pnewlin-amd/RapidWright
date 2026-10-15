@@ -1,0 +1,476 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.82in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,booktabs,longtable,array}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=blue,citecolor=blue}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{3em}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\sha}[1]{{\scriptsize\texttt{#1}}}
+\newcommand{\ReleaseTestStatus}{Current source builds and tests are reported separately below. The tiny end-to-end portable release smoke and final release identity remain pending their actual completion. The sixteen large-design results are completed measurements of the separately identified benchmark engine.}
+\title{Timing-, Topology-, and Register-Free-Path-Aware FPGA Partition Mapping\\Implementation, Controlled Observations, and J4 Validation Evidence}
+\author{RapidWright partitioner engineering validation}
+\date{15 October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report documents a mapping-only extension of the RapidWright partitioner using Mt-KaHyPar v1.6.2. It combines topology-aware hypergraph initialization, conservative primitive-level register-free path analysis, sampled source timing guidance, bounded local refinement, and independent Native Vivado resource and endpoint checks. Sixteen selected mappings cover NVIDIA NVDLA, OpenTitan Earl Grey, a 3,072-core PicoRV32 mesh, and an AES farm on one through four J4 VP1902 targets. All sixteen have recorded exact endpoint and cut-category parity with zero mismatches and pass their effective hard Native LUT caps. AES and OpenTitan use complete source-net censuses; NVDLA and mesh use exact mapping-bound crossing incidence plus complete logical-owner/control and top-port coverage. These scopes are deliberately distinguished. A controlled mesh comparison demonstrates lower endpoint excess, transit, and structural transfers at unchanged worst crossing count; AES demonstrates meaningful balance/quality tradeoffs rather than universal improvement. The results establish auditable source mappings, not global optimality, transport feasibility, routed timing, bitstreams, or achieved DUT frequency.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+\section{Scope, release identity, and evidence conventions}
+
+The required output is a partition assignment for an original post-synthesis netlist. A mapping places existing hierarchical logic on logical FPGA labels. This work does not regroup or wrap the netlist, insert transport, replicate logic, pipeline a crossing, or change sequential behavior. Downstream hardware implementation is outside the experiment. The reduced completion target is mesh three/four-FPGA validation, exact cut/category comparisons, AES tuning, and the selected J4 mapping package.
+
+The measured large-design engine is identified by approved manifest SHA-256
+\begin{center}\sha{b12fe61853478f92424932bcbbe7b0c82635c8f158de5a888bac8a2766cc48b2}.\end{center}
+Its synchronous-control authority manifest is
+\begin{center}\sha{60bc13f5988f730bf9dcd5936ff37bd639e3cb06700e5813c61ed469a25ad3b5}.\end{center}
+The release branch is \code{Partitioner_Extreme_Overhaul}, started from \code{5bc91b48}. Subsequent portable launch/environment changes remove machine-specific tool locations, permit explicit optional WSL use, and pass the required Linux dynamic-library environment. They do not constitute sixteen new large-design experiments. \ReleaseTestStatus
+
+The companion \code{evidence/validation_evidence.json} contains portable extracts of completed small reports, exact numeric results, mapping/source/receipt hashes, selected comparison traces, and the original-report digest index. A \code{workspace/} alias refers to the common parent containing RapidWright, LSUT\_2, topologies, work, and RESULTS FOR J4. It is a location alias, not a hash of relocated or rewritten evidence. Original SHA-256 values always refer to the original report bytes before path normalization. Large EDIF/DCP payloads, mapping payloads, and Native streams were not reread to prepare this report. Hashes locate and bind that separately retained evidence; they do not embed the source payload in this repository.
+
+The snapshot was built from 342 bounded report inputs. Its extraction is repeatable with \code{evidence/build_snapshot.py}; the extractor does not run a solver, Native Vivado, STA, or a payload validator. Its assertions check report consistency, not a fresh physical implementation. A final summary renderer likewise reads current qualified package artifacts rather than repeating the underlying experiments.
+
+\section{Research basis and the engineering decisions it supports}
+
+\subsection{Why min-cut alone does not answer the FPGA question}
+
+Mt-KaHyPar's published framework supplies scalable multilevel coarsening and FM/flow-based improvement. Its broad graph/hypergraph evaluation motivates using a mature backend, but does not supply a primitive timing model or an FPGA transport implementation \cite{mtpaper}. Consequently, FPGA-specific path semantics, useful occupancy, physical resource validation, and candidate acceptance reside around the backend in this implementation.
+
+The pinned v1.6.2 documentation supports cut/connectivity objectives, direct target-graph mapping through a Steiner-tree metric, fixed vertices, and individual scalar block weights; its direct Steiner target graph is limited to 64 nodes \cite{mtdocs}. This accommodates the requested 24/28-node topology scale at the API level, but this report's completed selected result matrix is J4, one through four targets. No final 24/28-target result is inferred from backend capability. The pinned file format requires symmetric undirected target adjacency, one-based input IDs, and zero-based output blocks. It explicitly lacks multidimensional constraint support \cite{mtformats}. Resource-vector constraints therefore require separate graph/refiner checks and a final Native oracle rather than an unsupported backend claim.
+
+Heuer's direct mapping formulation incorporates target-graph Steiner cost during optimization, providing a stronger rationale than a label permutation after unconstrained partitioning \cite{steiner}. Here topology cost participates in initialization and refinement; minimum physical-link hop bounds additionally participate in register-free path auditing. These are distinct quantities. Weighted shortest-path/Steiner communication costs are not measured cable latency or bandwidth.
+
+\subsection{Timing and path snaking}
+
+OpenROAD's TritonPart documentation describes extracting critical paths/slack, incorporating timing cost into coarsening and refinement, and updating costs with slack propagation. It defines snaking through block reentries \cite{openroad}. The original TritonPart paper combines constraints and timing-aware partitioning and shows why initially noncritical paths must not be ignored \cite{tritonpaper}. These findings motivated the path-based layer here, but this implementation is narrower: it re-evaluates the supplied Native STA sample and does not propagate a complete timing graph after each mapping change.
+
+A path \(A\rightarrow B\rightarrow C\) has no repeated FPGA and thus no block reentry, yet B contains the uncaptured combinational transit the user wants to avoid. This implementation therefore measures worst register-free boundary changes, topology hops, endpoint excess, and transit primitives in addition to reentries. Reentry penalties alone cannot detect every undesirable transit. The design goal is to reduce these concrete quantities while respecting capacities and an explicit cut/topology budget, not to attach an aesthetic score with an unverified relationship to hardware frequency.
+
+\subsection{FPGA transport and balance}
+
+Lin et al. jointly consider routing topology, net-group criticality and TDM allocation because limited inter-FPGA I/O causes multiplexing delay \cite{tdm2020}. Zheng and Young explicitly minimize the maximum FPGA-pair cut burden before assigning TDM ratios; their abstract also identifies clock compatibility restrictions on sharing a wire \cite{tdm2023}. These results support auditing pair/link pressure and preserving clock categories. They do not justify converting a total cut count directly into a DUT clock without transport details.
+
+EasyPart addresses FPGA-emulation resources and topology constraints with a min-hop initialization that can relax strict non-hop requirements \cite{easypart}. Its capacity/balance definitions must not be numerically substituted for another tool's imbalance definition. For example, a bound written \((1/K+\epsilon)W\) differs from \((1+\epsilon)W/K\). There is no public result here establishing one universally best 3\%, 10\%, 20\%, or 30\% tradeoff. Relaxing balance enlarges the feasible set mathematically, while a finite seeded heuristic may still return a worse solution.
+
+Synopsys publicly describes hardware-aware connectivity, constraint-driven partitioning, timing-driven synthesis and high-speed multiplexing \cite{vendor}. Those public product goals corroborate the relevance of the modeled information; they do not disclose sufficient internal algorithms to reproduce ProtoCompiler or support equivalence claims. The current implementation neither uses a proprietary partitioner nor claims its frequency/quality guarantees.
+
+\section{Implemented mapping flow}
+
+The high-level flow is:
+\begin{enumerate}
+\item Read the original source EDIF, or obtain the associated EDIF and Native inventory from the original synthesized checkpoint. Bind source identity, Native logical owners, target topology, target parts, and timing sample through recorded hashes.
+\item Construct a hierarchy frontier and canonical connectivity hypergraph. A frontier vertex can represent many primitive instances, but containing a register does not make an entire module a timing barrier. Expand zero-LUT hierarchy where needed so that large FF/memory structures remain visible.
+\item Invoke only Mt-KaHyPar v1.6.2, using scalar proxy weights and a target graph. Sampled timing weights guide initialization; they do not alter the unweighted audit counters.
+\item Build the conservative directed primitive dependency model. Audit all modeled acyclic register-free paths and collect a bounded set of complete witnesses for move scoring. Perform bounded greedy moves and paired exchanges, retaining only results satisfying the configured acceptance guards.
+\item Ask Native Vivado for resource usage of the original-source mapped primitive subsets. Use physical feedback to evaluate candidates and, within the recorded effort budget, adjust proxy weights/caps while preserving the original quality/cut anchors.
+\item Check hard Native caps, useful nonempty occupancy, fixed rules, model completeness and the native search envelope. Select an admissible candidate under the recorded ranked policy. Preserve rejected/limited alternatives with their original statuses.
+\item Compact hierarchy assignments and verify their expansion. For the separate benchmark-publication workflow, additionally audit the nonconstant original-source expansion and independently compare Native endpoints and categories for the exact selected map before qualifying its package.
+\end{enumerate}
+
+Ordinary frontend \code{PASS} establishes its recorded model, occupancy, search-envelope and Native resource/cap acceptance; it does not automatically run the independent full endpoint/category proof used for these sixteen benchmark packages. Those separate proof receipts and publication qualifications establish the stronger statements in this report. The short CLI example below must not be interpreted as automatically producing a complete Native census or one of these benchmark qualification receipts.
+
+This is an iterative heuristic. A failed candidate cannot be silently relabeled as a success, and failure to find a feasible result is possible. The hard-cap contract concerns accepted/published mappings: when feasibility cannot be established, the frontend must refuse that qualification rather than exceed the cap.
+
+\subsection{Primitive semantics and model completeness}
+
+The current model scope is \code{functional_synchronous_controls_v2_UNISIM_2025_1}. Sequential primitives are both capture endpoints and independent launch points. An incoming crossing is counted before capture; no register-free path continues through the captured state. Functional synchronous controls, such as active synchronous reset/set stages, participate according to their primitive parameters. Asynchronous reset/preset and disabled stages do not become synchronous captures merely because their pin names resemble controls. Ordinary clock/reset-only distribution remains separately classified.
+
+Memories expose separate synchronous write/data/control captures while asynchronous LUTRAM/SRL read-address dependencies remain combinational. BRAM, URAM and DSP stage parameters affect the dependency model. Unspecified parameters use the pinned UNISIM 2025.1 defaults; invalid or unsupported cases must not acquire invented behavior. Combinational roots/terminals handle unanchored source boundaries. Internal path optimization assigns no fabricated FPGA home to top I/O. Unknown/opaque semantics or combinational cycles limit completeness rather than producing a claimed all-path result. The sixteen selected candidates record complete path analysis and resource coverage on the supplied model; this is not a proof of Boolean sensitization or complete pin-accurate timing arcs.
+
+\section{Metrics and objective definitions}
+
+\subsection{Register-free path metrics}
+
+Let \(a(v)\) be a primitive's assigned FPGA, and let \(p=(v_0,\ldots,v_m)\) be a path in the modeled dependency graph up to its next capture or terminal. Consecutive same-FPGA vertices do not contribute a boundary change. Define
+\begin{align}
+ C(p)&=\sum_{i=1}^{m}\mathbf{1}[a(v_{i-1})\ne a(v_i)],\\
+ H(p)&=\sum_{\substack{i=1\\a(v_{i-1})\ne a(v_i)}}^{m}h(a(v_{i-1}),a(v_i)),\\
+ C_{\max}&=\max_p C(p),\qquad H_{\max}=\max_p H(p),
+\end{align}
+where \(h\) is the shortest physical-link count on declared selected adjacency. \(H_{\max}\) is a lower bound on required transport hops, not a selected physical route. For directly connected J4 subsets, \(h(A,B)=1\) for distinct selected FPGAs, so \(H_{\max}=C_{\max}\). That equality must not be assumed for other systems. Report tables use \(H=H_{\max}\).
+
+Endpoint excess is
+\begin{equation}
+ E=\sum_{e\in\mathcal{E}}\max\{0,\max_{p\to e} C(p)-1\},
+\end{equation}
+where \(\mathcal{E}\) contains modeled captures and combinational terminals. This sums each endpoint's worst excess, not exponentially many distinct paths. Transit \(V\) counts combinational primitives reachable from a cut ingress and able to reach a cut egress inside their own FPGA without a register. It counts primitives, not paths, and detects both \(A\to B\to A\) and \(A\to B\to C\) transit.
+
+The final dynamic-programming audit covers every modeled acyclic path. Move scoring uses at most 4,096 complete endpoint-maximal witnesses and a one-million primitive-ID aggregate default budget. Witness sampling bounds refinement effort; it is not the coverage of the final global structural audit. Topology relay counts, logical reentries and logical boundary changes remain separately reported where applicable.
+
+\subsection{Structural transfers versus exact Native cuts}
+
+\(T\) is the optimizer's directed structural net-destination transfer metric. Its graph excludes certain clock/reset-only and external-I/O distribution scopes. An undirected hyperedge pair count, \(T\), the number of distinct canonical Native crossing nets, and the number of distinct directed Native net-to-FPGA destinations answer different questions.
+
+The exact boundary proof counts each nonconstant canonical electrical crossing net once. A net with more than one remote destination contributes several directed destinations. Root top-level I/O and clock/reset distribution are included according to the exact mapping-bound proof policy. Directed categories are mutually exclusive:
+\begin{equation}
+ D_{\rm all}=D_{\rm clock}+D_{\rm reset\ only}+D_{\rm data/functional\ control}.
+\end{equation}
+The last category includes functional synchronous control nets; it is not synonymous with only D-input data. Logical signals/destinations are not package pins, transport channels, TDM slots, or actual link loads after routing. In particular, neither \(D_{\rm all}\) nor its data category may be substituted for \(T\).
+
+\subsection{Sampled source STA guidance}
+
+For an exported path with source slack \(s_p\) and its own source requirement \(R_p\), the implemented source criticality and normalization are
+\begin{equation}
+ q_p=\max(0,1-s_p/R_p)^2,\qquad
+ Q=\begin{cases}\max_p q_p&\max_p q_p>0,\\1&\text{otherwise}.\end{cases}
+\end{equation}
+With timing weight \(W\), an eligible initial hyperedge receives
+\begin{equation}
+ w_e=1+\operatorname{round}\left(W\max_{p\ {
+m matched\ to}\ e} q_p/Q\right),
+\end{equation}
+subject to the implementation's integer bound. Matching through ordered owner pairs conservatively weights parallel matching hyperedges; it is not exact pin-arc attribution. Normalization preserves useful relative criticality under a loose unchanged source clock. It is not a conversion from cost units to nanoseconds.
+
+The sampled path score uses normalized criticality times topology/path severity, including \(H(p)+\max(0,H(p)-1)^2\) and logical reentries. Every selected multi-FPGA case scored its recorded sample of 1,000 source setup paths. The one-FPGA case needs no boundary sample. A score of zero means those sampled paths incur zero modeled internal crossing cost, not that physical delay is zero or that unexported paths are safe. The design-wide unconstrained-path count is not established by these exports.
+
+Without an explicit link-delay model, retained candidates prioritize global \(H\), global \(C\), sampled timing cost, \(E\), and \(V\). If a user supplies an extra delay \(\delta\) per logical crossing, only the sampled modeled slack becomes \(s'_p=s_p-\delta C(p)\), and the declared modeled-slack ranking applies. That model uses logical crossings, not topology-hop sum, and does not discover omitted STA paths. The selected J4 experiments do not invent transport delay and do not claim routed frequency.
+
+\section{Hard capacities, soft balance, and admissible tradeoffs}
+
+For selected FPGA \(i\), the effective hard Native LUT cap is
+\begin{equation}
+ B_i=\min\{\lfloor u_i L_i\rfloor,\ B_i^{\rm uniform},\ B_i^{\rm explicit},\ B_i^{\rm topology}\},\qquad u_i\le0.75,
+\end{equation}
+with unspecified explicit terms omitted. \(L_i\) is the selected part's Native \code{LUT_ELEMENTS} capacity. The 75\% ceiling is the user's engineering policy, not a proven routability threshold. J4 VP1902 has \(L_i=8{,}460{,}288\), giving \(B_i=6{,}345{,}216\) before tighter caps. Native queries also confirmed VU19P at 4,085,760 elements and a 3,064,320 policy cap; the installed catalog contains 5,566 part variants. A historical all-part postprocessor failure is retained separately from the completed Native export and later clean VP1902/VU19P confirmation. Unknown/conflicting targets are rejected rather than assigned guessed capacities.
+
+Native Vivado \emph{CLB LUT Used} for the original-source mapped primitive subset is the physical accounting authority. Raw logical LUT primitive counts differ: LUT6\_2 is one logical primitive, while combining and memory packing affect Native usage. Separate partition-subset CLB totals can differ from a whole-design report because combining opportunities can cross the hypothetical partition boundary. For example, mesh reports 7,105,564 logical LUT primitives but 6,314,270 whole-source Native CLB LUTs. The per-subset count is not an independently synthesized, wrapped or routed target image.
+
+For equal devices, reported Native imbalance is
+\begin{equation}
+ I=\frac{\max_i L_i^{\rm used}}{\frac{1}{k}\sum_iL_i^{\rm used}}-1.
+\end{equation}
+For heterogeneous devices, selection uses the analogous imbalance of actual usage divided by physical device capacity, while retaining raw imbalance separately. Explicit lower experiment caps do not redefine a part's capacity.
+
+The preferred balance target is 20\%, separate from each recorded 28\% or 30\% search envelope and from immutable hard caps. Extremely tight balance is not pursued solely for its own sake when path/cut quality is better elsewhere in the admissible set. Every requested FPGA must contain useful nonconstant logic; constants, synthetic endpoints and trusted infrastructure cannot alone satisfy occupancy.
+
+The default cut-growth allowance is 10\%, an explicit engineering choice responding to the user's preference for severe transit reduction, not a literature-derived universal constant. The cut and topology budgets stay anchored to their original references through refinement/feedback rather than compounding on each accepted pass. Ranked guards can accept a secondary regression when a higher-priority metric improves; componentwise mode forbids each listed regression. Hard capacities, occupancy and the original cut/topology budgets remain independent gates. Changes in balance, seed, frontier, effort or anchor must be disclosed before calling an observation a controlled improvement.
+
+\section{Native equivalence and the large-design extraction repair}
+
+\subsection{What was compared}
+
+AES and OpenTitan comparisons stream the complete Native canonical source-net census, then bind the selected mapping and compare nonconstant endpoints, owner/reference histograms, directed pairs and categories. NVDLA and mesh instead use a four-map union of exact crossing incidence, complete source logical-owner/control metadata and top ports. That large-design proof intentionally does not dump internal noncrossing nets. The comparator must check both missing and extra crossings, exact endpoint fingerprints, destination pairs, and category agreement. It cannot qualify an unlisted map by inheriting another map's receipt.
+
+Hashes of the source checkpoint/EDIF, mapping set, engine/control authority, producer, Native output and comparison receipts bind each proof. Actual owned Native and comparison exits, guard failures, and monitor errors are retained. A zero exit for an owned Python comparison is not called a new Vivado execution; its original-source Native certificate is separate. Interrupted, resource-stopped and incomplete work never qualifies a mapping.
+
+\subsection{Logical memory macro pins must survive extraction}
+
+A concrete mesh failure exposed an important distinction: Vivado implementation-leaf traversal and original logical EDIF boundaries are not interchangeable. An earlier clock extraction omitted 18,432 logical RAM WCLK endpoints (6,144 RAM32M plus 12,288 RAM32M16). Filtering Native implementation children to original logical owners left 3,795,857 tokens. Adding precisely those source WCLK tokens reproduced the existing Java clock fingerprint, diagnosing an identity omission; a hypothetical reconstruction was not accepted as Native proof.
+
+The final producer restored the generic Native \code{get_pins -of_objects} semantics over \emph{all} electrical segments, in bounded 512-segment chunks, without \code{-leaf}. Each Native chunk's NAME, REF\_PIN\_NAME and DIRECTION columns are captured before collection stringification, checked for alignment, and deduplicated by exact pin identity with metadata conflicts rejected. A one-time top-port index preserves original top-port names/directions and electrical alias membership without repeatedly querying the enormous clock fanout. The same stream schema, source owner inventory, mapping masks and final comparator remain mandatory.
+
+Early canary attempts that repeated per-macro net traversals were stopped because they did not scale. The final canary verifies bounded prefix-query equivalence and exports the full chunked clock relation as an API/performance diagnostic. Its completion label explicitly does \emph{not} claim macro parity. Actual full-source metadata and the unchanged final four-map comparator supply the correctness proof. The completed mesh Native phase took 4,715.16 s, with about 43.22 GB peak RSS; the following full comparison took 240.32 s and exited zero. These are validation timings on this workstation, not partitioner speed benchmarks.
+
+\section{Selected sixteen-case J4 results}
+
+The source designs are the actual preserved synthesized experiments, not a statement that an arbitrary upstream configuration has the same size. Whole-source Native reports for the one-FPGA assignments establish the following scale. Logical primitive leaves refer to the original logical boundaries, including memory macros; they must not be confused with Vivado's additional implementation-child objects.
+
+\begin{center}\small
+\begin{tabular}{lrrrr}
+\toprule
+Source & Logical leaves & Logical LUT primitives & Native CLB LUTs & Native FFs\\
+\midrule
+OpenTitan Earl Grey & 434,666 & 267,266 & 230,543 & 146,801\\
+NVDLA & 2,869,930 & 2,032,257 & 1,703,727 & 764,988\\
+PicoRV32 mesh & 11,216,577 & 7,105,564 & 6,314,270 & 3,789,664\\
+AES farm & 517,544 & 262,135 & 236,741 & 232,541\\
+\bottomrule
+\end{tabular}\end{center}
+
+The checkpoint's synthesis/import part describes the source experiment; VP1902 is the separate selected target capacity. Reading a source synthesized for another part does not retarget, place or route that source onto VP1902. The original DCP/EDIF hashes in each case make this distinction auditable.
+
+All selected devices are VP1902. Logical A/B/C/D correspond to physical IDs 0/1/2/3 at C01/S01/E/F/G/H; a k-FPGA result uses its recorded selected subset. Each package includes \code{fpga_devices.tsv}. The topology SHA-256 is
+\begin{center}\sha{6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83}.\end{center}
+OT means OpenTitan Earl Grey; Mesh means the 3,072-core PicoRV32 mesh. Every row passes its effective hard Native LUT caps and useful occupancy. Preferred balance can remain unmet.
+
+\begin{center}\small
+\begin{longtable}{llrrrrr}
+\toprule
+Design/k & Native LUTs A/B/C/D & I(\%) & H & E & V & T\\
+\midrule\endhead
+OT/1 & {\scriptsize 230,543} & 0.0000 & 0 & 0 & 0 & 0 \\
+OT/2 & {\scriptsize 116,486/114,070} & 1.0479 & 3 & 7,950 & 1,119 & 1,869 \\
+OT/3 & {\scriptsize 98,750/61,885/70,025} & 28.4358 & 4 & 36,693 & 2,966 & 3,258 \\
+OT/4 & {\scriptsize 48,375/64,288/59,861/58,040} & 11.5317 & 4 & 27,667 & 6,002 & 3,529 \\
+NVDLA/1 & {\scriptsize 1,703,727} & 0.0000 & 0 & 0 & 0 & 0 \\
+NVDLA/2 & {\scriptsize 917,761/785,966} & 7.7357 & 3 & 1,886 & 1,972 & 3,236 \\
+NVDLA/3 & {\scriptsize 511,063/641,556/551,108} & 12.9681 & 5 & 37,521 & 3,717 & 6,026 \\
+NVDLA/4 & {\scriptsize 299,097/490,065/367,183/547,391} & 28.5155 & 2 & 733 & 230 & 8,110 \\
+Mesh/1 & {\scriptsize 6,314,270} & 0.0000 & 0 & 0 & 0 & 0 \\
+Mesh/2 & {\scriptsize 3,156,885/3,157,385} & 0.0079 & 1 & 0 & 0 & 3,663 \\
+Mesh/3 & {\scriptsize 2,631,240/1,578,448/2,104,582} & 25.0140 & 2 & 32 & 720 & 6,452 \\
+Mesh/4 & {\scriptsize 1,578,440/1,578,950/1,578,441/1,578,439} & 0.0242 & 2 & 32 & 1,440 & 7,131 \\
+AES/1 & {\scriptsize 236,741} & 0.0000 & 0 & 0 & 0 & 0 \\
+AES/2 & {\scriptsize 148,726/88,064} & 25.6185 & 3 & 27,942 & 9,205 & 8,440 \\
+AES/3 & {\scriptsize 100,452/82,724/53,630} & 27.2586 & 3 & 30,604 & 7,723 & 14,133 \\
+AES/4 & {\scriptsize 75,196/60,621/72,146/28,921} & 26.9752 & 3 & 31,342 & 6,193 & 16,800 \\
+\bottomrule
+\end{longtable}\end{center}
+
+\subsection{Exact canonical crossing counts and categories}
+
+All rows below have zero recorded missing, extra, endpoint/pair, primitive-histogram and category mismatches under their stated proof scope. F denotes full source census (AES/OT); B denotes exact four-map boundary plus all-owner/control/top-port coverage (NVDLA/mesh). The category columns count directed destinations and sum to D. Counts include Native clock/reset/top-I/O scope and therefore differ from structural \(T\).
+
+\begin{center}\small
+\begin{longtable}{lrrrrrr}
+\toprule
+Design/k & Scope & Cut nets & D & Clock & Reset only & Data/control\\
+\midrule\endhead
+OT/1 & F & 0 & 0 & 0 & 0 & 0 \\
+OT/2 & F & 1,989 & 1,989 & 1 & 3 & 1,985 \\
+OT/3 & F & 3,187 & 3,277 & 2 & 14 & 3,261 \\
+OT/4 & F & 3,352 & 3,676 & 3 & 25 & 3,648 \\
+NVDLA/1 & B & 0 & 0 & 0 & 0 & 0 \\
+NVDLA/2 & B & 3,239 & 3,239 & 1 & 2 & 3,236 \\
+NVDLA/3 & B & 6,230 & 6,234 & 2 & 4 & 6,228 \\
+NVDLA/4 & B & 8,313 & 8,320 & 3 & 5 & 8,312 \\
+Mesh/1 & B & 0 & 0 & 0 & 0 & 0 \\
+Mesh/2 & B & 3,715 & 3,715 & 1 & 7 & 3,707 \\
+Mesh/3 & B & 6,504 & 6,549 & 2 & 10 & 6,537 \\
+Mesh/4 & B & 7,178 & 7,268 & 3 & 8 & 7,257 \\
+AES/1 & F & 0 & 0 & 0 & 0 & 0 \\
+AES/2 & F & 8,486 & 8,486 & 1 & 40 & 8,445 \\
+AES/3 & F & 13,937 & 14,227 & 2 & 90 & 14,135 \\
+AES/4 & F & 16,326 & 16,915 & 3 & 109 & 16,803 \\
+\bottomrule
+\end{longtable}\end{center}
+
+One-FPGA zero cuts are expected: they verify assignment coverage and resource accounting, rather than challenging an inter-FPGA boundary. Mesh one-FPGA Native use is only 30,946 LUTs below the user policy cap; that small remaining budget does not include later wrapping/transport overhead. The large six-million-LUT mesh therefore gives a meaningful source-scale validation while still requiring downstream implementation judgement.
+
+\section{Controlled comparisons and preserved alternatives}
+
+\subsection{NVDLA: a strong four-FPGA path improvement and two revealing tradeoffs}
+
+The selected NVDLA candidates retain the following before/after refinement measurements. Each pair is within one actual candidate: source, engine, topology, primitive graph, timing sample and budget anchor are fixed. ``Before'' is the actual initial backend assignment's complete structural audit, not a separately Native-resource-validated or exact-boundary-qualified package. ``After'' is the retained assignment that subsequently receives Native resource validation and final map-specific boundary proof.
+
+\begin{center}\small
+\begin{tabular}{lrrrrr}
+\toprule
+k & H/C before--after & E before--after & V before--after & T before--after & T anchor\\
+\midrule
+2 & 3/3--3/3 & 4,091--1,886 & 19--1,972 & 2,942--3,236 & 2,942\\
+3 & 5/5--5/5 & 38,568--37,521 & 3,716--3,717 & 5,768--6,026 & 5,780\\
+4 & 3/3--2/2 & 1,001--733 & 266--230 & 8,093--8,110 & 8,093\\
+\bottomrule
+\end{tabular}\end{center}
+
+NVDLA k4 is the clearest local improvement: the worst uncaptured crossing count drops from three to two, endpoint excess falls 26.77\%, and transit falls 13.53\%, for 17 additional structural transfers (0.2101\%). Its greedy trace first reaches H/C=2/2 with E=772 and V=248; retained swaps reduce E to 733 and V to 230. A later greedy state returning to H/C=3/3 is rejected. The final Native subsets contain 299,097 / 490,065 / 367,183 / 547,391 CLB LUTs, within their hard caps and the 30\% envelope at 28.5155\% imbalance. Its exact final proof matches 8,313 canonical crossing nets and 8,320 directed destinations (3 clock, 5 reset-only, 8,312 data/functional-control). That count is distinct from structural T=8,110.
+
+NVDLA k2 exposes a real residual weakness of ranked selection: endpoint excess improves while transit rises from 19 to 1,972 and T approaches the original 10\% allowance. The trace does not show a worst-path or sampled-timing improvement; sampled cost is zero on both sides. It would be misleading to call this an across-the-board snake-path improvement. E precedes V in the declared ranked guard, so a lower E can permit a large V regression. Componentwise acceptance is available when that tradeoff is unacceptable; this report does not retroactively replace the selected policy or hide the regression.
+
+NVDLA k3 also shows mixed behavior. Two Native-validated feedback iterations have (H/C,E,V,T,I)=(5/5,37,530,3,682,6,038,12.9677\%) and selected (5/5,37,521,3,717,6,026,12.9681\%). Small E/T reductions accompany 35 more transit primitives. Only the selected iteration receives the final exact-map boundary qualification in this package. These observations support a measurable heuristic and explicit tradeoffs, not a monotonic decrease in every path metric or an inferred timing-frequency gain.
+
+\subsection{OpenTitan Earl Grey: path reductions at controlled cut cost}
+
+OpenTitan's selected candidate traces use the same within-candidate interpretation as NVDLA. All source sampled timing costs shown here remain zero; improvements are structural path/cut observations. The original transfer anchor is stated explicitly because a feedback candidate's initial backend assignment can be below that anchor.
+
+\begin{center}\small
+\begin{tabular}{lrrrrr}
+\toprule
+k & H/C before--after & E before--after & V before--after & T before--after & T anchor\\
+\midrule
+2 & 4/4--3/3 & 18,173--7,950 & 1,125--1,119 & 1,732--1,869 & 1,804\\
+3 & 5/5--4/4 & 37,872--36,693 & 3,851--2,966 & 2,755--3,258 & 3,117\\
+4 & 5/5--4/4 & 43,567--27,667 & 5,136--6,002 & 3,375--3,529 & 3,366\\
+\bottomrule
+\end{tabular}\end{center}
+
+At k2, worst crossing count improves from four to three and endpoint excess falls by more than half; transit also falls slightly. T grows 7.91\% from that candidate's initial baseline but only 3.60\% from its original 1,804 reference, within the 10\% budget. This directly demonstrates the user's requested willingness to spend some cuts on a less severe uncaptured path. The retained swap transition is H/C=4/4,E=7,883,V=1,187,T=1,971 to H/C=3/3,E=7,950,V=1,119,T=1,869: it accepts slightly greater E for the higher-priority worst-path improvement.
+
+At k3, the selected candidate reduces worst crossings five to four and transit 3,851 to 2,966. Its 2,755-to-3,258 local T increase is 18.26\%, but the original fixed anchor is 3,117; the final T is 4.52\% above that anchor. Calling this a violation of an unchanged 10\% original-reference budget, or calling it a 10\% allowance relative to 2,755, would both misstate the experiment. At k4, worst crossings and E improve but transit grows 866; ranked tradeoff semantics must remain visible.
+
+The following completed Native-resource-validated feedback candidates show that softer balance can accompany stronger path/cut quality. Each row shares the same source/topology/model within its FPGA count, but feedback weights and seeds evolve. They are not independent controlled ablations. An asterisk identifies the selected iteration with final full-census map-specific proof.
+
+\begin{center}\small
+\begin{tabular}{lrrrrrr}
+\toprule
+k / iteration & H/C & E & V & T & Native I(\%) & Selected\\
+\midrule
+2 / 0 & 4/4 & 16,855 & 3,774 & 1,949 & 0.9038 & \\
+2 / 1 & 3/3 & 7,950 & 1,119 & 1,869 & 1.0479 & *\\
+3 / 0 & 5/5 & 27,724 & 5,165 & 3,338 & 6.7213 & \\
+3 / 1 & 4/4 & 50,413 & 7,051 & 3,423 & 8.3458 & \\
+3 / 2 & 4/4 & 36,693 & 2,966 & 3,258 & 28.4358 & *\\
+4 / 0 & 5/5 & 73,904 & 7,593 & 3,521 & 19.9298 & \\
+4 / 1 & 4/4 & 63,940 & 5,308 & 3,684 & 10.1225 & \\
+4 / 2 & 4/4 & 27,667 & 6,002 & 3,529 & 11.5317 & *\\
+\bottomrule
+\end{tabular}\end{center}
+
+For k3, selected iteration 2 improves E/V/T over iteration 1 while increasing imbalance substantially; all remain inside the recorded envelope. For k4, selected iteration 2 improves E/T over iteration 1 but has more transit and slightly worse imbalance. The selected final k2/k3/k4 full-census comparisons match 1,989 / 3,187 / 3,352 canonical cut nets and 1,989 / 3,277 / 3,676 directed destinations, respectively, with zero mismatches. Thus exact Vivado correspondence is established independently of whether a particular tradeoff is preferred. No boundary proof is inherited by a nonselected feedback row.
+
+\subsection{Mesh three-FPGA feedback candidate comparison}
+
+The same b12 engine, original mesh source, J4 subset, 1,000-path source timing sample, ranked policy and original 6,967-transfer/10\% budget produced the following candidate records. Both have actual Native mapped-subset resource validation. Candidate 1 is the selected final exact-boundary-proved map; candidate 0 is not retrospectively assigned that later boundary proof.
+
+\begin{center}\small
+\begin{tabular}{lrrrrrr}
+\toprule
+Candidate & H/C & E & V & T & Sample cost & Native imbalance\\
+\midrule
+0 & 2/2 & 66 & 813 & 6,988 & 0 & 25.010868\%\\
+1 selected & 2/2 & 32 & 720 & 6,452 & 0 & 25.013976\%\\
+\bottomrule
+\end{tabular}\end{center}
+
+Transfers fall 536 (7.6703\%), endpoint excess falls 34 (51.5152\%), and transit falls 93 (11.4391\%), while worst crossings/hops stay at two. Native imbalance increases by only 0.003108 percentage points and remains within 30\%; the soft 20\% target remains unmet. This is evidence of a better measured tradeoff on the same modeled problem, not a causal isolation of feedback: seeds/proxy feedback differ between iterations, and no multi-run statistical significance is claimed.
+
+The selected candidate's own retained greedy pass gives a more local observation: one accepted move reduces transit from 1,296 to 720 (44.4444\%) with H/C=2/2, E=32 and T=6,452 unchanged. A proposed later swap trajectory has H/C=3/3 and is rejected, demonstrating that a lower-level cost proposal cannot silently bypass the global guard. These traces are structural audits. There was no nonzero sampled timing cost to improve in this selected mesh sample, so a timing-improvement claim would be unsupported.
+
+Candidate 0's mapping SHA starts \code{b559cf6c}; selected candidate 1 starts \code{93fce6c9}. Full map, assignment, Native completion and report hashes are retained in the evidence snapshot. Compact canonical mapping bytes may have a different SHA from the verbose source assignment while their audited nonconstant expansions match exactly.
+
+\subsection{AES balance tuning: measured compromises}
+
+AES comparisons share the original checkpoint, EDIF, timing sample, J4 scope and b12 model within each FPGA count. Original main runs use effort 3/3/3 (iterations/starts/refine passes); V4/V5 follow-ups use 5/3/3, while a separate coarse k2 experiment uses 5/7/6. Selected feedback iterations, granularity and budget anchors differ. These are recorded engineering alternatives, not an isolated experiment proving that a leaf-size switch caused the result.
+
+\begin{center}\small
+\begin{tabular}{llrrrrrr}
+\toprule
+k & Variant & I(\%) & H/C & STA cost & E & V & T\\
+\midrule
+2 & main LIMIT & 30.5966 & 2/2 & 13.022 & 37,031 & 5,942 & 8,172\\
+2 & selected V5 & 25.6185 & 3/3 & 0 & 27,942 & 9,205 & 8,440\\
+2 & V4 alternative & 28.9985 & 3/3 & 57.618 & 66,939 & 3,826 & 8,132\\
+3 & main LIMIT & 32.8498 & 3/3 & 120.375 & 27,097 & 6,812 & 13,804\\
+3 & selected V5 & 27.2586 & 3/3 & 216.998 & 30,604 & 7,723 & 14,133\\
+4 & main LIMIT & 30.7948 & 3/3 & 239.922 & 32,990 & 7,177 & 15,997\\
+4 & selected V5 & 26.9752 & 3/3 & 350.814 & 31,342 & 6,193 & 16,800\\
+\bottomrule
+\end{tabular}\end{center}
+
+The selected V5 k2/k3/k4 cases enter the independent 30\% search envelope and satisfy tighter per-FPGA caps of 153,881, 102,587 and 76,940 Native LUTs, respectively. All remain above the preferred soft 20\% imbalance. At k2, balance and sampled timing/E improve, but H/C, transit and T worsen against the main LIMIT reference. At k3, qualifying balance improves while STA cost/E/V/T worsen. At k4, balance/E/V improve while STA cost and T worsen. The V4 k2 PASS has lower transit/T than selected V5, while V5 has better imbalance/STA/E; neither dominates all metrics.
+
+Selected V5 maps have fresh map-specific full census/category parity, as does the V4 k2 alternative. Main LIMIT alternatives retain their original balance limitations; no new status is inherited. The coarse k2 map has imbalance 31.1701\%, H/C=2/2, STA=110.893, E=18,871, V=3,769 and T=7,650, but its exact-map category comparison is pending and it is not selected or newly qualified. The preserved alternatives directory excludes that pending coarse map. The separate selected-map/alternatives notes retain these distinctions and their original receipt hashes.
+
+No claim is made that every selected V5 case is universally prettier than every older map. The evidence supports balance-qualified compromises and a retained Pareto discussion. Whether an H2 balance-limited map should be preferred over an H3 balanced map for a real platform requires an explicit user/platform policy, not an undocumented reranking after results are observed.
+
+\section{Validation coverage and versioned checks}
+
+Validation has several independent layers. Structural unit tests do not replace Native endpoint parity; a Native LUT pass does not establish correct path semantics; complete structural auditing does not establish all-path STA coverage. Source-only publication reviews establish guard/identity handling, not a new physical run.
+
+\begin{longtable}{p{0.22\linewidth}p{0.71\linewidth}}
+\toprule
+Layer & Covered behavior and limit\\
+\midrule\endhead
+Primitive graph & LUT/FF/memory/DSP/control roles, active stage defaults and invalid parameters; synchronous versus asynchronous capture, memory write capture versus asynchronous read dependency, opaque semantics and cycle/incompleteness handling. Tests include \code{TestHardwarePartitionGraph} and \code{TestPrimitiveTimingPolicy}.\\
+Path auditing & Register cut barriers, A--B--C transit, reentries, endpoint excess, complete DAG maxima, cycles, unanchored endpoints, physical-hop bounds and complete-J4 equivalence. Tests include \code{TestCombinationalPathAnalyzer}, \code{TestPhysicalRouteHops} and route-objective proofs.\\
+Timing guidance & Ordered owner paths, criticality normalization, unmatched/parallel owner-pair treatment, weighted hMETIS edges, optional modeled slack, rank/componentwise distinctions. Tests include \code{TestTimingPathModel} and \code{TestTimingHmetisWeights}.\\
+Refinement legality & Fixed assignments, frontier constraints, hard logical/scalar capacities, useful occupancy, original budget anchors, retain/rollback, ranked nonregression and bounded paired swaps. Tests include accepted-anchor, bounded-balanced-swap, retained-greedy-swap, route-aware-swap and grouped-frontier fixtures.\\
+Accounting/parity & Canonical electrical aliases, driver/sink role, distinct directed destinations, clock/reset/functional-control categories, top-level I/O, logical memory macro ownership, primitive histograms, missing/extra/metadata-mismatch rejection, compact longest-prefix expansion and explicit-constant omission. Native selected-map comparisons provide the final independent reference.\\
+Target policy & Part lookup/alias conflicts, verified capacity catalog, uniform/per-device/topology hard-cap minimum, utilization ceiling, meaningful nonempty targets and equal/heterogeneous imbalance definitions. Final Native subset counts remain authoritative.\\
+Runtime/provenance & Exact source/mapping/engine pins, complete markers, owned process identity/exits, resource stops, no partial-output authority, preserved originals and staged publication. This is operational evidence, not a hardware timing result.\\
+\bottomrule
+\end{longtable}
+
+The following historical source-review counts are version-specific and are not added together as a current unit-test total. The final export-only Tcl peer receipt records 95 focused checks, including generic all-segment column/dedup semantics and export-only canary scope. Its producer's host fixture run records 36 tests exiting zero. The final publisher peer records 155 review checks and 30 copied focused executable checks exiting zero, bound to publisher SHA \code{b1805520} and adapter SHA \code{5819a5fa}. The held data/helper peer records 217 bounded checks preserving all sixteen identities/caps/metrics, twelve then-completed proofs, four then-pending mesh bindings, and all 281 captured prior payload digest entries. The pending wording in those historical receipts is not rewritten after later successful execution.
+
+Current portable release checks are distinct from those historical reviews. A clean isolated source snapshot, with no sibling LSUT\_2 or topology checkout, ran 172 Python tests: 170 passed and two optional recorded-Native fixtures were skipped. The source-receipt SHA is \sha{853782d63f9e17ef34159fbee67f56f8e9be762e5d58fb53a2ac946674700645}. The partition frontend suite accounts for 155 tests (153 passed, two optional skips), and the tools suite for 17 passes. A fresh Gradle Java execution completed 120/120 tests with actual exit zero. Tool preflight also completed with actual exit zero using installed Vivado/Java and WSL Mt-KaHyPar v1.6.2. The separate tiny actual end-to-end release smoke and final commit identity remain pending their actual receipts; no large-design rerun is implied by these portability checks.
+
+The selected current packages provide the actual large-design completion: sixteen exact map-bound endpoint/category comparisons PASS, with Native source certificates and Native per-subset resource results. NVDLA and mesh each bind all four maps to their respective completed joint proof. The mesh completion is SHA
+\begin{center}\sha{52f3e4f8f0fdd334424235a8c8261b30c03e32e90f3709b3dc0fd8f885a1c96e};\end{center}
+its exact parity report is
+\begin{center}\sha{593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785}.\end{center}
+These completed proof identities must not be replaced by a failed earlier probe or by a merely source-reviewed candidate.
+
+\section{Use and reproduction}
+
+\subsection{High-level source command}
+
+For a standalone checkout or extracted release, run from its RapidWright root, configure the installed tools as described in the manual, and choose a fresh output directory. If the topology has no part declarations or companion, supply the actual target part:
+\begin{Verbatim}[fontsize=\small]
+.\partitioner.cmd --input "C:\designs\synth.dcp" `
+  --system-topology "C:\systems\machine.json" --target-part VP1902 `
+  --fpga-count 4 --output "C:\results\new_run"
+\end{Verbatim}
+On a POSIX host, use \code{./partitioner} with that host's paths. This command does not require a sibling LSUT\_2 repository or the historical J4 topology file. It does require a real input design, supported topology/target declarations and installed tools.
+
+The original common-workspace J4 example is contextual to the preserved experiments:
+\begin{Verbatim}[fontsize=\small]
+.\RapidWright\partitioner.cmd --input "source\synth.dcp" `
+  --system-topology "topologies\j4_board_topology.json" `
+  --fpga-count 4 --output "work\example_j4_new"
+\end{Verbatim}
+This is a usage example, not an assertion that this placeholder command was executed. J4's separate target companion associates VP1902 with the original topology identity. The original topology JSON bytes remain unchanged. Other systems can provide a supported target part/per-device assignment. Portable release tooling must locate installed Java, Vivado and Mt-KaHyPar v1.6.2 through documented environment/PATH or explicit flags; a workstation path embedded in old provenance is historical evidence, not an installation requirement.
+
+Users may control balance/search envelope, LUT utilization and explicit caps, cut growth, timing requirement/sample, leaf frontier, effort/seed, deterministic backend preset, quality guard and optional capture cohorts. \code{--timing required} rejects unavailable source timing; auto mode may use a clearly reported structural fallback. Capture cohorts are experimental and off by default. Their pilots did not establish a causal improvement. Explicit deterministic mode helps controlled repeats, but v1.6.2 fixed-vertex restrictions must be respected; the default multithreaded preset need not reproduce identical results with the same seed.
+
+To reproduce a selected experiment, retain its exact original source DCP/EDIF, source logical inventory, timing TSV/metadata, topology/target companion, backend version, approved model, Native tool version, effort, seeds, caps, proxy feedback, quality anchor and accepted iteration from \code{run_provenance.json}, \code{STATUS.json} and proof receipts. Merely rerunning the short example with defaults is not a reproduction of every selected run. A seed-only comparison under the multithreaded default is not a causal ablation.
+
+\subsection{Mapping representation}
+
+Mappings use longest matching ancestor rules. For example, assigning \code{hw_top/cool_module FPGA_A} assigns its descendants unless a deeper rule overrides it. This reduces verbosity without changing the audited nonconstant leaf assignment. GND/VCC leaf assignments are omitted; constants inherit an ancestor/root rule for accounting and are not useful-logic occupants. Every selected package's compact audit expands its rules over all original nonconstant logical boundaries and compares the result to the accepted assignment. Ancestor redundancy is removed; no proof of a globally minimum-length rule set is claimed.
+
+The delivered mapping should be consumed with those same rule semantics. A downstream tool that treats only exact leaf lines as assignments is a different consumer contract. The present work does not execute the unavailable wrapper/regrouping tool or assert its output resources.
+
+\subsection{Portable evidence extraction}
+
+From the RapidWright checkout:
+\begin{Verbatim}[fontsize=\small]
+python doc/partition/evidence/build_snapshot.py --workspace <common-parent>
+\end{Verbatim}
+This requires the separately preserved completed J4 package/work reports at their relative aliases. It reads only bounded small reports and does not regenerate missing measurements. The snapshot can be reviewed without the original workstation's user directory; hashes and alias paths identify what an auditor must retrieve for deeper inspection. Source payload verification, re-synthesis and timing reruns require those original payloads and the installed tools/licenses.
+
+\section{Limits and the next meaningful experiments}
+
+The strongest established result is exact selected-map accounting and boundary correspondence at substantial source scale, together with a hardware-aware heuristic that can improve specific path/cut tradeoffs. It is not a proof of globally optimal balanced partitioning. Native mapping resources are original-source subset reports, not final board utilization. Hard LUT caps omit future wrapper/TDM/debug overhead and do not guarantee routing; other resource, pin, clocking and board constraints can dominate.
+
+Source STA is limited to 1,000 exported setup paths for each multi-FPGA case, with unchanged source clocks and no measured inter-FPGA delay. Global structural maxima are exact only on the conservative supported graph; functional sensitization, true pin-to-pin arcs, routing congestion, transport sharing and actual critical paths remain implementation questions. The J4 complete graph does not exercise the distinction between logical crossings and multi-link relay hops in these sixteen selected mappings.
+
+The next experiments should hold source/topology/frontier/effort/anchors fixed, compare multiple deterministic seeds across balance envelopes, and preserve the full Pareto set. A 24/28-FPGA study should report per-link/pair bottlenecks on declared nonuniform topologies, relay-hop bounds and physical caps; API support alone is not evidence of successful large-system mapping. To claim improved DUT frequency, one must obtain platform transport/TDM timing, perform downstream implementation and compare constrained routed timing or hardware measurements. None of those absent stages is replaced by the word ``timing-aware.''
+
+\appendix
+\section{Selected canonical mapping identities}
+
+These hashes identify the current canonical compact mapping bytes. Source/verbose map hashes and original source DCP/EDIF identities are retained separately in the portable evidence. A hash difference caused by proven compaction is not evidence that the assignments differ.
+
+\begin{longtable}{lp{0.72\linewidth}}
+\toprule
+Design/k & Canonical compact mapping SHA-256\\
+\midrule\endhead
+OT/1 & \sha{c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16} \\
+OT/2 & \sha{e936356c04c73c0d99bd11538e731007aa2ba28da84ccd12c47d49a608cee04a} \\
+OT/3 & \sha{fa6fa3113fa99a3905c8ae3c6ee9ac1c427d3da5a4afaf52a6a73a479969ea92} \\
+OT/4 & \sha{574a96b4079dce7d6c9ebb9a7908d3d3cfb835fba616a6e27c4320a807d6def9} \\
+NVDLA/1 & \sha{1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102} \\
+NVDLA/2 & \sha{b9f20eccfbc28683314417a1d32fa0ff40928480a7553d2214cec28c4ad99e11} \\
+NVDLA/3 & \sha{8466751633f900eb0f46491878d1f0294afa5e9eae002b9b8f2ac84840d9a5c1} \\
+NVDLA/4 & \sha{51de3c6b16c4f06c102b42c7a59262ec7f1e69ed56504ee9b13bc352905e0383} \\
+Mesh/1 & \sha{962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508} \\
+Mesh/2 & \sha{6712b6b70b31e1726d633499171b94f048e0f4ed906229bb556bcce011b95470} \\
+Mesh/3 & \sha{93fce6c9f77e7e39199a8a74b40d98132d9299545ac29f6be7c6149eda4dcb45} \\
+Mesh/4 & \sha{e200219ac0ef2c9ad7eb4f8712ffca177a090d7e7e168d1e162eec9d1476c37f} \\
+AES/1 & \sha{b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23} \\
+AES/2 & \sha{cf236d659341e88c84cff660e58af2c50eed10fdb6e8834f8333560b4486c877} \\
+AES/3 & \sha{206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6} \\
+AES/4 & \sha{5557dfb34e40a282e7a84127f4e24f416d8f3bf6de4b938e4d078d67810aeac2} \\
+\bottomrule
+\end{longtable}
+
+\section{Key evidence identities}
+
+The completed aggregate \code{RESULTS FOR J4/SUMMARY.json} is bound by
+\begin{center}\sha{1c222fdb23eaae252b04ec7f843ba208eae9f352ef3f417d5b6a50779dc01d92}.\end{center}
+The portable snapshot is a derivative, not a replacement for that original summary or its underlying Native receipts. Its current digest, byte count, and source-input index are emitted by the bounded extractor and should be checked alongside the repository revision. The report source itself is standalone: it requires no external bibliography, figure or generated table file to compile.
+
+\begin{thebibliography}{10}
+\bibitem{openroad} OpenROAD Project, ``Partition Manager: Timing Aware Algorithm,'' official documentation, accessed 15 October 2026. \url{https://openroad.readthedocs.io/en/latest/main/src/par/README.html#timing-aware-algorithm}.
+\bibitem{tritonpaper} I. Bustany, G. Gasparyan, A. B. Kahng, I. Koutis, B. Pramanik and Z. Wang, ``An Open-Source Constraints-Driven General Partitioning Multi-Tool for VLSI Physical Design,'' ICCAD, 2023, doi:10.1109/ICCAD57390.2023.10323975. Author paper: \url{https://vlsicad.ucsd.edu/Publications/Conferences/401/c401.pdf}.
+\bibitem{mtdocs} Mt-KaHyPar maintainers, official README at tag \code{v1.6.2}, accessed 15 October 2026. \url{https://raw.githubusercontent.com/kahypar/mt-kahypar/v1.6.2/README.md}.
+\bibitem{mtformats} Mt-KaHyPar maintainers, official file-format specification at tag \code{v1.6.2}, accessed 15 October 2026. \url{https://raw.githubusercontent.com/kahypar/mt-kahypar/v1.6.2/mt-kahypar/io/docs/FileFormats.md}.
+\bibitem{mtpaper} L. Gottesb\"uren, T. Heuer, N. Maas, P. Sanders and S. Schlag, ``Scalable High-Quality Hypergraph Partitioning,'' 2023. \url{https://arxiv.org/abs/2303.17679}.
+\bibitem{steiner} T. Heuer, ``A Direct k-Way Hypergraph Partitioning Algorithm for Optimizing the Steiner Tree Metric,'' ALENEX, 2024; author version 2023. \url{https://arxiv.org/abs/2309.16694}.
+\bibitem{tdm2020} T.-W. Lin, W.-C. Tai, Y.-C. Lin and I. H.-R. Jiang, ``Routing Topology and Time-Division Multiplexing Co-Optimization for Multi-FPGA Systems,'' 2020. Author paper: \url{https://waynelin567.github.io/files/FPGA_TDM.pdf}.
+\bibitem{tdm2023} D. Zheng and E. F. Y. Young, ``An Integrated Circuit Partitioning and TDM Assignment Optimization Framework for Multi-FPGA Systems,'' ASP-DAC, 2023. Publisher abstract: \url{https://ieeexplore.ieee.org/document/10044749}.
+\bibitem{easypart} S. Tong, H. Li, J. Xu, C. Pei, W. Yu, S. Liu and J. Shen, ``EasyPart: An Effective and Comprehensive Hypergraph Partitioner for FPGA-based Emulation,'' ICCAD, 2024. Author paper: \url{https://numbda.cs.tsinghua.edu.cn/papers/iccad24.pdf}.
+\bibitem{vendor} Synopsys, ``Prototyping Systems / HAPS ProtoCompiler SW,'' official product description, accessed 15 October 2026. \url{https://www.synopsys.com/verification/emulation-prototyping/prototyping.html}.
+\end{thebibliography}
+\end{document}

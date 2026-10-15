@@ -122,6 +122,35 @@ task mainJar(type: Jar, dependsOn: classes) {
 }
 compileJava.finalizedBy(mainJar)
 
+// Mapping-only runtime bundle. Vendor tools, Mt-KaHyPar, source checkpoints,
+// experiment outputs and caches are deliberately external to the distribution.
+tasks.register('partitionerDistZip', Zip) {
+    group = 'distribution'
+    description = 'Build a portable hardware-aware partitioner runtime ZIP.'
+    dependsOn classes, copyJars, restoreScripts
+    archiveFileName = 'rapidwright-partitioner-extreme-overhaul.zip'
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+    into('rapidwright-partitioner') {
+        from('partitioner') {
+            filePermissions { unix('rwxr-xr-x') }
+        }
+        from('partitioner.cmd')
+        from('packaging/partitioner/README.md')
+        from('.') { include 'LICENSE*', 'NOTICE*', 'CONTRIBUTORS*' }
+        into('bin') { from(sourceSets.main.output) }
+        into('jars') { from(configurations.runtimeClasspath) }
+        into('scripts/partition') {
+            from('scripts/partition') {
+                include '*.py', 'part_catalog/**'
+                exclude 'test_*.py', '**/__pycache__/**'
+            }
+        }
+        into('tools') { from('tools') { include '*.py', '*.tcl', '*.md'; exclude 'test_*.py' } }
+        into('doc/partition') { from('doc/partition') { exclude '*.aux', '*.log', '*.out', '*.toc', '*.pdf' } }
+        into('test/resources/partition/smoke') { from('test/resources/partition/smoke') }
+    }
+}
+
 task deleteJars(type: Delete) {
     delete fileTree('jars')
 }

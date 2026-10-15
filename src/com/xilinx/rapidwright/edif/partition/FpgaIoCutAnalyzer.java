@@ -1,42 +1,25 @@
-/*
- *
- * Copyright (c) 2025, Advanced Micro Devices, Inc.
- * All rights reserved.
- *
- * Author: Perry Newlin
- *
- * This file is part of RapidWright.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
+/* Copyright (c) 2026, Advanced Micro Devices, Inc. All rights reserved.
+ * Licensed under the Apache License, Version 2.0. */
 package com.xilinx.rapidwright.edif.partition;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
-import com.xilinx.rapidwright.edif.EDIFCellInst;
 import com.xilinx.rapidwright.edif.EDIFDirection;
 import com.xilinx.rapidwright.edif.EDIFHierCellInst;
 import com.xilinx.rapidwright.edif.EDIFHierNet;
@@ -44,432 +27,309 @@ import com.xilinx.rapidwright.edif.EDIFHierPortInst;
 import com.xilinx.rapidwright.edif.EDIFNet;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 import com.xilinx.rapidwright.edif.EDIFPortInst;
+import com.xilinx.rapidwright.edif.EDIFTools;
+import com.xilinx.rapidwright.edif.EDIFCellInst;
 
 /**
- * Analyzes FPGA-level IO cuts with direction awareness.
- * 
- * Unlike the topology-unaware PartitionPairCounter which counts nets touching
- * multiple partitions in the coarsened hypergraph, this analyzer:
- * 
- * 1. Identifies signal DIRECTION (driver vs load) using EDIF port directions
- * 2. Counts signals at the FPGA partition boundary level
- * 3. Reports directional flow: FPGA_A -> FPGA_B vs FPGA_B -> FPGA_A
- * 4. Filters out constant nets (VCC, GND, const0, const1)
- * 5. Separately categorizes global signals (clock, reset)
+ * Counts unique logical nets crossing each directed partition pair. Hierarchy
+ * aliases are traversed once and only primitive/top-port endpoints determine
+ * direction. These counts are logical signal requirements before serialization
+ * and routing; they are not Vivado report_io/package pin utilization.
  */
 public final class FpgaIoCutAnalyzer {
+    private FpgaIoCutAnalyzer() { }
 
-    private FpgaIoCutAnalyzer() {
-        // No instances
+    /** An actual leaf primitive pin or a top-level design port. */
+    public static final class Endpoint {
+        public final String path, pin, type;
+        public final boolean driver, load, topPort;
+        public final boolean trustedPrimitive;
+        final EDIFCellInst instance;
+
+        private Endpoint(String path, String pin, String type, EDIFDirection direction, boolean topPort, EDIFCellInst instance) {
+            this.path = path; this.pin = pin; this.type = type; this.topPort = topPort;
+            this.instance = instance; trustedPrimitive = PrimitiveTimingPolicy.trusted(instance);
+            driver = direction == EDIFDirection.INOUT
+                    || direction == (topPort ? EDIFDirection.INPUT : EDIFDirection.OUTPUT);
+            load = direction == EDIFDirection.INOUT
+                    || direction == (topPort ? EDIFDirection.OUTPUT : EDIFDirection.INPUT);
+        }
+
+        public String name() { return topPort ? "PORT:" + pin : path + "/" + pin; }
+    }
+
+    /** Complete connectivity of one electrical net, including hierarchy aliases. */
+    public static final class NetEndpoints {
+        public final Set<EDIFHierNet> aliases = new HashSet<>();
+        public final List<Endpoint> endpoints = new ArrayList<>();
+        public String name;
+        public boolean constant;
     }
 
     /**
-     * Result container for FPGA IO cut analysis.
+     * Traverses aliases without getLeafHierPortInsts' omission of INOUT pins.
+     * A visited alias set makes traversal linear in the net's hierarchy/pins.
      */
-    public static class FpgaIoCutResult {
-        /** Directional cut counts: key = "FPGA_A->FPGA_B", value = count */
-        public final Map<String, Integer> directionalCuts = new LinkedHashMap<>();
-        
-        /** Nets identified as clock signals crossing partitions */
-        public final List<String> clockNets = new ArrayList<>();
-        
-        /** Nets identified as reset signals crossing partitions */
-        public final List<String> resetNets = new ArrayList<>();
-        
-        /** Constant nets that were filtered out */
-        public final List<String> filteredConstantNets = new ArrayList<>();
-        
-        /** Total data signals (excluding clock/reset/constants) */
-        public int totalDataSignals = 0;
-        
-        /** Debug: nets that couldn't be fully analyzed */
-        public final List<String> unanalyzedNets = new ArrayList<>();
-    }
-
-    /**
-     * Analyzes the netlist for FPGA-level IO cuts with direction awareness.
-     * 
-     * @param netlist The EDIF netlist to analyze
-     * @param leafInsts Map of coarsened leaf instances to their vertex indices
-     * @param nameToPart Map from instance name to partition index
-     * @return Analysis result with directional cuts and categorized signals
-     */
-    public static FpgaIoCutResult analyze(
-            EDIFNetlist netlist,
-            Map<EDIFHierCellInst, Integer> leafInsts,
-            Map<String, Integer> nameToPart) {
-        
-        FpgaIoCutResult result = new FpgaIoCutResult();
-        
-        // Build reverse lookup: instance name -> partition label
-        Map<String, String> instToFpgaLabel = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : nameToPart.entrySet()) {
-            String instName = entry.getKey();
-            int partIdx = entry.getValue();
-            String fpgaLabel = PartitionLabel.indexToFpgaLabel(partIdx);
-            instToFpgaLabel.put(instName, fpgaLabel);
-        }
-        
-        System.out.println("DEBUG: FpgaIoCutAnalyzer start");
-        System.out.println("DEBUG: instToFpgaLabel size: " + instToFpgaLabel.size());
-        if (!instToFpgaLabel.isEmpty()) {
-            System.out.println("DEBUG: Sample mapping: " + instToFpgaLabel.entrySet().iterator().next());
-        }
-        
-        // Track processed nets to avoid duplicates
-        Set<String> processedNets = new HashSet<>();
-        
-        // Iterate through all leaf instances and their connected nets
-        int netsProcessed = 0;
-        for (EDIFHierCellInst leafInst : leafInsts.keySet()) {
-            for (EDIFHierPortInst portInst : leafInst.getHierPortInsts()) {
-                EDIFHierNet hierNet = portInst.getHierarchicalNet();
-                if (hierNet == null) continue;
-                
-                // Get canonical net name to avoid processing same net multiple times
-                String netName = hierNet.getHierarchicalNetName();
-                if (netName == null) {
-                    netName = hierNet.toString();
+    public static NetEndpoints collectEndpoints(EDIFHierNet initial) {
+        NetEndpoints result = new NetEndpoints();
+        Deque<EDIFHierNet> queue = new ArrayDeque<>();
+        Set<String> seenEndpoints = new HashSet<>();
+        queue.add(initial);
+        while (!queue.isEmpty()) {
+            EDIFHierNet net = queue.removeFirst();
+            if (!result.aliases.add(net)) continue;
+            String name = net.getHierarchicalNetName();
+            if (result.name == null || name.compareTo(result.name) < 0) result.name = name;
+            for (EDIFPortInst port : net.getNet().getPortInsts()) {
+                EDIFHierPortInst hierPort = new EDIFHierPortInst(net.getHierarchicalInst(), port);
+                Endpoint endpoint = null;
+                if (port.getCellInst() == null) {
+                    if (net.getHierarchicalInst().isTopLevelInst()) {
+                        endpoint = new Endpoint("", port.getName(), "TOP_PORT", port.getDirection(), true, null);
+                    } else {
+                        EDIFHierPortInst parent = hierPort.getPortInParent();
+                        if (parent != null && parent.getHierarchicalNet() != null) queue.add(parent.getHierarchicalNet());
+                    }
+                } else if (port.getCellInst().getCellType().isLeafCellOrBlackBox()) {
+                    String type = port.getCellInst().getCellType().getName();
+                    endpoint = new Endpoint(hierPort.getFullHierarchicalInstName(), port.getName(), type,
+                            port.getDirection(), false, port.getCellInst());
+                    // EDIFNet.isGND/isVCC also trusts reserved NET NAMES. A
+                    // constant exclusion needs an actual vendor primitive driver.
+                    result.constant |= port.getCellInst().getCellType().isPrimitive()
+                            && port.getDirection() == EDIFDirection.OUTPUT
+                            && ("GND".equals(type) || "VCC".equals(type));
+                } else {
+                    EDIFHierNet internal = hierPort.getInternalNet();
+                    if (internal != null) queue.add(internal);
                 }
-                if (processedNets.contains(netName)) continue;
-                processedNets.add(netName);
-                netsProcessed++;
-                
-                EDIFNet net = hierNet.getNet();
-                if (net != null && (net.isVCC() || net.isGND())) {
-                    result.filteredConstantNets.add(netName);
-                    continue;
-                }
-                
-                // Analyze this net for cross-partition signals
-                analyzeNetForCrossings(hierNet, leafInsts, instToFpgaLabel, result, netName);
+                if (endpoint != null && seenEndpoints.add(endpoint.name())) result.endpoints.add(endpoint);
             }
         }
-        System.out.println("DEBUG: Nets processed: " + netsProcessed);
-        
+        result.endpoints.sort((a, b) -> a.name().compareTo(b.name()));
         return result;
     }
 
-    // Debug counter for first few nets
-    private static int debugNetCount = 0;
-    private static final int DEBUG_NET_LIMIT = 5;
-    
-    /**
-     * Analyzes a single net for FPGA boundary crossings.
-     */
-    private static void analyzeNetForCrossings(
-            EDIFHierNet hierNet,
-            Map<EDIFHierCellInst, Integer> leafInsts,
-            Map<String, String> instToFpgaLabel,
-            FpgaIoCutResult result,
-            String netName) {
-        
-        boolean debugThis = (debugNetCount < DEBUG_NET_LIMIT);
-        
-        // Find all port instances on this net
-        Collection<EDIFHierPortInst> allPortInsts = hierNet.getPortInsts();
-        if (allPortInsts == null || allPortInsts.isEmpty()) {
-            if (debugThis) {
-                System.out.println("DEBUG NET [" + netName + "]: No port instances found");
-                debugNetCount++;
-            }
-            return;
-        }
-        
-        if (debugThis) {
-            System.out.println("DEBUG NET [" + netName + "]: Found " + allPortInsts.size() + " port instances");
-        }
-        
-        // Separate drivers from loads
-        List<PartitionedPort> drivers = new ArrayList<>();
-        List<PartitionedPort> loads = new ArrayList<>();
-        int nullPiCount = 0;
-        int nullParentCount = 0;
-        int nullFpgaLabelCount = 0;
-        
-        for (EDIFHierPortInst portInst : allPortInsts) {
-            // Get direction from the underlying port instance
-            EDIFPortInst pi = portInst.getPortInst();
-            if (pi == null) {
-                nullPiCount++;
-                continue;
-            }
-            EDIFDirection direction = pi.getDirection();
-            
-            // Get the actual cell instance that owns this port (not the hierarchical context)
-            EDIFCellInst cellInst = pi.getCellInst();
-            if (cellInst == null) {
-                // This is a top-level port (e.g., clk, reset input to the design)
-                nullParentCount++;
-                continue;
-            }
-            
-            // Get the cell instance name - this is what we need to match against the partition map
-            String cellInstName = cellInst.getName();
-            
-            // Also try to construct full hierarchical path
-            EDIFHierCellInst hierContext = portInst.getHierarchicalInst();
-            String fullHierPath = "";
-            if (hierContext != null && hierContext.toString() != null && !hierContext.toString().isEmpty()) {
-                fullHierPath = hierContext.toString() + "/" + cellInstName;
-            } else {
-                fullHierPath = cellInstName;
-            }
-            
-            // Find which partition this instance belongs to using cell instance name
-            String fpgaLabel = resolveInstanceByName(cellInstName, fullHierPath, instToFpgaLabel);
-            if (fpgaLabel == null) {
-                nullFpgaLabelCount++;
-                if (debugThis && nullFpgaLabelCount <= 3) {
-                    System.out.println("DEBUG NET [" + netName + "]: Could not resolve - cellInstName=[" + 
-                        cellInstName + "] fullHierPath=[" + fullHierPath + "]");
-                }
-                continue;
-            }
-            
-            PartitionedPort pp = new PartitionedPort(portInst, fpgaLabel);
-            
-            if (direction == EDIFDirection.OUTPUT) {
-                drivers.add(pp);
-            } else if (direction == EDIFDirection.INPUT) {
-                loads.add(pp);
-            } else if (direction == EDIFDirection.INOUT) {
-                // INOUT pins can be both driver and load
-                drivers.add(pp);
-                loads.add(pp);
-            }
-        }
-        
-        if (debugThis) {
-            System.out.println("DEBUG NET [" + netName + "]: drivers=" + drivers.size() + 
-                " loads=" + loads.size() + " nullPi=" + nullPiCount + 
-                " nullParent=" + nullParentCount + " nullFpgaLabel=" + nullFpgaLabelCount);
-            debugNetCount++;
-        }
-        
-        // If no drivers or no loads, no crossing possible
-        if (drivers.isEmpty() || loads.isEmpty()) {
-            return;
-        }
-        
-        // Check for clock/reset patterns
-        boolean isClockNet = isClockSignal(netName);
-        boolean isResetNet = isResetSignal(netName);
-        
-        // For each driver, check if any loads are in different partitions
-        Set<String> crossingsForThisNet = new HashSet<>();
-        
-        for (PartitionedPort driver : drivers) {
-            for (PartitionedPort load : loads) {
-                if (!driver.fpgaLabel.equals(load.fpgaLabel)) {
-                    // This is a cross-partition signal!
-                    String crossingKey = driver.fpgaLabel + "->" + load.fpgaLabel;
-                    crossingsForThisNet.add(crossingKey);
-                }
-            }
-        }
-        
-        // Record the crossings
-        if (!crossingsForThisNet.isEmpty()) {
-            if (isClockNet) {
-                result.clockNets.add(netName);
-            } else if (isResetNet) {
-                result.resetNets.add(netName);
-            } else {
-                result.totalDataSignals++;
-                for (String crossing : crossingsForThisNet) {
-                    result.directionalCuts.put(crossing, 
-                        result.directionalCuts.getOrDefault(crossing, 0) + 1);
-                }
-            }
+    public static class FpgaIoCutResult {
+        public final Map<String, Integer> directionalCuts = new TreeMap<>();
+        public final List<String> clockNets = new ArrayList<>();
+        public final List<String> resetNets = new ArrayList<>();
+        public final List<String> filteredConstantNets = new ArrayList<>();
+        public final List<String> unanalyzedNets = new ArrayList<>();
+        public final Map<String, Set<String>> netCrossings = new TreeMap<>();
+        public final Map<String, String> endpointFingerprints = new TreeMap<>();
+        public final Map<String, String> controlCategories = new TreeMap<>();
+        public int totalDataSignals;
+        public int directionalDataSignals;
+        public int canonicalNets;
+        public int unmappedTopPorts;
+    }
+
+    /** Strict longest mapped ancestor. Repeated simple cell names never alias. */
+    public static Integer resolvePartition(String path, Map<String, Integer> mapping) {
+        String candidate = path;
+        while (true) {
+            Integer partition = mapping.get(candidate);
+            if (partition != null) return partition;
+            int slash = candidate.lastIndexOf('/');
+            if (slash < 0) return mapping.get("");
+            candidate = candidate.substring(0, slash);
         }
     }
 
-    /**
-     * Resolves an instance to its FPGA partition label using name matching.
-     * Tries simple name first, then full hierarchical path, then partial matches.
-     * 
-     * @param simpleName The simple cell instance name (e.g., "result_reg[16]")
-     * @param fullHierPath The full hierarchical path (e.g., "hw_top/result_reg[16]")
-     * @param instToFpgaLabel Map from instance name to FPGA label
-     * @return The FPGA label, or null if not found
-     */
-    private static String resolveInstanceByName(
-            String simpleName,
-            String fullHierPath,
-            Map<String, String> instToFpgaLabel) {
-        
-        // Try simple name first (this is what instLookup uses)
-        if (simpleName != null && instToFpgaLabel.containsKey(simpleName)) {
-            return instToFpgaLabel.get(simpleName);
-        }
-        
-        // Try full hierarchical path
-        if (fullHierPath != null && !fullHierPath.isEmpty() && instToFpgaLabel.containsKey(fullHierPath)) {
-            return instToFpgaLabel.get(fullHierPath);
-        }
-        
-        // Try partial path matching - check if this instance is a child of a mapped instance
-        if (fullHierPath != null && !fullHierPath.isEmpty()) {
-            for (Map.Entry<String, String> entry : instToFpgaLabel.entrySet()) {
-                String mappedPath = entry.getKey();
-                // Check if fullHierPath starts with mappedPath (instance is child of mapped)
-                if (fullHierPath.startsWith(mappedPath + "/") || fullHierPath.equals(mappedPath)) {
-                    return entry.getValue();
-                }
-                // Check if mappedPath starts with fullHierPath (mapped is child of this instance)
-                if (mappedPath.startsWith(fullHierPath + "/")) {
-                    return entry.getValue();
-                }
+    public static FpgaIoCutResult analyze(EDIFNetlist netlist,
+            Map<EDIFHierCellInst, Integer> leafInsts, Map<String, Integer> nameToPart) {
+        return analyze(netlist, leafInsts, nameToPart, nameToPart.get(""));
+    }
+
+    /** topIoPartition must match the root assignment in the emitted mapping. */
+    public static FpgaIoCutResult analyze(EDIFNetlist netlist,
+            Map<EDIFHierCellInst, Integer> leafInsts, Map<String, Integer> nameToPart,
+            Integer topIoPartition) {
+        FpgaIoCutResult result = new FpgaIoCutResult();
+        Set<EDIFHierNet> processed = new HashSet<>();
+        List<EDIFHierNet> candidates = new ArrayList<>();
+        for (EDIFHierCellInst leaf : leafInsts.keySet()) {
+            for (EDIFHierPortInst port : leaf.getHierPortInsts()) {
+                if (port.getHierarchicalNet() != null) candidates.add(port.getHierarchicalNet());
             }
         }
-        
-        // Try matching with just the last component of the path
-        if (fullHierPath != null && fullHierPath.contains("/")) {
-            String[] parts = fullHierPath.split("/");
-            for (int i = parts.length - 1; i >= 0; i--) {
-                String partialPath = String.join("/", java.util.Arrays.copyOfRange(parts, i, parts.length));
-                if (instToFpgaLabel.containsKey(partialPath)) {
-                    return instToFpgaLabel.get(partialPath);
+        for (EDIFNet net : netlist.getTopCell().getNets()) {
+            candidates.add(new EDIFHierNet(netlist.getTopHierCellInst(), net));
+        }
+        Collections.sort(candidates);
+        for (EDIFHierNet candidate : candidates) {
+            if (processed.contains(candidate)) continue;
+            NetEndpoints net = collectEndpoints(candidate);
+            processed.addAll(net.aliases);
+            result.canonicalNets++;
+            if (net.constant) {
+                result.filteredConstantNets.add(net.name);
+                continue;
+            }
+            Set<Integer> drivers = new TreeSet<>(), loads = new TreeSet<>();
+            boolean clock = true, reset = true;
+            boolean topDriver = false, functionalSyncReset = false, unresolvedReset = false;
+            int loadPins = 0, driverPins = 0;
+            for (Endpoint endpoint : net.endpoints) {
+                Integer partition = endpoint.topPort ? topIoPartition : resolvePartition(endpoint.path, nameToPart);
+                if (partition == null) {
+                    if (!endpoint.topPort) throw new IllegalArgumentException("Unmapped primitive endpoint: " + endpoint.name());
+                    result.unmappedTopPorts++;
+                    result.unanalyzedNets.add(net.name + ": top port " + endpoint.pin + " has no root FPGA assignment");
+                } else if (partition < 0) {
+                    throw new IllegalArgumentException("Negative partition for endpoint " + endpoint.name());
                 }
-                // Also check if any mapped path contains this partial path
-                for (Map.Entry<String, String> entry : instToFpgaLabel.entrySet()) {
-                    String mappedPath = entry.getKey();
-                    if (mappedPath.endsWith("/" + partialPath) || mappedPath.equals(partialPath)) {
-                        return entry.getValue();
+                if (endpoint.driver) {
+                    driverPins++;
+                    topDriver |= endpoint.topPort;
+                    if (partition != null) drivers.add(partition);
+                }
+                if (endpoint.load) {
+                    loadPins++;
+                    String pin = basePin(endpoint.pin);
+                    clock &= endpoint.trustedPrimitive && PrimitiveTimingPolicy.clockPin(endpoint.instance, pin);
+                    boolean resetPin = PrimitiveTimingPolicy.resetPin(endpoint.instance, pin);
+                    reset &= resetPin;
+                    if (resetPin) {
+                        int roles = PrimitiveTimingPolicy.resetRoles(endpoint.instance, pin);
+                        functionalSyncReset |= roles != 0;
+                        unresolvedReset |= roles == PrimitiveTimingPolicy.COMBINATIONAL;
                     }
+                    if (partition != null) loads.add(partition);
+                }
+            }
+            if (driverPins != 1) result.unanalyzedNets.add(net.name + ": " + driverPins + " driver pins (direction may be ambiguous)");
+            Set<String> crossings = new TreeSet<>();
+            for (int driver : drivers) for (int load : loads) {
+                if (driver != load) crossings.add(PartitionLabel.indexToFpgaLabel(driver)
+                        + "->" + PartitionLabel.indexToFpgaLabel(load));
+            }
+            if (crossings.isEmpty()) continue;
+            result.netCrossings.put(net.name, crossings);
+            List<String> endpointNames = new ArrayList<>();
+            for (Endpoint endpoint : net.endpoints) endpointNames.add(endpoint.name() + ":"
+                    + (endpoint.driver ? "D" : "") + (endpoint.load ? "L" : ""));
+            Collections.sort(endpointNames);
+            result.endpointFingerprints.put(net.name, endpointFingerprint(endpointNames));
+            if (loadPins > 0 && clock) { result.clockNets.add(net.name); result.controlCategories.put(net.name, "clock"); }
+            else if (loadPins > 0 && reset && !unresolvedReset && (driverPins == 1 && topDriver || !functionalSyncReset)) {
+                result.resetNets.add(net.name); result.controlCategories.put(net.name, "reset_only");
+            }
+            else {
+                result.controlCategories.put(net.name, "data_or_functional_sync_control");
+                result.totalDataSignals++;
+                result.directionalDataSignals += crossings.size();
+                for (String crossing : crossings) {
+                    result.directionalCuts.put(crossing, result.directionalCuts.getOrDefault(crossing, 0) + 1);
                 }
             }
         }
-        
-        return null;
+        Collections.sort(result.clockNets);
+        Collections.sort(result.resetNets);
+        Collections.sort(result.filteredConstantNets);
+        Collections.sort(result.unanalyzedNets);
+        return result;
     }
 
-    /**
-     * Checks if a net name appears to be a clock signal.
-     * 
-     * TODO: Better source of truth? EDIF net domain?
-     */
-    private static boolean isClockSignal(String netName) {
-        if (netName == null) return false;
-        String lower = netName.toLowerCase();
-        // Common clock naming patterns
-        return lower.equals("clk") || 
-               lower.equals("clock") ||
-               lower.endsWith("/clk") ||
-               lower.endsWith("/clock") ||
-               lower.contains("_clk") ||
-               lower.contains("clk_");
+    private static String basePin(String pin) {
+        int bracket = pin.indexOf('[');
+        return bracket < 0 ? pin : pin.substring(0, bracket);
     }
 
-    /**
-     * Checks if a net name appears to be a reset signal.
-     * 
-     * TODO: Better source of truth? EDIF net domain?
-     */
-    private static boolean isResetSignal(String netName) {
-        if (netName == null) return false;
-        String lower = netName.toLowerCase();
-        // Common reset naming patterns
-        return lower.equals("reset") || 
-               lower.equals("rst") ||
-               lower.equals("resetn") ||
-               lower.equals("rst_n") ||
-               lower.endsWith("/reset") ||
-               lower.endsWith("/rst") ||
-               lower.contains("_reset") ||
-               lower.contains("_rst");
+    private static String endpointFingerprint(List<String> sortedEndpoints) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            boolean first = true;
+            for (String endpoint : sortedEndpoints) {
+                if (!first) digest.update((byte) ';');
+                first = false;
+                digest.update(endpoint.getBytes(StandardCharsets.UTF_8));
+            }
+            StringBuilder result = new StringBuilder("sha256:");
+            for (byte value : digest.digest()) result.append(String.format("%02x", value & 255));
+            return result.toString();
+        } catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
     }
 
-    /**
-     * Writes the FPGA IO cut analysis to a file.
-     * 
-     * @param outputDir Output directory
-     * @param result Analysis result to write
-     */
     public static void writeReport(Path outputDir, FpgaIoCutResult result) {
-        Path outputFile = outputDir.resolve("fpga_io_cuts.txt");
-        
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile.toFile()))) {
-            writer.write("=== FPGA IO Cut Report (Direction-Aware) ===\n");
-            writer.write("\n");
-            
-            // Directional data signal counts
-            writer.write("--- Data Signals by Direction ---\n");
-            if (result.directionalCuts.isEmpty()) {
-                writer.write("  No data signal crossings detected.\n");
-            } else {
-                // Sort entries for consistent output
-                List<Map.Entry<String, Integer>> sorted = new ArrayList<>(result.directionalCuts.entrySet());
-                sorted.sort((a, b) -> a.getKey().compareTo(b.getKey()));
-                
-                for (Map.Entry<String, Integer> entry : sorted) {
-                    writer.write(String.format("  %s: %d signal(s)\n", 
-                        entry.getKey(), entry.getValue()));
-                }
+        List<String> rows = new ArrayList<>();
+        rows.add("=== FPGA Logical Net Cut Report (Direction-Aware) ===");
+        rows.add("Unit: one canonical net per source/destination FPGA pair; not physical package I/O pins.");
+        rows.add("Control scope: " + PrimitiveTimingPolicy.CONTROL_SCOPE + "; defaults: " + PrimitiveTimingPolicy.DEFAULT_AUTHORITY);
+        rows.add("Trusted clocks remain clock-only; top-driven reset-only and async/disabled resets remain separate; internally driven active synchronous controls and mixed-use nets are data/control.");
+        rows.add("");
+        rows.add("--- Data Signals by Direction ---");
+        for (Map.Entry<String, Integer> entry : result.directionalCuts.entrySet()) rows.add("  " + entry.getKey() + ": " + entry.getValue() + " signal(s)");
+        rows.add("");
+        rows.add("--- Summary ---");
+        rows.add("  Unique data nets crossing FPGA boundaries: " + result.totalDataSignals);
+        rows.add("  Directed data net destinations crossing FPGA boundaries: " + result.directionalDataSignals);
+        rows.add("  Clock nets crossing: " + result.clockNets.size());
+        rows.add("  Reset nets crossing: " + result.resetNets.size());
+        rows.add("  Constant nets filtered: " + result.filteredConstantNets.size());
+        rows.add("  Canonical nets examined: " + result.canonicalNets);
+        rows.add("  Unmapped top-level ports: " + result.unmappedTopPorts);
+        rows.add("  Connectivity diagnostics: " + result.unanalyzedNets.size());
+        appendSection(rows, "Clock Nets", result.clockNets);
+        appendSection(rows, "Reset Nets", result.resetNets);
+        appendSection(rows, "Connectivity Diagnostics", result.unanalyzedNets);
+        try {
+            Files.write(outputDir.resolve("fpga_io_cuts.txt"), rows, StandardCharsets.UTF_8);
+            List<String> audit = new ArrayList<>();
+            audit.add("CANONICAL_NET\tDIRECTED_PARTITION_PAIRS\tENDPOINT_FINGERPRINT");
+            for (Map.Entry<String, Set<String>> entry : result.netCrossings.entrySet()) audit.add(entry.getKey() + "\t" + String.join(",", entry.getValue())
+                    + "\t" + result.endpointFingerprints.get(entry.getKey()));
+            Files.write(outputDir.resolve("fpga_net_crossings.tsv"), audit, StandardCharsets.UTF_8);
+            List<String> categories = new ArrayList<>();
+            categories.add("#control_scope=" + PrimitiveTimingPolicy.CONTROL_SCOPE);
+            categories.add("#default_authority=" + PrimitiveTimingPolicy.DEFAULT_AUTHORITY);
+            categories.add("CANONICAL_NET\tCATEGORY\tDIRECTED_PARTITION_PAIRS\tENDPOINT_FINGERPRINT");
+            for (Map.Entry<String, String> entry : result.controlCategories.entrySet()) {
+                categories.add(entry.getKey() + "\t" + entry.getValue() + "\t"
+                        + String.join(",", result.netCrossings.get(entry.getKey())) + "\t" + result.endpointFingerprints.get(entry.getKey()));
             }
-            writer.write("\n");
-            
-            // Summary
-            writer.write("--- Summary ---\n");
-            writer.write(String.format("  Total data signals crossing FPGA boundaries: %d\n", 
-                result.totalDataSignals));
-            writer.write(String.format("  Clock nets crossing: %d\n", result.clockNets.size()));
-            writer.write(String.format("  Reset nets crossing: %d\n", result.resetNets.size()));
-            writer.write(String.format("  Constant nets filtered: %d\n", 
-                result.filteredConstantNets.size()));
-            writer.write("\n");
-            
-            // Clock net details
-            if (!result.clockNets.isEmpty()) {
-                writer.write("--- Clock Nets ---\n");
-                for (String clkNet : result.clockNets) {
-                    writer.write(String.format("  %s\n", clkNet));
-                }
-                writer.write("\n");
-            }
-            
-            // Reset net details
-            if (!result.resetNets.isEmpty()) {
-                writer.write("--- Reset Nets ---\n");
-                for (String rstNet : result.resetNets) {
-                    writer.write(String.format("  %s\n", rstNet));
-                }
-                writer.write("\n");
-            }
-            
-            // Filtered constants (for debugging)
-            if (!result.filteredConstantNets.isEmpty()) {
-                writer.write("--- Filtered Constant Nets ---\n");
-                int maxToShow = Math.min(10, result.filteredConstantNets.size());
-                for (int i = 0; i < maxToShow; i++) {
-                    writer.write(String.format("  %s\n", result.filteredConstantNets.get(i)));
-                }
-                if (result.filteredConstantNets.size() > maxToShow) {
-                    writer.write(String.format("  ... and %d more\n", 
-                        result.filteredConstantNets.size() - maxToShow));
-                }
-                writer.write("\n");
-            }
-            
-            PartitionTools.logPartitionerDebug(null, 
-                "Partitioner artifact written: %s", outputFile.toString());
-            
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+            Files.write(outputDir.resolve("fpga_control_categories.tsv"), categories, StandardCharsets.UTF_8);
+        } catch (IOException e) { throw new UncheckedIOException(e); }
     }
 
-    /**
-     * Helper class to associate a port instance with its FPGA partition.
-     */
-    private static class PartitionedPort {
-        final EDIFHierPortInst portInst;
-        final String fpgaLabel;
-        
-        PartitionedPort(EDIFHierPortInst portInst, String fpgaLabel) {
-            this.portInst = portInst;
-            this.fpgaLabel = fpgaLabel;
+    private static void appendSection(List<String> rows, String title, List<String> values) {
+        if (values.isEmpty()) return;
+        rows.add(""); rows.add("--- " + title + " ---");
+        for (String value : values) rows.add("  " + value);
+    }
+
+    /** Independent audit of an existing final mapping against its original EDF. */
+    public static void main(String[] args) throws IOException {
+        if (args.length != 3) throw new IllegalArgumentException("Usage: input.edf mapping.txt output_directory");
+        EDIFNetlist netlist = EDIFTools.readEdifFile(java.nio.file.Paths.get(args[0]));
+        String top = netlist.getTopCell().getName();
+        Map<String, Integer> mapping = new TreeMap<>();
+        for (String line : Files.readAllLines(java.nio.file.Paths.get(args[1]), StandardCharsets.UTF_8)) {
+            line = line.trim();
+            if (line.isEmpty() || line.startsWith("#")) continue;
+            String[] fields = line.split("\\s+");
+            if (fields.length != 2 || !fields[1].matches("FPGA_[A-Z]+")) throw new IllegalArgumentException("Invalid mapping rule " + line);
+            String suffix = fields[1].substring(5);
+            for (int i = 1; i < suffix.length(); i++) {
+                if (suffix.charAt(i) != 'Z') throw new IllegalArgumentException("Unknown legacy FPGA label " + fields[1]);
+            }
+            int partition = suffix.charAt(0) - 'A';
+            if (suffix.length() > 1) partition += 26 * (suffix.length() - 1);
+            String path = fields[0];
+            if (path.equals(top)) path = "";
+            else if (path.startsWith(top + "/")) path = path.substring(top.length() + 1);
+            Integer old = mapping.put(path, partition);
+            if (old != null && old.intValue() != partition) throw new IllegalArgumentException("Conflicting mapping rule " + line);
         }
+        if (!mapping.containsKey("")) throw new IllegalArgumentException("Missing top mapping for " + top);
+        Map<EDIFHierCellInst, Integer> leaves = new java.util.LinkedHashMap<>();
+        for (EDIFHierCellInst leaf : netlist.getAllLeafHierCellInstances(true)) leaves.put(leaf, leaves.size() + 1);
+        Path output = java.nio.file.Paths.get(args[2]);
+        Files.createDirectories(output);
+        FpgaIoCutResult result = analyze(netlist, leaves, mapping, mapping.get(""));
+        writeReport(output, result);
+        System.out.println("LOGICAL_CUT_AUDIT nets=" + result.canonicalNets + " crossing_nets=" + result.netCrossings.size()
+                + " data_destinations=" + result.directionalDataSignals + " diagnostics=" + result.unanalyzedNets.size());
     }
 }

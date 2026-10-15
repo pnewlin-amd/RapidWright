@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.xilinx.rapidwright.edif.EDIFHierCellInst;
+import com.xilinx.rapidwright.edif.EDIFCell;
+import com.xilinx.rapidwright.edif.EDIFCellInst;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 import com.xilinx.rapidwright.util.FileTools;
 
@@ -85,46 +87,6 @@ public final class HierMappingWriter {
     }
 
     /**
-     * Returns true if a trie-leaf node name looks like a synthesized implementation
-     * primitive (flip-flop, LUT cell, bit-indexed instance) rather than a user-defined
-     * module boundary.
-     *
-     * only meaningful when the node has no children in the trie. for generate-block
-     * style names like "gen_foo[0].u_bar", only the portion after the last dot is
-     * tested so "u_bar" is evaluated (not suppressed) while for "gen_normal_case.arb_req__0"
-     * "arb_req__0" is evaluated and is suppressed.
-     *
-     * patterns matched (any single match is sufficient):
-     *   '[' in name  : bit-indexed instance, e.g. foo[0], bar[31]
-     *   '_i_' in name: Vivado LUT naming, e.g. foo_i_1, bar_i_12
-     *   '_reg' suffix: Vivado flip-flop, e.g. foo_reg
-     *   '_reg_' sub  : Vivado FF with qualifier, e.g. foo_reg_0
-     *   '.*__\d+$'   : double-underscore digit suffix, e.g. arb_req__0
-     *   'data_\w+\d+': data port pattern, e.g. data_o1, data_i13
-     *
-     * @param name the trie node name (the last '/' segment of the hierarchy path)
-     * @return true if this node should be treated as a flat implementation primitive
-     */
-    private static boolean isLeafPrimitiveName(String name) {
-        if (name == null || name.isEmpty()) return false;
-        // use only the part after the last '.' to handle gen-block.module patterns:
-        // "gen_foo[0].u_hostfifo" -> tests "u_hostfifo" (not suppressed)
-        // "gen_normal_case.arb_req__0" -> tests "arb_req__0" (suppressed)
-        String effective = name;
-        int dotPos = name.lastIndexOf('.');
-        if (dotPos >= 0 && dotPos + 1 < name.length()) {
-            effective = name.substring(dotPos + 1);
-        }
-        if (effective.contains("[")) return true;
-        if (effective.contains("_i_")) return true;
-        if (effective.endsWith("_reg")) return true;
-        if (effective.contains("_reg_")) return true;
-        if (effective.matches(".*__\\d+$")) return true;
-        if (effective.matches("data_[a-zA-Z]*\\d+(_+\\d+)?$")) return true;
-        return false;
-    }
-
-    /**
      * Emits mapping lines only when the partition assignment changes from the parent.
      * @param node The current node.
      * @param parentPartition The partition assigned to the parent node.
@@ -144,14 +106,7 @@ public final class HierMappingWriter {
 
         if (isDifferent && node.assignedPartition != null) {
             if (!currentPath.isEmpty()) {
-                if (!logicDiscoveryPolicy.pathHasExcludedSegment(currentPath)) {
-                    // suppress trie-leaf nodes whose names match flat primitive patterns;
-                    // they inherit the assignment from their nearest non-primitive ancestor,
-                    // keeping mapping.txt concise without losing module-level cut information.
-                    if (!node.children.isEmpty() || !isLeafPrimitiveName(node.name)) {
-                        out.add(currentPath + " " + node.assignedPartition);
-                    }
-                }
+                out.add(currentPath + " " + node.assignedPartition);
             }
         }
     }
@@ -170,15 +125,28 @@ public final class HierMappingWriter {
             , String cellsFile
             , String defaultPartitionName
             , boolean optimize) {
+        return buildMappingFromPartitionFiles(partitionDir, cellsFile,
+                defaultPartitionName, optimize, null);
+    }
+
+    /** Netlist-aware overload omits actual static-source primitives by type. */
+    public static List<String> buildMappingFromPartitionFiles(String partitionDir,
+            String cellsFile, String defaultPartitionName, boolean optimize,
+            EDIFNetlist netlist) {
         List<String> partitions = readPartitionNames(Paths.get(cellsFile));
         Map<String, Set<String>> partToPaths = readPartitionInstanceSets(Paths.get(partitionDir),
                 new LinkedHashSet<>(partitions));
+        if (netlist != null) partToPaths = withoutConstants(partToPaths, netlist);
         Node root = buildTrie(partToPaths);
         computeCounts(root);
         List<String> out = new ArrayList<>();
         if (optimize) {
             assignPartitions(root);
-            emitOptimizedMappings(root, null, "", out);
+            // This API has no named root mapping. Each first-level subtree
+            // therefore needs an explicit default unless the caller supplies it.
+            for (Node child : root.children.values()) {
+                emitOptimizedMappings(child, defaultPartitionName, child.name, out);
+            }
         } else {
             selectAndEmitMappings(root, "", out, false);
         }
@@ -189,6 +157,7 @@ public final class HierMappingWriter {
                     defaultPartitionName);
         }
 
+        validateMappings(partToPaths, out, defaultPartitionName, "");
         return out;
     }
 
@@ -241,20 +210,9 @@ public final class HierMappingWriter {
         }
         int numParts = Math.max(0, maxIdx + 1);
 
-        List<String> names = readPartitionNames(cellsFile);
-        if (names.size() < numParts) {
-            List<String> gen = CellsWriter.generateNames(numParts);
-            if (names.isEmpty()) {
-                names = gen;
-            } else {
-                List<String> extended = new ArrayList<>(names);
-                for (int i = names.size(); i < numParts; i++) {
-                    extended.add(gen.get(i));
-                }
-                names = extended;
-            }
-            CellsWriter.write(outDir, names);
-        }
+        // A reused output directory must not retain labels from an older run.
+        List<String> names = CellsWriter.generateNames(numParts);
+        CellsWriter.write(outDir, names);
 
         // ============================================================================
         // STEP 2
@@ -269,6 +227,7 @@ public final class HierMappingWriter {
             partToPaths.put(name, entry.getValue() != null
                     ? entry.getValue() : new LinkedHashSet<>());
         }
+        partToPaths = withoutConstants(partToPaths, netlist);
 
         // ============================================================================
         // STEP 3
@@ -308,9 +267,6 @@ public final class HierMappingWriter {
             int spaceIndex = line.indexOf(' ');
             String path = spaceIndex >= 0 ? line.substring(0, spaceIndex) : line;
             String destination = spaceIndex >= 0 ? line.substring(spaceIndex + 1) : "";
-            if (logicDiscoveryPolicy.pathHasExcludedSegment(path)) {
-                continue;
-            }
             String fullSourcePath = topName + "/" + path;
             prefixed.add(fullSourcePath + " " + destination);
         }
@@ -318,6 +274,7 @@ public final class HierMappingWriter {
         if (topHomePartition != null) {
             prefixed.add(topName + " " + topHomePartition);
         }
+        validateMappings(partToPaths, prefixed, null, topName);
 
         // ============================================================================
         // STEP 5
@@ -380,6 +337,45 @@ public final class HierMappingWriter {
 
         Path mappingFile = outDir.resolve("mapping.txt");
         writeMappingFile(prefixed, mappingFile.toString());
+    }
+
+    /**
+     * Constants have no placement ownership: regrouping recreates local sources.
+     * Ignore them before home selection, uniform-subtree compression and
+     * roundtrip checks. Classification uses primitive TYPE, never path spelling.
+     * A mixed coarse vertex is retained and its constants inherit implicitly.
+     */
+    private static Map<String, Set<String>> withoutConstants(
+            Map<String, Set<String>> source, EDIFNetlist netlist) {
+        Map<EDIFCell, Boolean> nonconstant = new java.util.IdentityHashMap<>();
+        Map<String, Set<String>> result = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> entry : source.entrySet()) {
+            Set<String> paths = new LinkedHashSet<>();
+            for (String path : entry.getValue()) {
+                EDIFHierCellInst instance = path.isEmpty() ? netlist.getTopHierCellInst()
+                        : netlist.getHierCellInstFromName(path);
+                if (instance == null) throw new IllegalArgumentException("Unknown mapping frontier path " + path);
+                if (hasNonconstantLeaf(instance.getCellType(), nonconstant)) paths.add(path);
+            }
+            result.put(entry.getKey(), paths);
+        }
+        return result;
+    }
+
+    private static boolean hasNonconstantLeaf(EDIFCell cell, Map<EDIFCell, Boolean> cache) {
+        Boolean old = cache.get(cell);
+        if (old != null) return old;
+        boolean value;
+        if (cell.isLeafCellOrBlackBox()) {
+            value = !(cell.isPrimitive() && ("GND".equals(cell.getName()) || "VCC".equals(cell.getName())));
+        } else {
+            value = false;
+            for (EDIFCellInst child : cell.getCellInsts()) {
+                if (hasNonconstantLeaf(child.getCellType(), cache)) { value = true; break; }
+            }
+        }
+        cache.put(cell, value);
+        return value;
     }
 
     /**
@@ -590,6 +586,9 @@ public final class HierMappingWriter {
         List<String> segs = splitPath(fullPath);
         Node cur = root;
         for (String seg : segs) {
+            if (!cur.leafCounts.isEmpty()) {
+                throw new IllegalArgumentException("Overlapping partition frontier at " + fullPath);
+            }
             Node nxt = cur.children.get(seg);
             if (nxt == null) {
                 nxt = new Node();
@@ -597,6 +596,9 @@ public final class HierMappingWriter {
                 cur.children.put(seg, nxt);
             }
             cur = nxt;
+        }
+        if (!cur.children.isEmpty() || !cur.leafCounts.isEmpty()) {
+            throw new IllegalArgumentException("Duplicate or overlapping partition frontier at " + fullPath);
         }
         cur.leafCounts.put(partition, cur.leafCounts.getOrDefault(partition, 0) + 1);
     }
@@ -776,14 +778,8 @@ public final class HierMappingWriter {
         }
 
         if (isWhollyContained(node.counts) && !currentPath.isEmpty()) {
-            // suppress trie-leaf primitives; return empty so the parent emits for them
-            if (node.children.isEmpty() && isLeafPrimitiveName(node.name)) {
-                return new LinkedHashMap<>();
-            }
             String p = singlePartition(node.counts);
-            if (!logicDiscoveryPolicy.pathHasExcludedSegment(currentPath)) {
-                out.add(currentPath + " " + p);
-            }
+            out.add(currentPath + " " + p);
             return new LinkedHashMap<>(node.counts);
         }
 
@@ -801,14 +797,45 @@ public final class HierMappingWriter {
         if (!currentPath.isEmpty()) {
             String home = chooseHomePartition(node.counts);
             if (home != null && !leftover.isEmpty()) {
-                if (!logicDiscoveryPolicy.pathHasExcludedSegment(currentPath)) {
-                    out.add(currentPath + " " + home);
-                }
+                out.add(currentPath + " " + home);
                 return new LinkedHashMap<>(node.counts);
             }
         }
 
         return relocatedFromChildren;
+    }
+
+    /** Verifies compression preserves every partitioned frontier assignment. */
+    private static void validateMappings(Map<String, Set<String>> partToPaths,
+            List<String> lines, String defaultPartition, String topName) {
+        Map<String, String> rules = new java.util.HashMap<>();
+        for (String line : lines) {
+            int space = line.lastIndexOf(' ');
+            if (space < 1) throw new IllegalArgumentException("Invalid mapping line: " + line);
+            String old = rules.put(line.substring(0, space), line.substring(space + 1));
+            if (old != null && !old.equals(line.substring(space + 1))) {
+                throw new IllegalArgumentException("Conflicting mapping rules: " + line);
+            }
+        }
+        for (Map.Entry<String, Set<String>> entry : partToPaths.entrySet()) {
+            for (String relative : entry.getValue()) {
+                String path = topName.isEmpty() ? relative : topName + (relative.isEmpty() ? "" : "/" + relative);
+                String candidate = path;
+                String resolved = null;
+                while (true) {
+                    resolved = rules.get(candidate);
+                    if (resolved != null) break;
+                    int slash = candidate.lastIndexOf('/');
+                    if (slash < 0) break;
+                    candidate = candidate.substring(0, slash);
+                }
+                if (resolved == null) resolved = defaultPartition;
+                if (!entry.getKey().equals(resolved)) {
+                    throw new IllegalStateException("Mapping compression changed " + path + " from "
+                            + entry.getKey() + " to " + resolved);
+                }
+            }
+        }
     }
 
     /**

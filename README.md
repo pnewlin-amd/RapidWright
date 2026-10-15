@@ -31,6 +31,15 @@ NOTE: RapidWright is not an official product from Xilinx and designs
 created or derived from it are not warranted. Please see
 LICENSE.TXT for full details.
 
+## FPGA partition mapping
+
+This branch includes a hardware-aware, mapping-only FPGA partitioner using
+**Mt-KaHyPar v1.6.2**, topology-aware register-free path refinement, sampled
+source timing, and Vivado-validated resource caps. Start with the
+[partitioner manual](doc/partition/README.md) for build requirements, a
+netlist-plus-topology quick start, tool discovery, all options, and validation
+scope. It produces mappings and reports; it does not create wrapped netlists.
+
 ## Installation
 
 ### Easiest way to Checkout and Compile a RapidWright Repo Locally:
