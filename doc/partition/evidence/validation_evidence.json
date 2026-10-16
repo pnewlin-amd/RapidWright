@@ -7,8 +7,9 @@
   "release_lineage": {
     "branch": "Partitioner_Extreme_Overhaul",
     "starting_commit": "5bc91b48",
+    "validated_source_commit": "f9f2cada5b8151df08414188e6bdfc554f6ce695",
     "large_results_scope": "Recorded benchmark engine b12; later portable launch/environment changes were not followed by sixteen large-design reruns.",
-    "fresh_release_build_tests_smoke_and_commit": "Root release evidence to be inserted after actual completion; not asserted by this snapshot."
+    "fresh_release_build_tests_and_smoke": "Actual clean-clone and unpacked-runtime checks are preserved separately in release_validation; no new large-design experiment is implied."
   },
   "summary": {
     "status": "SIXTEEN_CURRENT_QUALIFIED_J4_PACKAGE_ARTIFACTS_PASS",
@@ -33133,6 +33134,11 @@
       "bytes": 1799,
       "scope": "original completed report bytes; no original payload revalidation"
     },
+    "RapidWright/doc/partition/evidence/release_validation.json": {
+      "sha256": "e5112b3bb918c12b44110498541e0a96ac087607e5daf236c22fbd409c76f43b",
+      "bytes": 37012,
+      "scope": "original completed report bytes; no original payload revalidation"
+    },
     "work/native_canary_export_only_peer_20261015/independent_review.json": {
       "sha256": "b58696c8681e0f9f0a1d373c5f7f57412cc105334562afd2d10443940d28d62c",
       "bytes": 16656,
@@ -33184,5 +33190,766 @@
       "j4_board_topology.json": "6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83",
       "p9_board_topology.json": "076695c34574f63beade1aed1a4021bebb54dc881346d83dde02f330b70774f2"
     }
+  },
+  "release_validation": {
+    "schema": "rapidwright_portable_release_validation_20261015_v1",
+    "status": "ACTUAL_CLEAN_CLONE_AND_RUNTIME_SMOKE_PASS",
+    "validated_source_commit": "f9f2cada5b8151df08414188e6bdfc554f6ce695",
+    "branch": "Partitioner_Extreme_Overhaul",
+    "scope": "Small completed receipt capture only. No validation jobs, source payloads or archive payloads read by the report extractor. These packaging tests are separate from the sixteen large-design b12 experiments.",
+    "fresh_git_clone": {
+      "status": "PASS_FRESH_LOCAL_GIT_CLONE_BUILD_AND_TEST_VALIDATION",
+      "recorded_utc": "2026-10-15T23:53:49.156107+00:00",
+      "checkout": "workspace/work/release_packaging_20261015/clean-checkout",
+      "branch": "Partitioner_Extreme_Overhaul",
+      "commit": "f9f2cada5b8151df08414188e6bdfc554f6ce695",
+      "clone_origin": "workspace/RapidWright",
+      "clone_options": [
+        "--no-hardlinks",
+        "--single-branch",
+        "--branch",
+        "Partitioner_Extreme_Overhaul"
+      ],
+      "initial_ignored_runtime_directories_absent": {
+        "bin/com": true,
+        "jars": true,
+        "data": true,
+        "build": true,
+        ".gradle": true
+      },
+      "raw_catalog_and_topology_sha256_unchanged": {
+        "scripts/partition/part_catalog/vivado_2025_1_parts.tsv": "a402de944fbd660743f6a7ff12403060e886627439826186600da78618e6a1fe",
+        "test/resources/partition/topologies/j4_board_topology.json": "6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83",
+        "test/resources/partition/topologies/p9_board_topology.json": "076695c34574f63beade1aed1a4021bebb54dc881346d83dde02f330b70774f2"
+      },
+      "byte_preserving_git_attributes": "scripts/partition/part_catalog/vivado_2025_1_parts.tsv: text: unset\ntest/resources/partition/topologies/j4_board_topology.json: text: unset\ntest/resources/partition/topologies/p9_board_topology.json: text: unset\n",
+      "gradle": {
+        "completed_utc": "2026-10-15T23:52:04.4061163Z",
+        "command": "gradlew.bat compileJava testJava --tests com.xilinx.rapidwright.edif.partition.* -x initSubmodules --no-daemon --max-workers=4",
+        "actual_exit_code": 0,
+        "build_successful_wall_seconds": 54,
+        "JAVA_HOME": "VIVADO_INSTALL/tps/win64/jre21.0.1_12",
+        "GRADLE_USER_HOME": "workspace/work/gradle",
+        "unit_suite_count": 20,
+        "unit_totals": {
+          "tests": 120,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "suites": [
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestAcceptedQualityAnchor.xml",
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestBoundedBalancedSwaps.xml",
+            "tests": 7,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestCombinationalPathAnalyzer.xml",
+            "tests": 10,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestConstraintFrontier.xml",
+            "tests": 8,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestFrontierWeightModel.xml",
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestGroupedFrontierSwaps.xml",
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestHardwareMappingRefiner.xml",
+            "tests": 21,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestHardwarePartitionGraph.xml",
+            "tests": 9,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestMtKaHyParScalarCapacities.xml",
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestPartitionMetrics.xml",
+            "tests": 15,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestPartitionTopology.xml",
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestPhysicalRouteHops.xml",
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestPrimitiveTimingPolicy.xml",
+            "tests": 8,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestRankedQualityGuard.xml",
+            "tests": 7,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestRetainedGreedySwapPhase.xml",
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestRouteAwareBalancedSwaps.xml",
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestSingletonPartitioner.xml",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestTimingHmetisWeights.xml",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestTimingPathModel.xml",
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "file": "build\\test-results\\testJava\\TEST-com.xilinx.rapidwright.edif.partition.TestVertexWeightModel.xml",
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          }
+        ]
+      },
+      "python_results": [
+        {
+          "suite": "scripts",
+          "discovery_directory": "scripts/partition",
+          "command": [
+            "PYTHON",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "scripts/partition",
+            "-p",
+            "test_*.py"
+          ],
+          "started_at_utc": "2026-10-15T23:52:19.136922+00:00",
+          "exit_code": 0,
+          "tests_run": 155,
+          "unittest_reported_seconds": 23.935,
+          "skipped": 2,
+          "wall_seconds": 25.380088,
+          "log_path": "workspace/work/release_packaging_20261015/clean-python-scripts.log"
+        },
+        {
+          "suite": "tools",
+          "discovery_directory": "tools",
+          "command": [
+            "PYTHON",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tools",
+            "-p",
+            "test_*.py"
+          ],
+          "started_at_utc": "2026-10-15T23:52:44.518862+00:00",
+          "exit_code": 0,
+          "tests_run": 17,
+          "unittest_reported_seconds": 2.671,
+          "skipped": 0,
+          "wall_seconds": 3.014347,
+          "log_path": "workspace/work/release_packaging_20261015/clean-python-tools.log"
+        }
+      ],
+      "total_tests": 292,
+      "passed": 290,
+      "skipped_optional_recorded_native": 2,
+      "failed": 0,
+      "post_build_git_status": "",
+      "source_unchanged": true,
+      "Native_or_solver_jobs_launched_for_this_validation": false,
+      "pushed_or_committed_by_peer": false,
+      "scope": "Actual local fresh Git clone at initial release commit; build started without compiled classes, jars, data or build caches in checkout; reused allowed Gradle dependency cache; complete focused Java/Python tests. Optional recorded-native integrations explicitly skipped; no Native workload or new design synthesis validation is implied.",
+      "evidence_sha256": {
+        "workspace/work/release_packaging_20261015/clean_clone_initial_identity.json": "7098cf49ef9978a265051335cefbdc39179a65db8d7b51ec4aa57543fc7fc6fd",
+        "workspace/work/release_packaging_20261015/clean_python_test_receipt.json": "5664548f5ece41765d3a995dd06e90b70304e00cf78818473c3560ccad319f56",
+        "workspace/work/release_packaging_20261015/clean_gradle_exit.json": "eef12706d1d3cf901a2177eeced098a29d5daca9b3a58f66b737575335dc135d",
+        "workspace/work/release_packaging_20261015/clean-gradle.log": "ecefd3471a8ea3fdd66d446e628b09b4d388c61028ce1ca7c54486c70289d8d5",
+        "workspace/work/release_packaging_20261015/clean-python-scripts.log": "847695e2fb28cc37324ff6e96d76dcac0839b6a90fdbd2a9cbdb685494f1c9ed",
+        "workspace/work/release_packaging_20261015/clean-python-tools.log": "f5c0ec0fc7161f5b710641d54013ed0866557ee30e578c54fe5da975e73b14b9",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestAcceptedQualityAnchor.xml": "b090425173083a2d59fba4252f1f6c9e738d6985dd31155791d5b439dd46aaf1",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestBoundedBalancedSwaps.xml": "acc10ea0b954e9fd37f1cf02d4aac171a889b3172cdb7fdcf91f554c05765507",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestCombinationalPathAnalyzer.xml": "854cbfa44809e638885775f22f4eecb26f640fa58f1d7d9ffe1a178693bdf5cf",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestConstraintFrontier.xml": "871b68ee6e4487fabf33f66d36b464d3ceac1848a42f87b5b341e0e32b1e6585",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestFrontierWeightModel.xml": "f5317b6562c89dab4f78a6a59ec8afbb3c7f1b24db70e386f4591441317e5205",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestGroupedFrontierSwaps.xml": "610a397d4616d24eda987c263bc33f9b22f27c72bdcde7207e35027bc4c13a2a",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestHardwareMappingRefiner.xml": "1cff31ca69a3d97dc21de2260e869680d20b71c9a7311bbe1c9b548b1a10f989",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestHardwarePartitionGraph.xml": "7a5f8205057a8d032830ef6d259cbe8c088071f163927f2d995dca262239d42d",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestMtKaHyParScalarCapacities.xml": "f2ee8b2b4e49479a2fa3797ba5b6eed87e573e53881bb0a52459c73e9155088d",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestPartitionMetrics.xml": "78ed150e0c7e8c2da5f44b664f6ca1398cef40419df1d1dc8c76a50b81cc0637",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestPartitionTopology.xml": "eac3ad477a3f67802de3c0b84a5363be44273f286851e4a3a48448b75a8170ad",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestPhysicalRouteHops.xml": "433f6f1f6f13f3d2237ee7156e6881f5ea4564c1a19bc3589553e7dc0cf7db80",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestPrimitiveTimingPolicy.xml": "eac2e8c4f7a516f1dd62555a1d51fc92c892299372c56f22defe53755b0e93d0",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestRankedQualityGuard.xml": "ed2da4f5b21fcb1c311a178c3ebea1ddd1577131ab038570478aa59fce8f3482",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestRetainedGreedySwapPhase.xml": "c9970c5e58c53a72cac9a114e1e50edd61e67712a4729f8ecf827a728195600e",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestRouteAwareBalancedSwaps.xml": "509948cc3299776705062a0821dac9aadb232e9250819f522f42e964f8981b7d",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestSingletonPartitioner.xml": "a1b27678d0406eee681593dc8ca773734382c10e937a2a1fb1bdf6d3603188ef",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestTimingHmetisWeights.xml": "93bc203d70ceceb3f8338cbb1fa1575484f2fbfbaf9ad7e2bfa306161806e706",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestTimingPathModel.xml": "0288d8b9e75a81b6ad845790cc9f10fd502c0c8049117768e652fa771ba4cb93",
+        "workspace/work/release_packaging_20261015/clean-checkout/build/test-results/testJava/TEST-com.xilinx.rapidwright.edif.partition.TestVertexWeightModel.xml": "ad5641decd8a50b2f7586194a740c9c26ca324b22a126b5b88932b5a1058ef1b"
+      }
+    },
+    "runtime_verified_smoke": {
+      "status": "ACTUAL_RUNTIME_DISTRIBUTION_SMOKE_PASS",
+      "archive_sha256": "9523d4ca1d3db88ec8d9e78216c68eaf6912ba568b787102dbbbadef0cdf0810",
+      "source_checkpoint_sha256": "dd882e106a7bfecfeb95f9560d20add8a5a08b62bc3fb7968c4d97a8d130c47c",
+      "cases": [
+        {
+          "case": "preflight",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--check-tools"
+          ],
+          "actual_exit_code": 0
+        },
+        {
+          "case": "k1",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_k1",
+            "--fpga-count",
+            "1"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "6c4c82742e4b56c367a02db9554d17cfea75684b696cc237f6922094ae189945",
+          "fpga_count": 1,
+          "native_clb_luts": {
+            "FPGA_A": 304
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216
+          },
+          "timing_guidance": "single_fpga_no_boundaries",
+          "native_backend_invoked": false,
+          "H": 0,
+          "E": 0,
+          "V": 0,
+          "T": 0
+        },
+        {
+          "case": "k2",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_k2",
+            "--fpga-count",
+            "2"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+          "fpga_count": 2,
+          "native_clb_luts": {
+            "FPGA_A": 185,
+            "FPGA_B": 119
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216,
+            "FPGA_B": 6345216
+          },
+          "timing_guidance": "sampled_source_STA",
+          "native_backend_invoked": true,
+          "H": 1,
+          "E": 0,
+          "V": 0,
+          "T": 32
+        },
+        {
+          "case": "k3",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_k3",
+            "--fpga-count",
+            "3"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "e9e83987554e230d83ec7880b293f9c9163433775cd23a94af5d7358c06b9a60",
+          "fpga_count": 3,
+          "native_clb_luts": {
+            "FPGA_A": 117,
+            "FPGA_B": 102,
+            "FPGA_C": 85
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216,
+            "FPGA_B": 6345216,
+            "FPGA_C": 6345216
+          },
+          "timing_guidance": "sampled_source_STA",
+          "native_backend_invoked": true,
+          "H": 1,
+          "E": 0,
+          "V": 0,
+          "T": 64
+        },
+        {
+          "case": "all4",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_all4"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "0b46121d209f58d09806c9de3cc8f3146c91796cc14ecbe8cc04263d38e7f721",
+          "fpga_count": 4,
+          "native_clb_luts": {
+            "FPGA_A": 70,
+            "FPGA_B": 68,
+            "FPGA_C": 83,
+            "FPGA_D": 83
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216,
+            "FPGA_B": 6345216,
+            "FPGA_C": 6345216,
+            "FPGA_D": 6345216
+          },
+          "timing_guidance": "sampled_source_STA",
+          "native_backend_invoked": true,
+          "H": 1,
+          "E": 0,
+          "V": 0,
+          "T": 80
+        },
+        {
+          "case": "hard_cap_rejection",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_hard_cap_rejection",
+            "--fpga-count",
+            "2",
+            "--max-luts",
+            "1",
+            "--quality",
+            "fast"
+          ],
+          "actual_exit_code": 1
+        }
+      ],
+      "scope": "Tiny source-design packaging smoke; not a rerun of the sixteen large-design experiments.",
+      "hard_cap_rejection_evidence": {
+        "status_json_status": "FAIL",
+        "error": "No candidate satisfies every hard native LUT cap. No accepted mapping was published; this is not a proof of infeasibility.",
+        "observed_candidate_cap_violations": 2,
+        "native_report_completed": true,
+        "accepted_mapping_exists": false
+      }
+    },
+    "original_runtime_smoke_receipt": {
+      "status": "ACTUAL_RUNTIME_DISTRIBUTION_SMOKE_PASS",
+      "archive_sha256": "9523d4ca1d3db88ec8d9e78216c68eaf6912ba568b787102dbbbadef0cdf0810",
+      "source_checkpoint_sha256": "dd882e106a7bfecfeb95f9560d20add8a5a08b62bc3fb7968c4d97a8d130c47c",
+      "cases": [
+        {
+          "case": "preflight",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--check-tools"
+          ],
+          "actual_exit_code": 0
+        },
+        {
+          "case": "k1",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_k1",
+            "--fpga-count",
+            "1"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "6c4c82742e4b56c367a02db9554d17cfea75684b696cc237f6922094ae189945",
+          "fpga_count": 1,
+          "native_clb_luts": {
+            "FPGA_A": 304
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216
+          },
+          "timing_guidance": "single_fpga_no_boundaries",
+          "native_backend_invoked": false,
+          "H": 0,
+          "E": 0,
+          "V": 0,
+          "T": 0
+        },
+        {
+          "case": "k2",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_k2",
+            "--fpga-count",
+            "2"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+          "fpga_count": 2,
+          "native_clb_luts": {
+            "FPGA_A": 185,
+            "FPGA_B": 119
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216,
+            "FPGA_B": 6345216
+          },
+          "timing_guidance": "sampled_source_STA",
+          "native_backend_invoked": true,
+          "H": 1,
+          "E": 0,
+          "V": 0,
+          "T": 32
+        },
+        {
+          "case": "k3",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_k3",
+            "--fpga-count",
+            "3"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "e9e83987554e230d83ec7880b293f9c9163433775cd23a94af5d7358c06b9a60",
+          "fpga_count": 3,
+          "native_clb_luts": {
+            "FPGA_A": 117,
+            "FPGA_B": 102,
+            "FPGA_C": 85
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216,
+            "FPGA_B": 6345216,
+            "FPGA_C": 6345216
+          },
+          "timing_guidance": "sampled_source_STA",
+          "native_backend_invoked": true,
+          "H": 1,
+          "E": 0,
+          "V": 0,
+          "T": 64
+        },
+        {
+          "case": "all4",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_all4"
+          ],
+          "actual_exit_code": 0,
+          "mapping_sha256": "0b46121d209f58d09806c9de3cc8f3146c91796cc14ecbe8cc04263d38e7f721",
+          "fpga_count": 4,
+          "native_clb_luts": {
+            "FPGA_A": 70,
+            "FPGA_B": 68,
+            "FPGA_C": 83,
+            "FPGA_D": 83
+          },
+          "hard_caps": {
+            "FPGA_A": 6345216,
+            "FPGA_B": 6345216,
+            "FPGA_C": 6345216,
+            "FPGA_D": 6345216
+          },
+          "timing_guidance": "sampled_source_STA",
+          "native_backend_invoked": true,
+          "H": 1,
+          "E": 0,
+          "V": 0,
+          "T": 80
+        },
+        {
+          "case": "hard_cap_rejection",
+          "command": [
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/partitioner.cmd",
+            "--input",
+            "workspace/RapidWright/build/partition-python-tests/release_smoke_source/synth.dcp",
+            "--system-topology",
+            "workspace/work/release_packaging_20261015/unpacked runtime/rapidwright-partitioner/test/resources/partition/smoke/topology.json",
+            "--output",
+            "workspace/work/release_packaging_20261015/smoke_hard_cap_rejection",
+            "--fpga-count",
+            "2",
+            "--max-luts",
+            "1",
+            "--quality",
+            "fast"
+          ],
+          "actual_exit_code": 1
+        }
+      ],
+      "scope": "Tiny source-design packaging smoke; not a rerun of the sixteen large-design experiments."
+    },
+    "negative_cap_native_status": {
+      "status": "FAIL",
+      "error": "No candidate satisfies every hard native LUT cap. No accepted mapping was published; this is not a proof of infeasibility.",
+      "candidates": [
+        {
+          "iteration": 0,
+          "directory": "workspace/work/release_packaging_20261015/smoke_hard_cap_rejection/candidate_00",
+          "native_clb_luts": {
+            "FPGA_A": 185,
+            "FPGA_B": 119
+          },
+          "selection_policy_version": 3,
+          "native_balance_search_envelope": 0.3,
+          "native_balance_absolute_tolerance": 1e-12,
+          "preferred_native_balance": 0.2,
+          "native_imbalance": 0.2171052631578947,
+          "target_imbalance": 0.2171052631578947,
+          "cap_violations": {
+            "FPGA_A": {
+              "actual": 185,
+              "cap": 1
+            },
+            "FPGA_B": {
+              "actual": 119,
+              "cap": 1
+            }
+          },
+          "target_device_utilizations": {
+            "FPGA_B": 1.4065715020576132e-05,
+            "FPGA_A": 2.186686788913096e-05
+          },
+          "preferred_balance_target_met": false,
+          "within_native_search_envelope": true,
+          "transfers": 32,
+          "topology_distance": 32.0,
+          "guard_reference_transfers": 32,
+          "guard_reference_topology": 32.0,
+          "max_crossings": 1,
+          "endpoint_excess": 0,
+          "transit_primitives": 0,
+          "path_analysis_complete": true,
+          "quality_guard_policy": "ranked",
+          "quality_guard_policy_confirmed": true,
+          "minimum_link_hop_analysis_available": true,
+          "max_minimum_link_hops": 1,
+          "max_minimum_relay_traversals": 0,
+          "timing_cost": 17.02846301081578,
+          "timing_path_count": 256,
+          "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+          "frontier_sha256": "bd3582ae0b767928a5706cce6aa226eaed38dce49a44245318728bb3af6a1707",
+          "assignment_sha256": "5de2b522f56bab86dcb0c8630388bafef3c4a2d8445d96fc1582160558efda9e",
+          "native_completion_sha256": "bd41ef82f8cc6145b09bcc5b6dfd47de29a48f2526369d40152b067fd1f78e1d",
+          "selected_report_sha256": {
+            "hardware_quality.txt": "6c64ef181b9a6d6d020f91457b1a10db527ab1de11436e8fb585e98ac34a9dad",
+            "logical_resources.tsv": "c0937472b984ade940c6860bbc5489588f251dd4ad5c53347f5f45103e1deb09",
+            "logical_lut_report.txt": "2e583ff732869ee03bf85840ae52265613bb61eaeb7e4b2b475ad4e061221923",
+            "primitive_counts.tsv": "b104e0e964e6f1470d24a64a9700c34d42d40af009f9f2e643ffff491114143e",
+            "native_candidates.tsv": "6d6866568c59fa042aa9032ab8efdf9fbcd7e991e70b70c9209b8c6af71615ec",
+            "fpga_io_cuts.txt": "4aa3463771640afa8074c255a2a352efb761b01e6b4d49a9ccb9a52ea5280934",
+            "fpga_net_crossings.tsv": "0762a657e5c0a82c425b768fa1b4d0bb7d2fa972708df112ecdaa9ab9ff39fa6",
+            "io_cuts.txt": "e3132efb5d8369c482afc5e87358dc675e918aadb20c952266454e79cc699b07",
+            "metric_definitions.txt": "28c1e87b6c622b819cb9908f3ad9f58277331314f7be645e2b80c10d99238ba8",
+            "run_provenance.json": "c6c76d70e624af3a6713a563bfdcab74f34d565ff353b7b11073b529fd29d64d",
+            "worst_combinational_path.tsv": "00bfe133d951be74554ff7facb5d837b09ae1a9662b075190184a22fcaf5a9f7",
+            "refinement_passes.tsv": "ec252ab6d7fe71061f703e2c1ac2e8793d4e332f2c668a396089d0428382d5c3",
+            "swap_refinement_passes.tsv": "6acc0a2098f52118afdedd88e63a4ebeadd873cf289ac7cd0bb5e3d84892d60e",
+            "final_assignment.part": "5de2b522f56bab86dcb0c8630388bafef3c4a2d8445d96fc1582160558efda9e",
+            "endpoint_kind_diagnostic.tsv": "96efddad7950bc07fa976a3d7068ab1149dbae1c5f8a6f4a1f17040eeb94de4a",
+            "fpga_control_categories.tsv": "d38694a121aefa28210f6683a582bc0c7cd4e3a7d69f66bcddc58ed9c782b1a5",
+            "cohort_refinement_passes.tsv": null
+          },
+          "java_immutable_report_sha256": {
+            "hardware_quality.txt": "6c64ef181b9a6d6d020f91457b1a10db527ab1de11436e8fb585e98ac34a9dad",
+            "logical_resources.tsv": "c0937472b984ade940c6860bbc5489588f251dd4ad5c53347f5f45103e1deb09",
+            "primitive_counts.tsv": "b104e0e964e6f1470d24a64a9700c34d42d40af009f9f2e643ffff491114143e",
+            "native_candidates.tsv": "6d6866568c59fa042aa9032ab8efdf9fbcd7e991e70b70c9209b8c6af71615ec",
+            "fpga_io_cuts.txt": "4aa3463771640afa8074c255a2a352efb761b01e6b4d49a9ccb9a52ea5280934",
+            "fpga_net_crossings.tsv": "0762a657e5c0a82c425b768fa1b4d0bb7d2fa972708df112ecdaa9ab9ff39fa6",
+            "io_cuts.txt": "e3132efb5d8369c482afc5e87358dc675e918aadb20c952266454e79cc699b07",
+            "run_provenance.json": "c6c76d70e624af3a6713a563bfdcab74f34d565ff353b7b11073b529fd29d64d",
+            "worst_combinational_path.tsv": "00bfe133d951be74554ff7facb5d837b09ae1a9662b075190184a22fcaf5a9f7",
+            "refinement_passes.tsv": "ec252ab6d7fe71061f703e2c1ac2e8793d4e332f2c668a396089d0428382d5c3",
+            "swap_refinement_passes.tsv": "6acc0a2098f52118afdedd88e63a4ebeadd873cf289ac7cd0bb5e3d84892d60e",
+            "final_assignment.part": "5de2b522f56bab86dcb0c8630388bafef3c4a2d8445d96fc1582160558efda9e",
+            "endpoint_kind_diagnostic.tsv": "96efddad7950bc07fa976a3d7068ab1149dbae1c5f8a6f4a1f17040eeb94de4a",
+            "fpga_control_categories.tsv": "d38694a121aefa28210f6683a582bc0c7cd4e3a7d69f66bcddc58ed9c782b1a5",
+            "cohort_refinement_passes.tsv": null,
+            "frontier.tsv": "bd3582ae0b767928a5706cce6aa226eaed38dce49a44245318728bb3af6a1707",
+            "mapping.txt": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17"
+          },
+          "native_regenerated_report_sha256": {
+            "lut_report.txt": "2e583ff732869ee03bf85840ae52265613bb61eaeb7e4b2b475ad4e061221923",
+            "vivado_resources.tsv": "e9b18e6f54a9c45e67cb64b3ad3c2deee546a32d9bddbc172802f304043f3fbc",
+            "source_mapping.txt": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+            "native_complete.txt": "bd41ef82f8cc6145b09bcc5b6dfd47de29a48f2526369d40152b067fd1f78e1d",
+            "vivado_resource_summary.txt": "04dae32ef3249ef6397b679bb934cbf7421cf5f9602cfde7fdd304245b9c7766"
+          }
+        }
+      ]
+    },
+    "runtime_code_identity": {
+      "portable_manifest": "doc/partition/evidence/runtime_code_manifest.json",
+      "original_alias": "workspace/work/release_packaging_20261015/smoked_runtime_code_manifest.json",
+      "sha256": "499dad8d823e4ed852f33fe72604648840a01380c57cb95e1ea6d49525c3d5d2",
+      "entries": 1141,
+      "copy_method": "Original manifest bytes copied unchanged; pre/post SHA256 identical. No runtime archive or runtime payload hashing by this extractor.",
+      "scope": "All runtime archive files except doc/ and Markdown documentation; exact relative path and SHA256. Future documentation-only bundle rebuilds must match this dictionary."
+    },
+    "historical_paper_numeric_audit": {
+      "scope": "228-check numeric audit of the earlier corrected paper source. Later updates only add actual release provenance and runtime results; original reviewed source SHA remains historical.",
+      "record": {
+        "status": "PASS_BOUNDED_VALIDATION_PAPER_NUMERIC_AND_SOURCE_AUDIT",
+        "recorded_utc": "2026-10-15T23:45:18.172556+00:00",
+        "completed_numeric_checks": 228,
+        "numeric_result": "Actual direct bounded Python check exited zero; no numeric/table finding.",
+        "source_snapshot_sha256": "b2aba5ecceff5416bb9a4866553b829357662d5797eb2cab24ec39b0ac149c77",
+        "validation_evidence_json_sha256": "1b14f30d8beede27b9127cf1c55ef5abdaaeb4c975d912ee6d3b1b76a28a67d4",
+        "original_final_summary_sha256": "1c222fdb23eaae252b04ec7f843ba208eae9f352ef3f417d5b6a50779dc01d92",
+        "numeric_scope": [
+          "16 final resource/path rows: Native LUT lists, imbalance, H/E/V/T.",
+          "16 exact cut/category rows, directed-category sums, proofkind and scope.",
+          "16 canonical mapping SHA appendix entries.",
+          "All16 portable summary Native LUT/cap/imbalance/H/E/V/T/proof/map identities against original final SUMMARY.",
+          "4 whole-source scale rows against Native DESIGN rows.",
+          "6 NVDLA/OpenTitan within-candidate before-after traces and original transfer anchors.",
+          "8 OpenTitan Native-validated feedback rows.",
+          "Mesh improvement percentages and documented Native imbalance delta."
+        ],
+        "prose_findings_reported_and_author_corrected": [
+          "Ordinary frontend resource PASS is distinct from separate independent endpoint/category benchmark publication qualification.",
+          "Standalone checkout/extracted tool-root example precedes historical commonworkspace J4 example.",
+          "Pending release macro narrowed after completed Java/Python/preflight checks; runtime smoke/final identity remain pending until their actual receipts."
+        ],
+        "audit_limits": "Bounded report/source consistency only. No source DCP/EDIF, mapping payload or Native bulk rehash, no solver or Native job, no full timing/route/frequency claim. Numeric audit preceded the author's three prose-only corrections; current snapshot hashes record the corrected source. This receipt is not compilation or physical validation.",
+        "files_changed_by_numeric_auditor": "Only this work receipt; paper and evidence edited solely by their owner."
+      }
+    },
+    "report_inputs": {
+      "work/release_packaging_20261015/clean_checkout_validation_receipt.json": {
+        "sha256": "24a26d1bbb382483cd2589d21f9aa5a943ff70b9f81cb62553b27757638a8e04",
+        "bytes": 15880
+      },
+      "work/release_packaging_20261015/runtime_smoke_verified_receipt.json": {
+        "sha256": "2d35ab553d0a14ad7e87a570cfddef348699e14859438feb8c337165509ecdc1",
+        "bytes": 7288
+      },
+      "work/release_packaging_20261015/runtime_smoke_receipt.json": {
+        "sha256": "c1208b17a8a04699bca9033fc59ecce04fc884296fcb06e426775b02986228aa",
+        "bytes": 6950
+      },
+      "work/release_packaging_20261015/smoke_hard_cap_rejection/STATUS.json": {
+        "sha256": "fc881cac62d5df28334a5f59bd7ffd7e7bfa3c9517cab339d3054839cdb08d59",
+        "bytes": 21367
+      },
+      "work/final_docs_check_20261015/validation_paper_numeric_audit.json": {
+        "sha256": "eec9d27e5e82c12235f16f0a19b45d7ac0e4ab7fb1323963a1cdb6244e5e43db",
+        "bytes": 2134
+      }
+    },
+    "final_archive_identity_policy": "The final documentation-bearing ZIP checksum belongs in an external sidecar, avoiding a self-referential hash. The preserved tested-code manifest defines the exact non-documentation runtime bytes."
   }
 }

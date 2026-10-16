@@ -60,8 +60,9 @@ def main():
         'benchmark_engine_manifest_sha256': summary['approved_engine_manifest_sha256'],
         'release_lineage': {
             'branch': 'Partitioner_Extreme_Overhaul', 'starting_commit': '5bc91b48',
+            'validated_source_commit': 'f9f2cada5b8151df08414188e6bdfc554f6ce695',
             'large_results_scope': 'Recorded benchmark engine b12; later portable launch/environment changes were not followed by sixteen large-design reruns.',
-            'fresh_release_build_tests_smoke_and_commit': 'Root release evidence to be inserted after actual completion; not asserted by this snapshot.'
+            'fresh_release_build_tests_and_smoke': 'Actual clean-clone and unpacked-runtime checks are preserved separately in release_validation; no new large-design experiment is implied.'
         },
         'summary': summary,
         'cases': [],
@@ -137,6 +138,7 @@ def main():
     evidence['controlled_comparisons']['aes_recorded_tradeoffs'] = read('work/final_aes_v5_cut_category_tradeoff_digest_20261015.json')
     evidence['controlled_comparisons']['aes_tradeoff_notes'] = read('RESULTS FOR J4/AES_SELECTED_MAPS_AND_ALTERNATIVES.txt', 'text')
     evidence['release_source_tests'] = read('RapidWright/build/partition-python-tests/portability_test_receipt.json')
+    evidence['release_validation'] = read('RapidWright/doc/partition/evidence/release_validation.json')
     for relative in [
         'work/native_canary_export_only_peer_20261015/independent_review.json',
         'work/new_policy_j4_publisher_joint_leaf_parent_peer_v1/publisher_canary_export_independent_review.json',

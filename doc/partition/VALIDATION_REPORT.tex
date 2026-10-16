@@ -11,7 +11,7 @@
 \setlength{\emergencystretch}{3em}
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
 \newcommand{\sha}[1]{{\scriptsize\texttt{#1}}}
-\newcommand{\ReleaseTestStatus}{Current source builds and tests are reported separately below. The tiny end-to-end portable release smoke and final release identity remain pending their actual completion. The sixteen large-design results are completed measurements of the separately identified benchmark engine.}
+\newcommand{\ReleaseTestStatus}{A fresh Git clone passed the focused source build/tests, and an unpacked portable runtime passed actual tool preflight, one/two/three/default-four-FPGA source runs, and a real Native hard-cap rejection. These release checks are reported separately below; the sixteen large-design measurements remain bound to the identified benchmark engine.}
 \title{Timing-, Topology-, and Register-Free-Path-Aware FPGA Partition Mapping\\Implementation, Controlled Observations, and J4 Validation Evidence}
 \author{RapidWright partitioner engineering validation}
 \date{15 October 2026}
@@ -37,7 +37,7 @@ The release branch is \code{Partitioner_Extreme_Overhaul}, started from \code{5b
 
 The companion \code{evidence/validation_evidence.json} contains portable extracts of completed small reports, exact numeric results, mapping/source/receipt hashes, selected comparison traces, and the original-report digest index. A \code{workspace/} alias refers to the common parent containing RapidWright, LSUT\_2, topologies, work, and RESULTS FOR J4. It is a location alias, not a hash of relocated or rewritten evidence. Original SHA-256 values always refer to the original report bytes before path normalization. Large EDIF/DCP payloads, mapping payloads, and Native streams were not reread to prepare this report. Hashes locate and bind that separately retained evidence; they do not embed the source payload in this repository.
 
-The snapshot was built from 342 bounded report inputs. Its extraction is repeatable with \code{evidence/build_snapshot.py}; the extractor does not run a solver, Native Vivado, STA, or a payload validator. Its assertions check report consistency, not a fresh physical implementation. A final summary renderer likewise reads current qualified package artifacts rather than repeating the underlying experiments.
+The snapshot was built from 343 bounded report inputs. Its extraction is repeatable with \code{evidence/build_snapshot.py}; the extractor does not run a solver, Native Vivado, STA, or a payload validator. Its assertions check report consistency, not a fresh physical implementation. A final summary renderer likewise reads current qualified package artifacts rather than repeating the underlying experiments.
 
 \section{Research basis and the engineering decisions it supports}
 
@@ -373,7 +373,29 @@ Runtime/provenance & Exact source/mapping/engine pins, complete markers, owned p
 
 The following historical source-review counts are version-specific and are not added together as a current unit-test total. The final export-only Tcl peer receipt records 95 focused checks, including generic all-segment column/dedup semantics and export-only canary scope. Its producer's host fixture run records 36 tests exiting zero. The final publisher peer records 155 review checks and 30 copied focused executable checks exiting zero, bound to publisher SHA \code{b1805520} and adapter SHA \code{5819a5fa}. The held data/helper peer records 217 bounded checks preserving all sixteen identities/caps/metrics, twelve then-completed proofs, four then-pending mesh bindings, and all 281 captured prior payload digest entries. The pending wording in those historical receipts is not rewritten after later successful execution.
 
-Current portable release checks are distinct from those historical reviews. A clean isolated source snapshot, with no sibling LSUT\_2 or topology checkout, ran 172 Python tests: 170 passed and two optional recorded-Native fixtures were skipped. The source-receipt SHA is \sha{853782d63f9e17ef34159fbee67f56f8e9be762e5d58fb53a2ac946674700645}. The partition frontend suite accounts for 155 tests (153 passed, two optional skips), and the tools suite for 17 passes. A fresh Gradle Java execution completed 120/120 tests with actual exit zero. Tool preflight also completed with actual exit zero using installed Vivado/Java and WSL Mt-KaHyPar v1.6.2. The separate tiny actual end-to-end release smoke and final commit identity remain pending their actual receipts; no large-design rerun is implied by these portability checks.
+Current portable release checks are distinct from those historical reviews. A fresh local Git clone at source commit \code{f9f2cada5b8151df08414188e6bdfc554f6ce695} started without inherited compiled classes, jars, data, build output or checkout Gradle cache. It reused the allowed Gradle dependency cache, built successfully, and completed 20 focused Java partition suites: 120 tests, zero failures/errors/skips. Python ran 172 tests: 170 passed and two optional recorded-Native fixtures were skipped. The combined focused total is 292 tests, 290 passes and two optional skips; source and Git status remained clean. This is one clean-clone execution total, not a sum with earlier repeated test runs.
+
+The clean-clone receipt is SHA \sha{24a26d1bbb382483cd2589d21f9aa5a943ff70b9f81cb62553b27757638a8e04}. An earlier isolated Python-portability receipt, SHA \sha{853782d63f9e17ef34159fbee67f56f8e9be762e5d58fb53a2ac946674700645}, separately confirms the same 172-test scope without sibling LSUT\_2/topology checkouts; it is not added again to 292. Full versioned receipt extracts are in \code{evidence/release_validation.json}. Hosted CI is configured but has not executed at this evidence cutoff; the results above are actual local clean-clone executions, not a claimed hosted-CI pass.
+
+\subsection{Actual unpacked-runtime release smoke}
+
+The prebuilt runtime ZIP was extracted and exercised through its normal \code{partitioner.cmd}. Tool preflight exited zero. A small synthesized original DCP (624 logical primitives: 304 LUTs, 256 FFs and 64 CARRY4s) then completed the following actual Native-backed frontend runs. The final row omitted \code{--fpga-count}, exercising the high-level all-device default. Multi-FPGA runs invoked Mt-KaHyPar v1.6.2 and sampled source STA; k1 used its intentional no-boundary/no-backend path. These source-design packaging tests do not repeat the sixteen large-design experiments or their separate endpoint/category proofs.
+
+\begin{center}\small
+\begin{tabular}{lrrrrr}
+\toprule
+Run & Native CLB LUTs A/B/C/D & H & E & V & T\\
+\midrule
+k1 & 304 & 0 & 0 & 0 & 0\\
+k2 & 185/119 & 1 & 0 & 0 & 32\\
+k3 & 117/102/85 & 1 & 0 & 0 & 64\\
+all four, count omitted & 70/68/83/83 & 1 & 0 & 0 & 80\\
+\bottomrule
+\end{tabular}\end{center}
+
+A negative k2 run with \code{--max-luts 1} exited one for the intended actual Native gate: completed Native subset reports measured 185 and 119 CLB LUTs, each exceeding cap one. \code{STATUS.json} is FAIL with ``No candidate satisfies every hard native LUT cap,'' and no accepted \code{mapping.txt} exists. This tests refusal to publish an over-cap result, not proof that every hypothetical assignment is infeasible. The verified smoke receipt is SHA \sha{2d35ab553d0a14ad7e87a570cfddef348699e14859438feb8c337165509ecdc1}.
+
+The immutable tested runtime archive is SHA \sha{9523d4ca1d3db88ec8d9e78216c68eaf6912ba568b787102dbbbadef0cdf0810}. Its exact non-documentation identity is preserved byte-for-byte in \code{evidence/runtime_code_manifest.json}, SHA \sha{499dad8d823e4ed852f33fe72604648840a01380c57cb95e1ea6d49525c3d5d2}. The manifest contains 1,141 relative file paths and SHA-256 values, excluding \code{doc/} and Markdown documentation under its explicit scope. Thus documentation-bearing distribution archives can be compared against the tested runtime without embedding a circular final-ZIP hash in their own paper. The final distributed archive checksum belongs in an external sidecar. The source code commit above identifies the tested executable implementation; subsequent documentation/CI history can be recorded with \code{git rev-parse HEAD} and \code{git log -3 --oneline}, without inserting a self-referential final documentation commit here.
 
 The selected current packages provide the actual large-design completion: sixteen exact map-bound endpoint/category comparisons PASS, with Native source certificates and Native per-subset resource results. NVDLA and mesh each bind all four maps to their respective completed joint proof. The mesh completion is SHA
 \begin{center}\sha{52f3e4f8f0fdd334424235a8c8261b30c03e32e90f3709b3dc0fd8f885a1c96e};\end{center}
