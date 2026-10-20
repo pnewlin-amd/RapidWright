@@ -2,11 +2,16 @@
  * Licensed under the Apache License, Version 2.0. */
 package com.xilinx.rapidwright.edif.partition;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,6 +24,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.zip.GZIPOutputStream;
+
+import org.json.JSONObject;
 
 import com.xilinx.rapidwright.edif.EDIFDirection;
 import com.xilinx.rapidwright.edif.EDIFHierCellInst;
@@ -43,11 +51,13 @@ public final class FpgaIoCutAnalyzer {
     public static final class Endpoint {
         public final String path, pin, type;
         public final boolean driver, load, topPort;
+        public final EDIFDirection direction;
         public final boolean trustedPrimitive;
         final EDIFCellInst instance;
 
         private Endpoint(String path, String pin, String type, EDIFDirection direction, boolean topPort, EDIFCellInst instance) {
             this.path = path; this.pin = pin; this.type = type; this.topPort = topPort;
+            this.direction = direction;
             this.instance = instance; trustedPrimitive = PrimitiveTimingPolicy.trusted(instance);
             driver = direction == EDIFDirection.INOUT
                     || direction == (topPort ? EDIFDirection.INPUT : EDIFDirection.OUTPUT);
@@ -123,6 +133,9 @@ public final class FpgaIoCutAnalyzer {
         public int directionalDataSignals;
         public int canonicalNets;
         public int unmappedTopPorts;
+        public Path connectionsManifest;
+        public String connectionsManifestSha256, connectionsManifestRoot;
+        public long connectionManifestNets, connectionManifestAliases, connectionManifestEndpoints;
     }
 
     /** Strict longest mapped ancestor. Repeated simple cell names never alias. */
@@ -146,6 +159,32 @@ public final class FpgaIoCutAnalyzer {
     public static FpgaIoCutResult analyze(EDIFNetlist netlist,
             Map<EDIFHierCellInst, Integer> leafInsts, Map<String, Integer> nameToPart,
             Integer topIoPartition) {
+        return analyze(netlist, leafInsts, nameToPart, topIoPartition, (ConnectionManifest) null);
+    }
+
+    /**
+     * Emits all source connectivity, including local/constant nets, one canonical
+     * net at a time. This records intended ownership before regroup; it does not
+     * certify a downstream transformed netlist or a wrapper's clock/reset hookup.
+     */
+    public static FpgaIoCutResult analyze(EDIFNetlist netlist,
+            Map<EDIFHierCellInst, Integer> leafInsts, Map<String, Integer> nameToPart,
+            Integer topIoPartition, Path connectionsManifest) {
+        if (connectionsManifest == null) throw new IllegalArgumentException("Connection manifest path is required");
+        if (topIoPartition == null || topIoPartition < 0) {
+            throw new IllegalArgumentException("Connection manifest requires an explicit nonnegative root FPGA assignment");
+        }
+        try (ConnectionManifest manifest = new ConnectionManifest(connectionsManifest,
+                netlist.getTopCell().getName(), nameToPart, topIoPartition)) {
+            FpgaIoCutResult result = analyze(netlist, leafInsts, nameToPart, topIoPartition, manifest);
+            manifest.finish(result);
+            return result;
+        } catch (IOException e) { throw new UncheckedIOException(e); }
+    }
+
+    private static FpgaIoCutResult analyze(EDIFNetlist netlist,
+            Map<EDIFHierCellInst, Integer> leafInsts, Map<String, Integer> nameToPart,
+            Integer topIoPartition, ConnectionManifest manifest) {
         FpgaIoCutResult result = new FpgaIoCutResult();
         Set<EDIFHierNet> processed = new HashSet<>();
         List<EDIFHierNet> candidates = new ArrayList<>();
@@ -163,6 +202,7 @@ public final class FpgaIoCutAnalyzer {
             NetEndpoints net = collectEndpoints(candidate);
             processed.addAll(net.aliases);
             result.canonicalNets++;
+            if (manifest != null) manifest.write(net);
             if (net.constant) {
                 result.filteredConstantNets.add(net.name);
                 continue;
@@ -225,11 +265,157 @@ public final class FpgaIoCutAnalyzer {
                 }
             }
         }
+        // The historical cut candidates intentionally start at frontier/top
+        // pins. A source manifest also accounts for disconnected local nets and
+        // empty hierarchy. Do not change existing cut counters for those nets.
+        if (manifest != null) streamRemainingNets(netlist.getTopHierCellInst(), processed, manifest);
         Collections.sort(result.clockNets);
         Collections.sort(result.resetNets);
         Collections.sort(result.filteredConstantNets);
         Collections.sort(result.unanalyzedNets);
         return result;
+    }
+
+    private static void streamRemainingNets(EDIFHierCellInst hierarchy, Set<EDIFHierNet> processed,
+            ConnectionManifest manifest) {
+        for (EDIFNet sourceNet : hierarchy.getCellType().getNets()) {
+            EDIFHierNet candidate = new EDIFHierNet(hierarchy, sourceNet);
+            // Every source alias is visited once in this DFS. Consume pending
+            // aliases instead of retaining a census-sized set after emission.
+            if (processed.remove(candidate)) continue;
+            NetEndpoints net = collectEndpoints(candidate);
+            for (EDIFHierNet alias : net.aliases) {
+                if (!alias.equals(candidate)) processed.add(alias);
+            }
+            manifest.write(net);
+        }
+        for (EDIFCellInst child : hierarchy.getCellType().getCellInsts()) {
+            if (!child.getCellType().isLeafCellOrBlackBox()) {
+                streamRemainingNets(hierarchy.getChild(child), processed, manifest);
+            }
+        }
+    }
+
+    /** Streaming, lossless source audit; no per-design endpoint table is kept. */
+    private static final class ConnectionManifest implements AutoCloseable {
+        private final Path destination, pending;
+        private final String root;
+        private final Map<String, Integer> mapping;
+        private final int topOwner;
+        private BufferedWriter writer;
+        private long nets, aliases, endpoints;
+
+        ConnectionManifest(Path destination, String root, Map<String, Integer> mapping, int topOwner) throws IOException {
+            this.destination = destination.toAbsolutePath().normalize();
+            this.root = root;
+            this.mapping = mapping;
+            this.topOwner = topOwner;
+            Files.createDirectories(this.destination.getParent());
+            pending = Files.createTempFile(this.destination.getParent(), "mapping_connections_", ".pending");
+            try {
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new GZIPOutputStream(Files.newOutputStream(pending)), StandardCharsets.UTF_8));
+                writer.write("RECORD_TYPE\tCANONICAL_NET\tSOURCE_INSTANCE\tPIN\tREF_NAME\tPORT_DIRECTION"
+                        + "\tDRIVER\tLOAD\tLOGICAL_OWNER\tBIT_WIDTH\tCONSTANT_CLASSIFICATION\tBOUNDARY_SCOPE\n");
+            } catch (IOException | RuntimeException e) {
+                if (writer != null) writer.close();
+                Files.deleteIfExists(pending);
+                throw e;
+            }
+        }
+
+        private String rooted(String relative) { return relative.isEmpty() ? root : root + "/" + relative; }
+
+        private boolean localConstant(Endpoint endpoint) {
+            return endpoint.instance != null && endpoint.instance.getCellType().isPrimitive()
+                    && ("GND".equals(endpoint.type) || "VCC".equals(endpoint.type));
+        }
+
+        private String owner(Endpoint endpoint) {
+            if (localConstant(endpoint)) return "LOCAL_CONSTANT";
+            Integer partition = endpoint.topPort ? Integer.valueOf(topOwner) : resolvePartition(endpoint.path, mapping);
+            if (partition == null || partition < 0) {
+                throw new IllegalArgumentException("Unmapped source connection endpoint: " + rooted(endpoint.path)
+                        + "/" + endpoint.pin);
+            }
+            return PartitionLabel.indexToFpgaLabel(partition);
+        }
+
+        void write(NetEndpoints net) {
+            Set<String> drivers = new HashSet<>(), loads = new HashSet<>();
+            for (Endpoint endpoint : net.endpoints) {
+                String owner = owner(endpoint);
+                if (endpoint.driver) drivers.add(owner);
+                if (endpoint.load) loads.add(owner);
+            }
+            boolean crossing = false;
+            for (String driver : drivers) for (String load : loads) crossing |= !driver.equals(load);
+            String scope = net.constant ? "LOCAL_CONSTANT" : crossing ? "CROSSING" : "LOCAL";
+            String constant = net.constant ? "VENDOR_CONSTANT_NET" : "NON_CONSTANT";
+            String canonical = rooted(net.name);
+            row("NET", canonical, "", "", "", "", "", "", "", "1", constant, scope);
+            nets++;
+            List<String> aliasNames = new ArrayList<>();
+            for (EDIFHierNet alias : net.aliases) aliasNames.add(rooted(alias.getHierarchicalNetName()));
+            Collections.sort(aliasNames);
+            for (String alias : aliasNames) {
+                row("ALIAS", canonical, alias, "", "", "", "", "", "", "1", constant, scope);
+                aliases++;
+            }
+            for (Endpoint endpoint : net.endpoints) {
+                String endpointClass = localConstant(endpoint) ? "LOCAL_CONSTANT_SOURCE" : constant;
+                row("ENDPOINT", canonical, rooted(endpoint.path), endpoint.pin, endpoint.type,
+                        endpoint.direction.name(), Boolean.toString(endpoint.driver), Boolean.toString(endpoint.load),
+                        owner(endpoint), "1", endpointClass, scope);
+                endpoints++;
+            }
+        }
+
+        private void row(String... fields) {
+            try {
+                for (int index = 0; index < fields.length; index++) {
+                    if (index > 0) writer.write('\t');
+                    writer.write(fields[index].replace("\\", "\\\\").replace("\t", "\\t")
+                            .replace("\r", "\\r").replace("\n", "\\n"));
+                }
+                writer.write('\n');
+            } catch (IOException e) { throw new UncheckedIOException(e); }
+        }
+
+        void finish(FpgaIoCutResult result) throws IOException {
+            writer.close();
+            writer = null;
+            try {
+                Files.move(pending, destination, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(pending, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+            result.connectionsManifest = destination;
+            result.connectionsManifestSha256 = fileSha256(destination);
+            result.connectionsManifestRoot = root;
+            result.connectionManifestNets = nets;
+            result.connectionManifestAliases = aliases;
+            result.connectionManifestEndpoints = endpoints;
+        }
+
+        @Override public void close() throws IOException {
+            try { if (writer != null) writer.close(); }
+            finally { Files.deleteIfExists(pending); }
+        }
+    }
+
+    private static String fileSha256(Path file) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[65536];
+            try (InputStream input = Files.newInputStream(file)) {
+                int count;
+                while ((count = input.read(buffer)) >= 0) digest.update(buffer, 0, count);
+            }
+            StringBuilder value = new StringBuilder();
+            for (byte octet : digest.digest()) value.append(String.format("%02x", octet & 255));
+            return value.toString();
+        } catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
     }
 
     private static String basePin(String pin) {
@@ -290,6 +476,30 @@ public final class FpgaIoCutAnalyzer {
                         + String.join(",", result.netCrossings.get(entry.getKey())) + "\t" + result.endpointFingerprints.get(entry.getKey()));
             }
             Files.write(outputDir.resolve("fpga_control_categories.tsv"), categories, StandardCharsets.UTF_8);
+            if (result.connectionsManifest != null) {
+                if (!result.connectionsManifestSha256.equals(fileSha256(result.connectionsManifest))) {
+                    throw new IllegalStateException("Source connection manifest changed after analysis");
+                }
+                JSONObject receipt = new JSONObject();
+                receipt.put("schema_version", 1);
+                receipt.put("status", "PRE_REGROUP_SOURCE_CONNECTIVITY_ONLY");
+                receipt.put("downstream_regroup_verification", "NOT_RUN");
+                receipt.put("file", result.connectionsManifest.getFileName().toString());
+                receipt.put("sha256", result.connectionsManifestSha256);
+                receipt.put("source_root", result.connectionsManifestRoot);
+                receipt.put("root_derivation", "synthesized top cell name used as consumer DUT root");
+                receipt.put("encoding", "UTF-8 gzip TSV; backslash, tab, CR and LF escaped as \\\\, \\t, \\r and \\n");
+                receipt.put("record_types", "NET, ALIAS, ENDPOINT");
+                receipt.put("alias_record_source_instance_field", "original hierarchical source net alias");
+                receipt.put("endpoint_bit_width", 1);
+                receipt.put("scope", "all canonical source nets, original hierarchy aliases and primitive/top-port endpoints");
+                receipt.put("constant_policy", "vendor GND/VCC sources are LOCAL_CONSTANT; consumer leaf ownership remains explicit");
+                receipt.put("canonical_nets", result.connectionManifestNets);
+                receipt.put("hierarchy_aliases", result.connectionManifestAliases);
+                receipt.put("endpoints", result.connectionManifestEndpoints);
+                Files.writeString(outputDir.resolve("mapping_connections_manifest.json"), receipt.toString(2) + "\n",
+                        StandardCharsets.UTF_8);
+            }
         } catch (IOException e) { throw new UncheckedIOException(e); }
     }
 
@@ -327,7 +537,7 @@ public final class FpgaIoCutAnalyzer {
         for (EDIFHierCellInst leaf : netlist.getAllLeafHierCellInstances(true)) leaves.put(leaf, leaves.size() + 1);
         Path output = java.nio.file.Paths.get(args[2]);
         Files.createDirectories(output);
-        FpgaIoCutResult result = analyze(netlist, leaves, mapping, mapping.get(""));
+        FpgaIoCutResult result = analyze(netlist, leaves, mapping, mapping.get(""), output.resolve("mapping_connections.tsv.gz"));
         writeReport(output, result);
         System.out.println("LOGICAL_CUT_AUDIT nets=" + result.canonicalNets + " crossing_nets=" + result.netCrossings.size()
                 + " data_destinations=" + result.directionalDataSignals + " diagnostics=" + result.unanalyzedNets.size());

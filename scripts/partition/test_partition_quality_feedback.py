@@ -77,7 +77,7 @@ class AutomaticQualityFeedbackAcceptance(unittest.TestCase):
                 if self.zero_area_hops is not None:
                     destination = "FPGA_C" if self.zero_area_hops == 2 else "FPGA_B"
                     other = "FPGA_B" if destination == "FPGA_C" else "FPGA_C"
-                    mapping.write_text(f"top/a FPGA_A\ntop/b {destination}\ntop/c {other}\ntop FPGA_A\n")
+                    mapping.write_text(f"top/b {destination}\ntop/c {other}\ntop FPGA_A\n")
                     (candidate / "frontier.tsv").write_text(
                         "vertex\tpath\tlogical_luts\tprimary_weight\n1\ta\t0\t1\n2\tb\t0\t1\n3\tc\t0\t1\n")
                     (candidate / "final_assignment.part").write_text("0\n2\n1\n" if self.zero_area_hops == 2 else "0\n1\n2\n")
@@ -92,6 +92,7 @@ class AutomaticQualityFeedbackAcceptance(unittest.TestCase):
                                    after_max_minimum_link_hops=str(self.zero_area_hops),
                                    after_max_minimum_relay_traversals=str(self.zero_area_hops - 1))
                 (candidate / "hardware_quality.txt").write_text("".join(f"{key}={value}\n" for key, value in quality.items()))
+                fixture.write_mapping_contract_fixture(candidate)
             elif any(value.endswith("prepare_native_resource_cells.py") for value in command):
                 native = Path(command[command.index("--output") + 1])
                 if self.first_cap_failure and native.parent.name == "candidate_00":

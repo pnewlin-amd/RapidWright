@@ -447,7 +447,7 @@ These are frontend flags; Java's underscore flags are not interchangeable.
 | `--mapping-constraints FILE` | Longest-prefix fixed hierarchy rules. |
 | `--logical-resource-capacities FILE` | Six-dimensional logical ceilings. |
 | `--weight-model FILE` | Initial primitive-type integer estimate. |
-| `--verbose-mapping` | Opt out of compact mapping. |
+| `--verbose-mapping` | Request frontier-level exceptions; explicit root and nonredundant ordered rules still apply. |
 | `--seed N` | Initial seed; default 1. |
 | `--threads N` | Backend worker threads; default 4. |
 | `--java EXECUTABLE` | Explicit Java; otherwise environment/PATH. |
@@ -467,24 +467,102 @@ the Java solver alone does not perform that complete workflow.
 
 ## Outputs and acceptance
 
-`mapping.txt` uses compact longest-ancestor assignments:
+### Required mapping contract
+
+`mapping.txt` is an **ordered move plan for the exact synthesized hierarchy**.
+Each assignment has exactly two whitespace-separated tokens: an instance path
+rooted at the DUT, followed by a logical destination matching
+`FPGA_[A-Za-z0-9_]+`. A path names an instance in that particular synthesized
+netlist, not a module type, signal, simulation prefix or guessed generate branch.
+Preserve literal generate indices, brackets and dots. No wildcards, quotes,
+shell escaping, inline comments, one-token shortcuts or duplicate source paths
+are permitted, including duplicate assignments to the same destination.
+Blank lines and whole-line `#` comments are accepted when reading a mapping;
+generated mappings contain assignments only, to support simpler consumers.
+
+**Every mapped descendant precedes its mapped ancestors. The residual DUT
+root is explicit and last.** The downstream consumer extracts children first,
+then moves only the parent's remaining hierarchy and local logic. It does not
+pull already extracted children back into a later parent. Consequently,
+sorting records alphabetically or moving the root first changes the plan.
+Independent siblings may retain a stable order.
+
+For a remote subtree and a nested exception returning to the root's FPGA:
 
 ```text
-hw_top FPGA_A
-hw_top/cool_module FPGA_B
 hw_top/cool_module/status FPGA_A
+hw_top/cool_module FPGA_B
+hw_top FPGA_A
 ```
 
-Uniform modules collapse while deeper exceptions retain their assignments.
-Compression verifies roundtrip equality. Explicit GND/VCC primitive rules are
-omitted; constants inherit defaults for native accounting and are excluded
-from data optimization. Labels are `FPGA_A` through `FPGA_Z`, then `FPGA_AZ`,
-`FPGA_BZ`, etc. `fpga_devices.tsv` maps labels to physical IDs/paths; a label is
-not automatically a particular socket.
+The `status` exception is necessary: its nearest mapped ancestor is
+`cool_module FPGA_B`, even though the more distant root targets `FPGA_A`.
+Every functional leaf inherits its **most-specific mapped ancestor in the
+original hierarchy**. There is no implicit destination for unlisted logic;
+the explicit root owns the remainder.
+
+Omit a child record whenever its destination equals its **nearest mapped
+ancestor's** destination. For example, adding `hw_top/other FPGA_A` before
+`hw_top FPGA_A` is redundant and is prohibited: same-FPGA parent/child moves
+have caused downstream hierarchy and attribute-promotion problems. Comparing
+only with the root would incorrectly remove the necessary `status` exception.
+Uniform modules collapse while genuine deeper exceptions retain their
+assignments. `--verbose-mapping` cannot bypass these rules; detailed ownership
+belongs in a separate manifest rather than redundant move records.
+
+Mapping generation validates actual source instances, complete functional-leaf
+ownership, ordered records, nearest-ancestor redundancy and destination
+agreement with `cells.txt` before publication. Compression must preserve the
+partition assignment; a successful syntax parse or equal cell counts alone
+does not establish this. Source-free partition lists cannot establish exact
+hierarchy validity: standalone generation requires the synthesized EDIF too.
+The original source/checkpoint association and mapping hashes remain part of
+the acceptance identity. Compression follows real instance-parent relationships,
+including names that contain `/`; it does not manufacture hierarchy from
+textual prefixes. If a name is ambiguous under the downstream textual ownership
+lookup, generation fails rather than publishing an unsafe interpretation.
+
+For low-level development, the standalone writer requires `--netlist` alongside
+its existing positional arguments. For example, from a built Windows checkout:
+
+```powershell
+java -cp 'bin;jars/*' com.xilinx.rapidwright.edif.partition.HierMappingWriter 'C:\solver\partitions' 'C:\solver\cells.txt' 'C:\results\mapping.txt' --netlist 'C:\designs\post_synth.edf' --optimized
+```
+
+The optional positional default destination must also be a valid populated
+logical destination. Omitting `--netlist` fails closed. This writer validates
+the hierarchy/mapping contract; use the normal frontend for topology, timing,
+native resource acceptance and the complete published package.
+Every writer requires a fresh mapping output: an existing final mapping is
+rejected before any companions are modified. Use a separate output directory
+for each alternative; do not reuse a previous accepted package in place.
+
+Explicit GND/VCC primitive rules are omitted by primitive **type**, not by
+instance-name spelling. Constants are accounted for separately; a real logic
+instance named `VCC` still requires correct ownership. Constants can inherit
+residual ownership for native accounting and are excluded from data
+optimization. Empty hierarchy is also distinct from useful functional logic.
+All requested FPGAs must receive useful design logic.
+
+Generated labels are `FPGA_A` through `FPGA_Z`, then `FPGA_AZ`, `FPGA_BZ`, etc.
+`cells.txt` contains each populated logical destination exactly once and agrees
+with the mapping. Physical board names such as `C01_S01_E` are not destinations
+in this file: `fpga_devices.tsv` records the separate logical-to-physical
+selection. A logical label is not automatically a particular socket.
+
+The ownership and boundary evidence describes the input netlist and intended
+placement. This tool does not execute WrapAndRegroup or prove the transformed
+netlist, promoted attributes, wrapper clock/reset hookup, transport or hardware
+behavior. Those downstream checks remain necessary in the consuming flow.
 
 | Artifact | Meaning |
 |---|---|
 | `mapping.txt`, `source_mapping.txt` | Accepted mapping and native-validated snapshot. |
+| `cells.txt` | One unique populated logical destination per line, consistent with the accepted mapping. |
+| `mapping_contract.json` | Source-bound contract validation, coverage and artifact identities. |
+| `mapping_records.tsv` | Ordered records with their actual nearest mapped ancestors. |
+| `mapping_ownership.tsv.gz` | Original instance path/type, functional/constant classification, intended owner, governing record and frontier owner. |
+| `mapping_connections.tsv.gz`, `mapping_connections_manifest.json` | Input-netlist boundary/connection evidence and its scope/identity. |
 | `STATUS.json` | Candidate, status, caps, balance, completeness, timing and identities. |
 | `target_capacity.json`, `native_lut_caps.tsv` | Devices, policy and explicit native bounds. |
 | `fpga_devices.tsv`, `topology_manifest.json` | Physical identity/topology provenance when applicable. |
@@ -501,7 +579,7 @@ not automatically a particular socket.
 | `run_provenance.json`, `source_pair_provenance.json` | Source/assignment/configuration/export identities. |
 | `candidate_NN/` | Solver frontier/assignments, native validation and detailed reports. |
 
-`cells.txt`, `frontier.tsv`, `final_assignment.part`, `initial_assignment.part`
+`frontier.tsv`, `final_assignment.part`, `initial_assignment.part`
 and original per-seed `*.KaHyPar` files remain in the selected candidate,
 identified by `STATUS.json`. New provenance exposes useful-logic counts and
 their definition. Those exclude trusted constant/clock/I/O infrastructure and
@@ -519,6 +597,66 @@ than treating exit zero as an unrestricted quality certificate. Publication
 stages/hashes the exact native-validated snapshot; a failed final copy/status
 step removes the accepted mapping. Input replacement during a run is detected.
 Candidate diagnostics can remain after failure.
+
+### Re-encoding a historical assignment
+
+Older compressed mappings can contain a textual prefix that is not a real
+synthesized instance. For example, a design can have two direct children named
+literally `flat/a` and `flat/b` without a parent instance named `flat`. A legacy
+rule for `hw_top/flat` may give meaningful ownership to a longest-prefix audit,
+but cannot be used as an actual move record. A legal successor must name the
+real children or another genuine source ancestor.
+
+The advanced `MappingReencoder` utility rebuilds legal records from the saved
+solver frontier and final assignment. It does not invoke Mt-KaHyPar or optimize
+the partition again. Supply the exact synthesized EDIF used for that solution,
+the historical mapping, its original ordered canonical `cells.txt`, the selected
+candidate's `frontier.tsv`, and its matching `final_assignment.part`. Do not mix
+these files between candidates. The frontier needs its original four-column
+header `vertex`, `path`, `logical_luts`, `primary_weight`, with dense vertex IDs
+starting at one. Assignment rows are zero-based partition indices in the
+original canonical label order, one per frontier vertex.
+
+Create a UTF-8 jobs TSV with **no header**, one job per line and exactly five
+tab-separated fields in this order:
+
+| Field | Value |
+|---|---|
+| 1 | Historical `mapping.txt` path. |
+| 2 | Original ordered `cells.txt` path. |
+| 3 | Saved selected-candidate `frontier.tsv` path. |
+| 4 | Matching `final_assignment.part` path. |
+| 5 | Fresh successor output directory. |
+
+Use literal tabs between fields; file-system paths in this jobs file need no
+quotes. Every job in one invocation uses the same source EDIF, which is loaded
+once. From a built Windows checkout:
+
+```powershell
+java -cp 'bin;jars/*' com.xilinx.rapidwright.edif.partition.MappingReencoder 'C:\designs\post_synth.edf' 'C:\saved\reencoding_jobs.tsv'
+```
+
+The utility checks the new mapping against actual source hierarchy and the
+saved frontier, then compares **every functional source leaf's owner** with
+the historical mapping's serialized longest-prefix interpretation. It also
+requires the explicit DUT root owner to remain unchanged, preserving top-port
+ownership. Any mismatch rejects final publication. It emits `mapping.txt`,
+`cells.txt`, the ownership/record/contract manifests and
+`reencoding_equivalence.json`, which binds the source, old/new mappings,
+frontier and final assignment by SHA-256. Failed staging directories may
+remain for diagnosis; they are not accepted successor mappings.
+
+When the source is the same source associated with the historical native
+evidence, unchanged functional-leaf and top-port ownership preserves its
+original-source resource subsets and nonconstant cut endpoints. This is a
+source-bound equivalence proof, **not a fresh Vivado measurement**. Keep the
+original mapping, native reports, source-pair receipt and their hash-bound
+qualification unchanged alongside the new proof. Do not rewrite an old native
+receipt or `source_mapping.txt` to make it appear to validate new mapping
+bytes. The re-encoder does not rerun independent native cut/category parity,
+emit the full frontend's acceptance status, or establish transformed-netlist,
+attribute-promotion, transport or hardware behavior. For a new solution and
+fresh native acceptance, use the normal partitioner frontend.
 
 ### Native resources and exact cut parity are separate
 

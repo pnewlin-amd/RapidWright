@@ -5,6 +5,8 @@ real frontend decides whether timing is trustworthy and whether to publish a
 mapping. Recorded-native acceptance tests separately exercise the Java oracle.
 """
 import importlib.util
+import csv
+import gzip
 import json
 from pathlib import Path
 import tempfile
@@ -70,6 +72,64 @@ class TimingAvailabilityAcceptance(unittest.TestCase):
         (output / "timing_reference.json").write_text(json.dumps(metadata))
         return paths
 
+    def write_mapping_contract_fixture(self, candidate):
+        """Synthetic producer artifacts for frontend control-flow tests only.
+
+        This does not stand in for Java's source-netlist verification: those
+        checks have dedicated Java tests. Here command boundaries already
+        substitute every expensive producer and native execution.
+        """
+        contract = FRONTEND.mapping_contract_module()
+        records = contract._records(candidate / "mapping.txt")
+        root = "top"
+        populations = {label: 0 for label in set(records.values())}
+        constants = 0
+        ancestors = contract._prefix_ancestors(records, root)
+        (candidate / "cells.txt").write_text("".join(label + "\n" for label in sorted(set(records.values()))))
+        with (candidate / "mapping_records.tsv").open("w", newline="", encoding="utf-8") as stream:
+            writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
+            writer.writerow(contract.RECORD_HEADER)
+            writer.writerows((source, destination, ancestors[source]) for source, destination in records.items())
+        with gzip.open(candidate / "mapping_ownership.tsv.gz", "wt", newline="", encoding="utf-8") as stream:
+            writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
+            writer.writerow(contract.OWNERSHIP_HEADER)
+            with self.inventory.open(newline="", encoding="utf-8") as inventory:
+                for row in csv.DictReader(inventory, delimiter="\t"):
+                    source = root + "/" + row["name"]
+                    governing = source
+                    while governing not in records:
+                        governing = governing.rsplit("/", 1)[0]
+                    constant = row["ref_name"] in ("GND", "VCC")
+                    if constant:
+                        constants += 1
+                    else:
+                        populations[records[governing]] += 1
+                    writer.writerow((source, row["ref_name"], "LOCAL_CONSTANT" if constant else "FUNCTIONAL",
+                                     "LOCAL_CONSTANT" if constant else records[governing], governing, records[governing]))
+        # Connectivity generation is separately covered by the Java source
+        # producer. Empty connection fixture data makes no hardware claim.
+        with gzip.open(candidate / "mapping_connections.tsv.gz", "wt", encoding="utf-8") as stream:
+            stream.write("\t".join(contract.CONNECTION_HEADER) + "\n")
+        (candidate / "mapping_connections_manifest.json").write_text(json.dumps({
+            "schema_version": 1, "status": "PRE_REGROUP_SOURCE_CONNECTIVITY_ONLY",
+            "downstream_regroup_verification": "NOT_RUN", "source_root": root,
+            "file": "mapping_connections.tsv.gz", "sha256": FRONTEND.sha256(candidate / "mapping_connections.tsv.gz"),
+            "scope": contract.CONNECTION_SCOPE, "canonical_nets": 0, "hierarchy_aliases": 0,
+            "endpoints": 0, "fixture": True}))
+        report = {
+            "schema_version": 1, "status": "PASS", "root_instance": root,
+            "scope": contract.SOURCE_SCOPE, "downstream_regroup_verified": False,
+            "record_count": len(records), "functional_leaf_count": sum(populations.values()),
+            "local_constant_leaf_count": constants, "empty_hierarchy_count": 0,
+            "functional_leaves_by_destination": populations,
+            "input_sha256": FRONTEND.sha256(self.netlist), "mapping_sha256": FRONTEND.sha256(candidate / "mapping.txt"),
+            "records_manifest_sha256": FRONTEND.sha256(candidate / "mapping_records.tsv"),
+            "ownership_manifest_sha256": FRONTEND.sha256(candidate / "mapping_ownership.tsv.gz"),
+            "connections_manifest_sha256": FRONTEND.sha256(candidate / "mapping_connections.tsv.gz"),
+            "connections_receipt_sha256": FRONTEND.sha256(candidate / "mapping_connections_manifest.json")}
+        report.update((flag, True) for flag in contract.SOURCE_PROOF_FLAGS)
+        (candidate / "mapping_contract.json").write_text(json.dumps(report))
+
     def run_boundary(self, command, cwd, log):
         command = [str(value) for value in command]
         if any(value.endswith("prepare_partition_input.py") for value in command):
@@ -115,6 +175,7 @@ class TimingAvailabilityAcceptance(unittest.TestCase):
             if "--timing_paths" in command:
                 quality.update(timing_cost_after="1.0", timing_paths_scored="1")
             (candidate / "hardware_quality.txt").write_text("".join(f"{key}={value}\n" for key, value in quality.items()))
+            self.write_mapping_contract_fixture(candidate)
         elif any(value.endswith("prepare_native_resource_cells.py") for value in command):
             output = Path(command[command.index("--output") + 1])
             output.mkdir(parents=True)

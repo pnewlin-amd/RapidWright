@@ -1,0 +1,2560 @@
+{
+  "schema_version": 2,
+  "audit_date": "2026-10-20",
+  "status": "SOURCE_CONTRACT_AND_EQUIVALENCE_DELIVERY_PASS",
+  "workspace_alias": "${WORKSPACE} is the upgrade_partitioner_handle_large_designs workspace root",
+  "contract_origin": "Five user-provided partition-contract photographs, 2026-10-20",
+  "scope": "Preferred mapping deliverables; exact source hierarchy and ownership equivalence, not new Native/full-frontend/regroup/hardware acceptance",
+  "summary": {
+    "schema_version": 1,
+    "status": "SIXTEEN_SOURCE_CONTRACT_AND_OWNERSHIP_EQUIVALENCE_PASS",
+    "scope": "Preferred mapping deliverables; exact source hierarchy and ownership equivalence, not new Native/full-frontend/regroup/hardware acceptance",
+    "path_base": "RESULTS FOR J4",
+    "target_device": "xcvp1902",
+    "LUT_ELEMENTS": 8460288,
+    "maximum_user75_LUT_cap": 6345216,
+    "topology_sha256": "6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83",
+    "historical_summary_sha256": "1c222fdb23eaae252b04ec7f843ba208eae9f352ef3f417d5b6a50779dc01d92",
+    "original_source_contract_passes": 12,
+    "original_source_contract_failures": 4,
+    "successor_source_contract_passes": 16,
+    "functional_leaf_ownership_comparisons": 59952616,
+    "ownership_mismatches": 0,
+    "all_top_port_owners_unchanged": true,
+    "original_artifacts_checked": 632,
+    "original_artifacts_changed": []
+  },
+  "cases": [
+    {
+      "case": "OPENTITAN_EARL_GREY_k1",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 1,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/OPENTITAN_EARL_GREY/1 FPGA",
+      "historical_package_relative_to_results_root": "OPENTITAN_EARL_GREY/1 FPGA",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "historical_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 230543
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.0,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "dabf40d0fdfd0399c8f8d436e08bcc74f751df999ff4970ed3b55f455a2f1205"
+      },
+      "historical_structural_metrics": {
+        "H": 0,
+        "E": 0,
+        "V": 0,
+        "T": 0
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 1,
+      "record_count": 1,
+      "artifacts_sha256": {
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "mapping.txt": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+        "mapping_contract.json": "79d4b1a55c887e8439e73c48b9d8e7ebecfa19b312394c2ed786084c1ac2e54a",
+        "mapping_ownership.tsv.gz": "e4e42e462320e936929d490cf8395de9b1aa84eac9252a5c0ca44c3d20fb064c",
+        "mapping_records.tsv": "82307e8b262a36c9b1e78eae5e1d00f59cfefe655b4fdab3c8f6e2e5785020fd",
+        "prior_native_evidence.json": "bd21da4f5f315b694ecd37b5a8cd17efa9be52f2d99b87f12cc4beb01e9b118e",
+        "reencoding_equivalence.json": "298c0c252cc1d75749f5bc62f18e9ea857cb0b977aa538a2e99ffa19b33069f5"
+      },
+      "source_contract": {
+        "record_count": 1,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 7495,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 427171,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "82307e8b262a36c9b1e78eae5e1d00f59cfefe655b4fdab3c8f6e2e5785020fd",
+        "functional_leaves_by_destination": {
+          "FPGA_A": 427171
+        },
+        "mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "e4e42e462320e936929d490cf8395de9b1aa84eac9252a5c0ca44c3d20fb064c",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "frontier_ownership_compared": true,
+        "root_instance": "opentitan_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 427171,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "f4e5066b3e0b56a18fe5e942de6fd4185f4dbf8e447f823f3c544b4e110d54a5",
+        "mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "5062bb832b7ec555705622bf6cf40a074a483f3cb1112a7fc218c01d94b64e69",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k2",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 2,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/OPENTITAN_EARL_GREY/2 FPGAS",
+      "historical_package_relative_to_results_root": "OPENTITAN_EARL_GREY/2 FPGAS",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "mapping_sha256": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+      "historical_mapping_sha256": "e936356c04c73c0d99bd11538e731007aa2ba28da84ccd12c47d49a608cee04a",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 116486,
+        "FPGA_B": 114070
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.01047901594406575,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 1989,
+        "directed_net_destinations": 1989,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 3,
+          "data_or_functional_sync_control": 1985
+        },
+        "raw_report_sha256": "aac62f62cc3f93f94dc2d5478700e8c63e10c6564832a5aed76fe859e06f1118"
+      },
+      "historical_structural_metrics": {
+        "H": 3,
+        "E": 7950,
+        "V": 1119,
+        "T": 1869
+      },
+      "historical_contract_status": "FAIL",
+      "historical_contract_error": "Nonexistent or wrong synthesized instance path: opentitan_proto/u_earlgrey/intr_wakeup",
+      "old_record_count": 1276,
+      "record_count": 1288,
+      "artifacts_sha256": {
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "mapping.txt": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+        "mapping_contract.json": "5c8013bd109274d810547ffa60d10155792190f05ab0d04a054c1957f0d9212b",
+        "mapping_ownership.tsv.gz": "173caf2fa57f18fe20dfc52d54f9e86f7b7db18803b0514c4d95363844dacc79",
+        "mapping_records.tsv": "35b8e1f3dff0f812f415d904ffcad9b1c74f1938e6e2611db8cde62d86013f4d",
+        "prior_native_evidence.json": "887c9f17c3ef58fd30c29e15b7832d3b8210fbf7749e77330f0f47e562c7e1e8",
+        "reencoding_equivalence.json": "68eb0526a74b971e2b0b30a212052e197d638e1ab226fbf42197c51bbeae4973"
+      },
+      "source_contract": {
+        "record_count": 1288,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 7495,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 427171,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "35b8e1f3dff0f812f415d904ffcad9b1c74f1938e6e2611db8cde62d86013f4d",
+        "functional_leaves_by_destination": {
+          "FPGA_B": 224066,
+          "FPGA_A": 203105
+        },
+        "mapping_sha256": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "173caf2fa57f18fe20dfc52d54f9e86f7b7db18803b0514c4d95363844dacc79",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "frontier_ownership_compared": true,
+        "root_instance": "opentitan_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 427171,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "f36d146c919e07a10f8da681e6d3c0100b4fdb6038bab4a40a55a5de3b3d1029",
+        "mapping_sha256": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "e443f4e25be3dbc44b4fbaa49291f8a65f448a108b9d5c9bc7b070b7e0c89b20",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "e936356c04c73c0d99bd11538e731007aa2ba28da84ccd12c47d49a608cee04a",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k3",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 3,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/OPENTITAN_EARL_GREY/3 FPGAS",
+      "historical_package_relative_to_results_root": "OPENTITAN_EARL_GREY/3 FPGAS",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "mapping_sha256": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+      "historical_mapping_sha256": "fa6fa3113fa99a3905c8ae3c6ee9ac1c427d3da5a4afaf52a6a73a479969ea92",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 98750,
+        "FPGA_B": 61885,
+        "FPGA_C": 70025
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.28435792941992544,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 3187,
+        "directed_net_destinations": 3277,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 14,
+          "data_or_functional_sync_control": 3261
+        },
+        "raw_report_sha256": "4ca16e954f2cbb38309e9d71828885bf2ff740b10fa4e8e6e977ed9991c9a24d"
+      },
+      "historical_structural_metrics": {
+        "H": 4,
+        "E": 36693,
+        "V": 2966,
+        "T": 3258
+      },
+      "historical_contract_status": "FAIL",
+      "historical_contract_error": "Nonexistent or wrong synthesized instance path: opentitan_proto/u_earlgrey/u_xbar_main/u_asf_35/reqfifo/sync_wptr/u_sync_2/gen_generic.u_impl_generic/u_claim_transition_if_regwen",
+      "old_record_count": 3548,
+      "record_count": 3688,
+      "artifacts_sha256": {
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "mapping.txt": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+        "mapping_contract.json": "2377890f5b5783af7cd25f2bbbf2059e87351d17f6dc584d2c1a6849f7a99330",
+        "mapping_ownership.tsv.gz": "0c464f1007a002bc9a1c5ada7b2da740eda3463935cf75c3e5ebada705967b56",
+        "mapping_records.tsv": "775f5a3e206b4640d26dd72f82f03f2ce9a07cd17d9e50ab33dc1a8a44db0f4c",
+        "prior_native_evidence.json": "14e8d623c711b0b51d505848d7ffab578110c45d20076e3be0ed40fbcf93d43c",
+        "reencoding_equivalence.json": "8346b4ec2195f38c89b2ac4edb61e6772c33372dd21f5ff126bd0222a3d42d8f"
+      },
+      "source_contract": {
+        "record_count": 3688,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 7495,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 427171,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "775f5a3e206b4640d26dd72f82f03f2ce9a07cd17d9e50ab33dc1a8a44db0f4c",
+        "functional_leaves_by_destination": {
+          "FPGA_C": 137115,
+          "FPGA_B": 100829,
+          "FPGA_A": 189227
+        },
+        "mapping_sha256": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "0c464f1007a002bc9a1c5ada7b2da740eda3463935cf75c3e5ebada705967b56",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "frontier_ownership_compared": true,
+        "root_instance": "opentitan_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 427171,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "3dadbde5fb7ed84f6bf01d410125493d9baabcbbfe2d97088fb846edc023b040",
+        "mapping_sha256": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "311c13aab01cbe2998a9fd84ef4042d4949f19153265a7711f62c41f8304cb06",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "fa6fa3113fa99a3905c8ae3c6ee9ac1c427d3da5a4afaf52a6a73a479969ea92",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k4",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 4,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/OPENTITAN_EARL_GREY/4 FPGAS",
+      "historical_package_relative_to_results_root": "OPENTITAN_EARL_GREY/4 FPGAS",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+      "historical_mapping_sha256": "574a96b4079dce7d6c9ebb9a7908d3d3cfb835fba616a6e27c4320a807d6def9",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 48375,
+        "FPGA_B": 64288,
+        "FPGA_C": 59861,
+        "FPGA_D": 58040
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216,
+        "FPGA_D": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.11531722211620199,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 3352,
+        "directed_net_destinations": 3676,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 25,
+          "data_or_functional_sync_control": 3648
+        },
+        "raw_report_sha256": "c6b53be48ef62dcef7c6054443e3293f67e676379624bd19718edc39305e44e5"
+      },
+      "historical_structural_metrics": {
+        "H": 4,
+        "E": 27667,
+        "V": 6002,
+        "T": 3529
+      },
+      "historical_contract_status": "FAIL",
+      "historical_contract_error": "Nonexistent or wrong synthesized instance path: opentitan_proto/u_earlgrey/intr_wakeup",
+      "old_record_count": 2789,
+      "record_count": 2941,
+      "artifacts_sha256": {
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "mapping.txt": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+        "mapping_contract.json": "e835f6c66bccc1c1f02d8510c427fb9486d1750f475e5cfecfb339e160b6c2c0",
+        "mapping_ownership.tsv.gz": "d144739870d0311784a2025f20b94eac4ebeaa5ca6ad3a4627ce599d2aedb368",
+        "mapping_records.tsv": "cb8cdc0875624c66fba60bcd8b092e06f785e5936946b529b0086c4ebf8c78bd",
+        "prior_native_evidence.json": "5ad570f58856ab57b26ad72158c02bbad937928164c63db761098f3b0747f678",
+        "reencoding_equivalence.json": "1496286e9d5ed7e029dfa64e71ee6b8c5b19c038e4441c5f5200331025bc29e2"
+      },
+      "source_contract": {
+        "record_count": 2941,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 7495,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 427171,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "cb8cdc0875624c66fba60bcd8b092e06f785e5936946b529b0086c4ebf8c78bd",
+        "functional_leaves_by_destination": {
+          "FPGA_D": 92109,
+          "FPGA_C": 113212,
+          "FPGA_B": 127695,
+          "FPGA_A": 94155
+        },
+        "mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "d144739870d0311784a2025f20b94eac4ebeaa5ca6ad3a4627ce599d2aedb368",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "frontier_ownership_compared": true,
+        "root_instance": "opentitan_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 427171,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "e44d9b35cf736a62b30f9a2439cb26d6e2f15053ff7419fb348383a78af5dd8f",
+        "mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "377e90af7102229d237b6634163d129b908e99f274526a4afe4939817c346bd6",
+        "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "574a96b4079dce7d6c9ebb9a7908d3d3cfb835fba616a6e27c4320a807d6def9",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "NVDLA_k1",
+      "design": "NVDLA",
+      "fpga_count": 1,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/NVDLA/1 FPGA",
+      "historical_package_relative_to_results_root": "NVDLA/1 FPGA",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+      "historical_mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 1703727
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.0,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_structural_metrics": {
+        "H": 0,
+        "E": 0,
+        "V": 0,
+        "T": 0
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 1,
+      "record_count": 1,
+      "artifacts_sha256": {
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "mapping.txt": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+        "mapping_contract.json": "42e5fc3749e6716a0f0d29eff2057543ba8f4519fc74ecc0c967fa2239371efa",
+        "mapping_ownership.tsv.gz": "10e317b36c758230e25009600aa0d97f4c916a7f3510fb5018b87356f94d4713",
+        "mapping_records.tsv": "136c81a61fc1c6a53a5065915bb7a0e2ca53044634bf95c589f65de32cc806e5",
+        "prior_native_evidence.json": "cd0ce2a352d3b03cd7d50a49c912cf7970749292a5680436a90e887bae136916",
+        "reencoding_equivalence.json": "ec4d047a4333428584983495ddd4a620f6486fa34931363cb8bcb4f0146a6f1d"
+      },
+      "source_contract": {
+        "record_count": 1,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 5867,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 2864063,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "136c81a61fc1c6a53a5065915bb7a0e2ca53044634bf95c589f65de32cc806e5",
+        "functional_leaves_by_destination": {
+          "FPGA_A": 2864063
+        },
+        "mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "10e317b36c758230e25009600aa0d97f4c916a7f3510fb5018b87356f94d4713",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "frontier_ownership_compared": true,
+        "root_instance": "nvdla_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 2864063,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "8cb6d7af499b10b0115afa44cac9ee437910c41146047c47675493513b83c9a2",
+        "mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "60691aa6421548607e6fc63d1d8803070f9ac88262cbdf4631fb128e4567f610",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "NVDLA_k2",
+      "design": "NVDLA",
+      "fpga_count": 2,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/NVDLA/2 FPGAS",
+      "historical_package_relative_to_results_root": "NVDLA/2 FPGAS",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "mapping_sha256": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+      "historical_mapping_sha256": "b9f20eccfbc28683314417a1d32fa0ff40928480a7553d2214cec28c4ad99e11",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 917761,
+        "FPGA_B": 785966
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.07735687701139904,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 3239,
+        "directed_net_destinations": 3239,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 2,
+          "data_or_functional_sync_control": 3236
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_structural_metrics": {
+        "H": 3,
+        "E": 1886,
+        "V": 1972,
+        "T": 3236
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 17656,
+      "record_count": 17656,
+      "artifacts_sha256": {
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "mapping.txt": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+        "mapping_contract.json": "a0e9d2873bdb7dfefe3cde9da7a7308a0534cbb53f87eb1dc476b692207b41b5",
+        "mapping_ownership.tsv.gz": "762bd89369eb592b33ea0923504a958f151fda443548220ccbd08fa696579a95",
+        "mapping_records.tsv": "b8e0743ee5573bc39f0d915eb5bffce5f793f894a615c07ca90f69695d085015",
+        "prior_native_evidence.json": "a2ef8a19d5d0dee01170e6055db469d0537fe3997ace498d5d4afaca63859dfc",
+        "reencoding_equivalence.json": "5a5149b53912381f01ae776ab345eb282d913d4080fbe0ea905564a55fd29d51"
+      },
+      "source_contract": {
+        "record_count": 17656,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 5867,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 2864063,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "b8e0743ee5573bc39f0d915eb5bffce5f793f894a615c07ca90f69695d085015",
+        "functional_leaves_by_destination": {
+          "FPGA_B": 1509960,
+          "FPGA_A": 1354103
+        },
+        "mapping_sha256": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "762bd89369eb592b33ea0923504a958f151fda443548220ccbd08fa696579a95",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "frontier_ownership_compared": true,
+        "root_instance": "nvdla_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 2864063,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "b2f58cc7200b9d0368891850ad23b69dac833a2a66c21078f964870570c62bce",
+        "mapping_sha256": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "60691aa6421548607e6fc63d1d8803070f9ac88262cbdf4631fb128e4567f610",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "b9f20eccfbc28683314417a1d32fa0ff40928480a7553d2214cec28c4ad99e11",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "NVDLA_k3",
+      "design": "NVDLA",
+      "fpga_count": 3,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/NVDLA/3 FPGAS",
+      "historical_package_relative_to_results_root": "NVDLA/3 FPGAS",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "mapping_sha256": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+      "historical_mapping_sha256": "8466751633f900eb0f46491878d1f0294afa5e9eae002b9b8f2ac84840d9a5c1",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 511063,
+        "FPGA_B": 641556,
+        "FPGA_C": 551108
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.12968098762301716,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 6230,
+        "directed_net_destinations": 6234,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 4,
+          "data_or_functional_sync_control": 6228
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_structural_metrics": {
+        "H": 5,
+        "E": 37521,
+        "V": 3717,
+        "T": 6026
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 3754,
+      "record_count": 3754,
+      "artifacts_sha256": {
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "mapping.txt": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+        "mapping_contract.json": "8d5e14a0df09936326eebd373cad670eb70a00a1e3183560b39618d522c6bc6e",
+        "mapping_ownership.tsv.gz": "24f5c089dbd36cd2b09562cd7a89657ed9c35d6f8f00b0d713a52ba4b5033bcd",
+        "mapping_records.tsv": "1459d5a0164df4553f12a1fcc7d8c4eb1f79f786d8ea42c12405e9cf8c6e1eaa",
+        "prior_native_evidence.json": "668290b269af1a5d34722c84ab41fc5a13ab794af63809d6bee5fddb214a433c",
+        "reencoding_equivalence.json": "b04765afde0de895a5e45c68bca4fac247ee9222bad2c03905622926a9cdafc1"
+      },
+      "source_contract": {
+        "record_count": 3754,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 5867,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 2864063,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "1459d5a0164df4553f12a1fcc7d8c4eb1f79f786d8ea42c12405e9cf8c6e1eaa",
+        "functional_leaves_by_destination": {
+          "FPGA_C": 1099144,
+          "FPGA_B": 995948,
+          "FPGA_A": 768971
+        },
+        "mapping_sha256": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "24f5c089dbd36cd2b09562cd7a89657ed9c35d6f8f00b0d713a52ba4b5033bcd",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "frontier_ownership_compared": true,
+        "root_instance": "nvdla_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 2864063,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "fd53086593e110c5fb18996eb7614068a57784b892a074246f08217e3ab0facf",
+        "mapping_sha256": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "b84762a981ca10f222420a1f9b79fef99c57a969bc4c8a7a60c9adcb49ee0e81",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "8466751633f900eb0f46491878d1f0294afa5e9eae002b9b8f2ac84840d9a5c1",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "NVDLA_k4",
+      "design": "NVDLA",
+      "fpga_count": 4,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/NVDLA/4 FPGAS",
+      "historical_package_relative_to_results_root": "NVDLA/4 FPGAS",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "mapping_sha256": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+      "historical_mapping_sha256": "51de3c6b16c4f06c102b42c7a59262ec7f1e69ed56504ee9b13bc352905e0383",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 299097,
+        "FPGA_B": 490065,
+        "FPGA_C": 367183,
+        "FPGA_D": 547391
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216,
+        "FPGA_D": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.2851545075058577,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 8313,
+        "directed_net_destinations": 8320,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 5,
+          "data_or_functional_sync_control": 8312
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_structural_metrics": {
+        "H": 2,
+        "E": 733,
+        "V": 230,
+        "T": 8110
+      },
+      "historical_contract_status": "FAIL",
+      "historical_contract_error": "Nonexistent or wrong synthesized instance path: nvdla_proto/accelerator/u_partition_o/u_NV_NVDLA_cdp/u_dat0_fifo0",
+      "old_record_count": 5398,
+      "record_count": 5407,
+      "artifacts_sha256": {
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "mapping.txt": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+        "mapping_contract.json": "aa402b103ea5d03bfe0773ce162d5ecad5d3be86609d510a64b59dcfb7f47c9c",
+        "mapping_ownership.tsv.gz": "90dbc848a068b6fa3740b4da358e919906b0f2a4a4dad9d30106d28d2acd7601",
+        "mapping_records.tsv": "99a1d4c1658a76615af1b9540d583e6aa88fa256ba85f28a09830b8d3d12693c",
+        "prior_native_evidence.json": "25a122d6bc0bbb8f8f72e16dbc6ac3983c7d8cbdc5cdedc322ae902cec457c58",
+        "reencoding_equivalence.json": "790ec0b0b71b2ccc02688926822b86ac53a0351d917f5bce14d04ffd88dd10e7"
+      },
+      "source_contract": {
+        "record_count": 5407,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 5867,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 2864063,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "99a1d4c1658a76615af1b9540d583e6aa88fa256ba85f28a09830b8d3d12693c",
+        "functional_leaves_by_destination": {
+          "FPGA_D": 822136,
+          "FPGA_C": 512938,
+          "FPGA_B": 1003513,
+          "FPGA_A": 525476
+        },
+        "mapping_sha256": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "90dbc848a068b6fa3740b4da358e919906b0f2a4a4dad9d30106d28d2acd7601",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "frontier_ownership_compared": true,
+        "root_instance": "nvdla_proto",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 2864063,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "0f9ce7df90cefdaff2c22cbecec215bea85f266879a04036d610052c67c8a1c9",
+        "mapping_sha256": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "c3d64cb971765e503475fb5793d6b9b7a9f7bcc5e9e8257e16f793c71fb1048b",
+        "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "51de3c6b16c4f06c102b42c7a59262ec7f1e69ed56504ee9b13bc352905e0383",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "RISCV_MESH_3072_k1",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 1,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/RISCV_MESH_3072/1 FPGA",
+      "historical_package_relative_to_results_root": "RISCV_MESH_3072/1 FPGA",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+      "historical_mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 6314270
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.0,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_structural_metrics": {
+        "H": 0,
+        "E": 0,
+        "V": 0,
+        "T": 0
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 1,
+      "record_count": 1,
+      "artifacts_sha256": {
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "mapping.txt": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+        "mapping_contract.json": "e48c1507b2f4126403e2e97f335049899134061fc4d5bebd68cf0a8a867d14c9",
+        "mapping_ownership.tsv.gz": "a69cb5215175ecf8ea0e4694746546b9639bd5f3140f6a568f30ba0b7a3d2622",
+        "mapping_records.tsv": "6b57bfbb3e84bd77048695a383a120915603dbe7fc93a549956eb4655d1c9328",
+        "prior_native_evidence.json": "895610a94571f2603b981580538d492633e8fe39b9b5f14405535087b565fca4",
+        "reencoding_equivalence.json": "9aba0fdfb9e35967eee8f65514f24ace3a26bdcf27ebb2be43af1ad65132821e"
+      },
+      "source_contract": {
+        "record_count": 1,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 36939,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 11179638,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "6b57bfbb3e84bd77048695a383a120915603dbe7fc93a549956eb4655d1c9328",
+        "functional_leaves_by_destination": {
+          "FPGA_A": 11179638
+        },
+        "mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "a69cb5215175ecf8ea0e4694746546b9639bd5f3140f6a568f30ba0b7a3d2622",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "frontier_ownership_compared": true,
+        "root_instance": "picorv32_mesh_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 11179638,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "6a8c1b934d5daa734dda228e8dc7634692f296322a3075e9c4d8ca14f0b5cf6e",
+        "mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "4db25f954c180b262104440ac8f3dc9b626dcd15754d0e940a58af79a6d496ea",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "RISCV_MESH_3072_k2",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 2,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/RISCV_MESH_3072/2 FPGAS",
+      "historical_package_relative_to_results_root": "RISCV_MESH_3072/2 FPGAS",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "mapping_sha256": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+      "historical_mapping_sha256": "6712b6b70b31e1726d633499171b94f048e0f4ed906229bb556bcce011b95470",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 3156885,
+        "FPGA_B": 3157385
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 7.918571743048552e-05,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 3715,
+        "directed_net_destinations": 3715,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 7,
+          "data_or_functional_sync_control": 3707
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_structural_metrics": {
+        "H": 1,
+        "E": 0,
+        "V": 0,
+        "T": 3663
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 17,
+      "record_count": 17,
+      "artifacts_sha256": {
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "mapping.txt": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+        "mapping_contract.json": "43b63c0b008faa7ecc721dbddaa28fda0941dd6ec42bad1adda45346cb3f66b0",
+        "mapping_ownership.tsv.gz": "14541b5aa3dd26feb0acbb30e0ac8df93eef722654c1ec45abb93575c0d50db3",
+        "mapping_records.tsv": "5898e787068a5947df2f9d6a7d7dbdbefcd1630a341dfbfdd800aaf7e5e99903",
+        "prior_native_evidence.json": "5a7140b59100e725d22b47d00d99cd187c9c03d5a13a83265165a1e645428569",
+        "reencoding_equivalence.json": "8ff591a6da8e6fd14b9730d99f66f83ffe512bfa96540102b7457a552d1f1262"
+      },
+      "source_contract": {
+        "record_count": 17,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 36939,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 11179638,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "5898e787068a5947df2f9d6a7d7dbdbefcd1630a341dfbfdd800aaf7e5e99903",
+        "functional_leaves_by_destination": {
+          "FPGA_B": 5590166,
+          "FPGA_A": 5589472
+        },
+        "mapping_sha256": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "14541b5aa3dd26feb0acbb30e0ac8df93eef722654c1ec45abb93575c0d50db3",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "frontier_ownership_compared": true,
+        "root_instance": "picorv32_mesh_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 11179638,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "2a34358769147a835b15c8f5a85a9a6460884a5992ef449b9cb93242b90caaa6",
+        "mapping_sha256": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "4db25f954c180b262104440ac8f3dc9b626dcd15754d0e940a58af79a6d496ea",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "6712b6b70b31e1726d633499171b94f048e0f4ed906229bb556bcce011b95470",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "RISCV_MESH_3072_k3",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 3,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/RISCV_MESH_3072/3 FPGAS",
+      "historical_package_relative_to_results_root": "RISCV_MESH_3072/3 FPGAS",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "mapping_sha256": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+      "historical_mapping_sha256": "93fce6c9f77e7e39199a8a74b40d98132d9299545ac29f6be7c6149eda4dcb45",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 2631240,
+        "FPGA_B": 1578448,
+        "FPGA_C": 2104582
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.25013976279126493,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 6504,
+        "directed_net_destinations": 6549,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 10,
+          "data_or_functional_sync_control": 6537
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_structural_metrics": {
+        "H": 2,
+        "E": 32,
+        "V": 720,
+        "T": 6452
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 21,
+      "record_count": 21,
+      "artifacts_sha256": {
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "mapping.txt": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+        "mapping_contract.json": "6a56f8adbadc657c6519f6628648b31d1ec801f1426b7cd8bff69a1793af1f16",
+        "mapping_ownership.tsv.gz": "9724310278b7d95b5739bbde5b936c3e7dd1092bb41b06541f9a702558cd5086",
+        "mapping_records.tsv": "0527061594dc589df5b11ca2e7fe9d94a3d8e319940178148bff433b6fd77a07",
+        "prior_native_evidence.json": "b1c09c96efa5093a2da67cf038742c22c065f7e0d1c10390859a7301ce4d3a4a",
+        "reencoding_equivalence.json": "5bfb3b5dd42efcf571e5144cdce4e40cd1059b2bde65779f2e3af099dd72931b"
+      },
+      "source_contract": {
+        "record_count": 21,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 36939,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 11179638,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "0527061594dc589df5b11ca2e7fe9d94a3d8e319940178148bff433b6fd77a07",
+        "functional_leaves_by_destination": {
+          "FPGA_C": 3726307,
+          "FPGA_B": 2794741,
+          "FPGA_A": 4658590
+        },
+        "mapping_sha256": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "9724310278b7d95b5739bbde5b936c3e7dd1092bb41b06541f9a702558cd5086",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "frontier_ownership_compared": true,
+        "root_instance": "picorv32_mesh_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 11179638,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "432bb0e826da68c1ffb4f91011818cfa34f91f28d6cb626d26151a54496e0660",
+        "mapping_sha256": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "c2890909699508a5f72c54661d208e542cd1223c6668527140fa4b251836cff5",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "93fce6c9f77e7e39199a8a74b40d98132d9299545ac29f6be7c6149eda4dcb45",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "RISCV_MESH_3072_k4",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 4,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/RISCV_MESH_3072/4 FPGAS",
+      "historical_package_relative_to_results_root": "RISCV_MESH_3072/4 FPGAS",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "mapping_sha256": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+      "historical_mapping_sha256": "e200219ac0ef2c9ad7eb4f8712ffca177a090d7e7e168d1e162eec9d1476c37f",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 1578440,
+        "FPGA_B": 1578950,
+        "FPGA_C": 1578441,
+        "FPGA_D": 1578439
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216,
+        "FPGA_D": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.00024230829533733456,
+      "historical_cut_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 7178,
+        "directed_net_destinations": 7268,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 8,
+          "data_or_functional_sync_control": 7257
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_structural_metrics": {
+        "H": 2,
+        "E": 32,
+        "V": 1440,
+        "T": 7131
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 21,
+      "record_count": 21,
+      "artifacts_sha256": {
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "mapping.txt": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+        "mapping_contract.json": "c1f5bf13c516b359dc4d8d3ed3601f931887692a093c139ed3d352568e2235a8",
+        "mapping_ownership.tsv.gz": "ad9b95ebdf76e795d81818098aade25222357605a16782ba0d7c56645645e1a0",
+        "mapping_records.tsv": "9e57834255d67cbe7765e1662a53958bc149bc52c7513361eb20b0ae8d02de40",
+        "prior_native_evidence.json": "c26bbaa7c36ca83d28e186ee54860cb0e0fdda37d95880af03e8ea7cbcddbabe",
+        "reencoding_equivalence.json": "84f2ba27d5358971a8b57163165e0b2b5f2e5f7d9ecd2ef7183469cb9b6f5bcf"
+      },
+      "source_contract": {
+        "record_count": 21,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 36939,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 11179638,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "9e57834255d67cbe7765e1662a53958bc149bc52c7513361eb20b0ae8d02de40",
+        "functional_leaves_by_destination": {
+          "FPGA_D": 2794733,
+          "FPGA_C": 2794734,
+          "FPGA_B": 2795438,
+          "FPGA_A": 2794733
+        },
+        "mapping_sha256": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "ad9b95ebdf76e795d81818098aade25222357605a16782ba0d7c56645645e1a0",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "frontier_ownership_compared": true,
+        "root_instance": "picorv32_mesh_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 11179638,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "505493a10e508310af4ab0738c7d99ca697d019fa300c0a3b59555cdad3fe84e",
+        "mapping_sha256": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "4db25f954c180b262104440ac8f3dc9b626dcd15754d0e940a58af79a6d496ea",
+        "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "e200219ac0ef2c9ad7eb4f8712ffca177a090d7e7e168d1e162eec9d1476c37f",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "AES_FARM_k1",
+      "design": "AES_FARM",
+      "fpga_count": 1,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/AES_FARM/1 FPGA",
+      "historical_package_relative_to_results_root": "AES_FARM/1 FPGA",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+      "historical_mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 236741
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 6345216
+      },
+      "requested_max_luts": null,
+      "native_imbalance": 0.0,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "7b222431fae923317de0a5a3f1347d4f864f49ca1d2a2e9c2535d855df11ff29"
+      },
+      "historical_structural_metrics": {
+        "H": 0,
+        "E": 0,
+        "V": 0,
+        "T": 0
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 1,
+      "record_count": 1,
+      "artifacts_sha256": {
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "mapping.txt": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+        "mapping_contract.json": "97ffe8e30e6a5eeeb11d62506b249385fd2ed1c9ae65ce7c419040bb3ffc1149",
+        "mapping_ownership.tsv.gz": "80ec91385e03f719b3544bee6301bf96a5c147ed0590817e0188e7b1f8cc573d",
+        "mapping_records.tsv": "6911c65c7733879c9c71e717fdbe6a620b20b07c41a3ddd0a514fe61ee323221",
+        "prior_native_evidence.json": "cf90f0eb13a20813df707fdd697d7d33769c058e12c0cc90c6f5aa645598668d",
+        "reencoding_equivalence.json": "3ebaba4917654f6d25d78079cf1bf0e4eecc19319c6efbc1375793d176ecc9db"
+      },
+      "source_contract": {
+        "record_count": 1,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 262,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 517282,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "6911c65c7733879c9c71e717fdbe6a620b20b07c41a3ddd0a514fe61ee323221",
+        "functional_leaves_by_destination": {
+          "FPGA_A": 517282
+        },
+        "mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "80ec91385e03f719b3544bee6301bf96a5c147ed0590817e0188e7b1f8cc573d",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "frontier_ownership_compared": true,
+        "root_instance": "aes_farm_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 517282,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "d555aac9c39ccb8d95725f15038f6145ffad67746694789e62aa6c1976ce8ad7",
+        "mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "8bc11a89cd30f46b5753f369c2efaccbb8f64b3aaa7a03e7ebca971dba506923",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "AES_FARM_k2",
+      "design": "AES_FARM",
+      "fpga_count": 2,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/AES_FARM/2 FPGAS",
+      "historical_package_relative_to_results_root": "AES_FARM/2 FPGAS",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "mapping_sha256": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+      "historical_mapping_sha256": "cf236d659341e88c84cff660e58af2c50eed10fdb6e8834f8333560b4486c877",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 148726,
+        "FPGA_B": 88064
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 153881,
+        "FPGA_B": 153881
+      },
+      "requested_max_luts": 153881,
+      "native_imbalance": 0.2561848051015667,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 8486,
+        "directed_net_destinations": 8486,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 40,
+          "data_or_functional_sync_control": 8445
+        },
+        "raw_report_sha256": "6c3ee03bb3bcd82658f48ae802db4cea337854f75a05fb341b712e512ea0a891"
+      },
+      "historical_structural_metrics": {
+        "H": 3,
+        "E": 27942,
+        "V": 9205,
+        "T": 8440
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 15620,
+      "record_count": 15620,
+      "artifacts_sha256": {
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "mapping.txt": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+        "mapping_contract.json": "38306a13b737c1768bb072930b93e2d01a8e06f4f32c1a0ee488004551d300d4",
+        "mapping_ownership.tsv.gz": "608a26233cbf5e0a989ad9db6b363a06ea2a7f227c353777eaa633020ec064f7",
+        "mapping_records.tsv": "a48b5fac50bdb51612c3b07ff90fef524d927987073ccdd429acbf10bb42c137",
+        "prior_native_evidence.json": "04146ea81be082a6dbd40bf98c58434edd2747fc45ea525801f86a6b81c8d89b",
+        "reencoding_equivalence.json": "396a4832dc5ea4bf28ee514ae5976fa12bdad00bd29ec3648cdff67e02fc94d7"
+      },
+      "source_contract": {
+        "record_count": 15620,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 262,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 517282,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "a48b5fac50bdb51612c3b07ff90fef524d927987073ccdd429acbf10bb42c137",
+        "functional_leaves_by_destination": {
+          "FPGA_B": 184696,
+          "FPGA_A": 332586
+        },
+        "mapping_sha256": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "608a26233cbf5e0a989ad9db6b363a06ea2a7f227c353777eaa633020ec064f7",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "frontier_ownership_compared": true,
+        "root_instance": "aes_farm_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 517282,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "98cbe7e122319cc0d06d25922d14dcc1b72eec34ce5e39e63f8dbba07bf738c0",
+        "mapping_sha256": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "60581a27f52256ffed4f309c2718d38f325949e700bf8eee949895a61569e6f5",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "cf236d659341e88c84cff660e58af2c50eed10fdb6e8834f8333560b4486c877",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "AES_FARM_k3",
+      "design": "AES_FARM",
+      "fpga_count": 3,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/AES_FARM/3 FPGAS",
+      "historical_package_relative_to_results_root": "AES_FARM/3 FPGAS",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+      "historical_mapping_sha256": "206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 100452,
+        "FPGA_B": 82724,
+        "FPGA_C": 53630
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 102587,
+        "FPGA_B": 102587,
+        "FPGA_C": 102587
+      },
+      "requested_max_luts": 102587,
+      "native_imbalance": 0.27258599866557454,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 13937,
+        "directed_net_destinations": 14227,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 90,
+          "data_or_functional_sync_control": 14135
+        },
+        "raw_report_sha256": "8372e0b7ffd5b5a42904cdcefa93681fe13f8b78d81c37a36e6f3ebacb26f01d"
+      },
+      "historical_structural_metrics": {
+        "H": 3,
+        "E": 30604,
+        "V": 7723,
+        "T": 14133
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 13754,
+      "record_count": 13754,
+      "artifacts_sha256": {
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "mapping.txt": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+        "mapping_contract.json": "bc2233d953c0a98aafefae613baa9a701b9654740e66da9ee3dc773dd87ef27b",
+        "mapping_ownership.tsv.gz": "f1a5e475fe221f9c7fc9dd81c4a30731cf4cab08a3ba4da3c46d07be2949691c",
+        "mapping_records.tsv": "94e5de4c27dc07d4279de49e1f6a468170bdce327feade7f5f8201388b4fc88d",
+        "prior_native_evidence.json": "5fa9f67a1b462cb647315462f88d268503872b4fd96ef8b0c4953def91d154cf",
+        "reencoding_equivalence.json": "e759862033184df9374c640293d0ffb88cef6cdf28937da81b27677511a3b8b4"
+      },
+      "source_contract": {
+        "record_count": 13754,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 262,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 517282,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "94e5de4c27dc07d4279de49e1f6a468170bdce327feade7f5f8201388b4fc88d",
+        "functional_leaves_by_destination": {
+          "FPGA_C": 111472,
+          "FPGA_B": 173605,
+          "FPGA_A": 232205
+        },
+        "mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "f1a5e475fe221f9c7fc9dd81c4a30731cf4cab08a3ba4da3c46d07be2949691c",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "frontier_ownership_compared": true,
+        "root_instance": "aes_farm_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 517282,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "7b7cab5975c79e69fdf09aae212bbcbeef4d42dfd4bcf07d8ef14be3a4c59df2",
+        "mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "1f8fe79d151f12c2803ac859a438883379c13a1a76ab0ba393133a111ffe8955",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    },
+    {
+      "case": "AES_FARM_k4",
+      "design": "AES_FARM",
+      "fpga_count": 4,
+      "package_relative_to_results_root": "CONTRACT_COMPLIANT_20261020/AES_FARM/4 FPGAS",
+      "historical_package_relative_to_results_root": "AES_FARM/4 FPGAS",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "mapping_sha256": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+      "historical_mapping_sha256": "5557dfb34e40a282e7a84127f4e24f416d8f3bf6de4b938e4d078d67810aeac2",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0,
+      "top_port_owner_unchanged": true,
+      "native_measurement_status": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "native_luts": {
+        "FPGA_A": 75196,
+        "FPGA_B": 60621,
+        "FPGA_C": 72146,
+        "FPGA_D": 28921
+      },
+      "effective_hard_caps": {
+        "FPGA_A": 76940,
+        "FPGA_B": 76940,
+        "FPGA_C": 76940,
+        "FPGA_D": 76940
+      },
+      "requested_max_luts": 76940,
+      "native_imbalance": 0.26975228381824023,
+      "historical_cut_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 16326,
+        "directed_net_destinations": 16915,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 109,
+          "data_or_functional_sync_control": 16803
+        },
+        "raw_report_sha256": "23f829a4aedc5a3af7ad82b563999e8e947b4937bd731ffcec3e3a19c8eab2be"
+      },
+      "historical_structural_metrics": {
+        "H": 3,
+        "E": 31342,
+        "V": 6193,
+        "T": 16800
+      },
+      "historical_contract_status": "PASS",
+      "historical_contract_error": null,
+      "old_record_count": 16396,
+      "record_count": 16396,
+      "artifacts_sha256": {
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "mapping.txt": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+        "mapping_contract.json": "dde47451dbbeb52a5b66945bf6e78ae2b52eaacdea4cee5584986402c0be1ed2",
+        "mapping_ownership.tsv.gz": "b6b08bca32e50978ddfba098454b7c18910416e82726975b546ced232b8a91c2",
+        "mapping_records.tsv": "d4efc99922945494b8d1f3defd16996e9d1c38a52417d3e352ae5281c2767251",
+        "prior_native_evidence.json": "037a57495b97446312cec01d1c2bb51548756c793a24670b388db78e6c9966e5",
+        "reencoding_equivalence.json": "eeea3759e7f55a18427babe69a0a5682f9d98aac7803d1aca8e17e04c99a29ae"
+      },
+      "source_contract": {
+        "record_count": 16396,
+        "descendants_before_ancestors": true,
+        "residual_root_explicit": true,
+        "cells_agreement": true,
+        "local_constant_leaf_count": 262,
+        "downstream_regroup_verified": false,
+        "source_paths_exact": true,
+        "nearest_ancestor_redundancy_absent": true,
+        "functional_leaf_count": 517282,
+        "empty_hierarchy_count": 0,
+        "schema_version": 1,
+        "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+        "records_manifest_sha256": "d4efc99922945494b8d1f3defd16996e9d1c38a52417d3e352ae5281c2767251",
+        "functional_leaves_by_destination": {
+          "FPGA_D": 59906,
+          "FPGA_C": 149638,
+          "FPGA_B": 125701,
+          "FPGA_A": 182037
+        },
+        "mapping_sha256": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+        "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+        "ownership_manifest_sha256": "b6b08bca32e50978ddfba098454b7c18910416e82726975b546ced232b8a91c2",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "frontier_ownership_compared": true,
+        "root_instance": "aes_farm_top",
+        "status": "PASS"
+      },
+      "reencoding_equivalence": {
+        "functional_leaves_compared": 517282,
+        "constant_policy": "GND/VCC separately local; no explicit move records",
+        "ownership_mismatches": 0,
+        "schema_version": 1,
+        "final_assignment_sha256": "505fe5f142baf3c1fc5eb2e7b9b73c7f09a14f8b439f4e0e96d4463486266fec",
+        "mapping_sha256": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+        "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+        "frontier_sha256": "01d8d8a0ab2f60a833f848cea9f000618c4911736c8426ff9c3a0019197ea20e",
+        "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+        "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+        "legacy_mapping_sha256": "5557dfb34e40a282e7a84127f4e24f416d8f3bf6de4b938e4d078d67810aeac2",
+        "status": "PASS",
+        "top_port_owner_unchanged": true
+      }
+    }
+  ],
+  "initial_limited_syntax_receipt": {
+    "path": "${WORKSPACE}/work/mapping_contract_20261020/mapping_contract_validation_initial_syntax.json",
+    "sha256": "a2225dde8775f59e7b79bcc649ddb118a0d261af4facf4fd0bbc6be890055a0f",
+    "bytes": 43732
+  },
+  "initial_syntax_audit_scope": "Historical 40-map text-only audit; not evidence of actual source ancestry. Superseded for the preferred16 source-bound successors.",
+  "source_audit_receipt": {
+    "path": "${WORKSPACE}/work/mapping_contract_20261020/qualified_j4_source_audit_final.json",
+    "sha256": "c8b33447ee3c2c3500f029eac135fac7243d9dea524dbb8a654016492bb2b31c",
+    "bytes": 15737
+  },
+  "successor_equivalence_receipt": {
+    "path": "${WORKSPACE}/work/mapping_contract_20261020/qualified_j4_reencoding_final.json",
+    "sha256": "447993722d6f1055c22c4aeb6a21571b075cb08c004ce9eb80bdabc5de0d3f61",
+    "bytes": 21836
+  },
+  "original_artifact_hash_inventory": {
+    "path": "${WORKSPACE}/work/mapping_contract_20261020/qualified_j4_original_artifacts_before.json",
+    "sha256": "045e61825b64ab7d8c1643d1d404227a484ecf7a37979156969dcac246fa0221",
+    "bytes": 131930
+  },
+  "frontier_bindings": {
+    "path": "${WORKSPACE}/work/mapping_contract_20261020/qualified_j4_original_frontiers.json",
+    "sha256": "1840168c1e79f8a880ac73a5bf5121f8c39f1acc8b0ddc2e6831964bdd91747f",
+    "bytes": 40627
+  },
+  "executed_reencoder_class_snapshot": {
+    "${WORKSPACE}/work/mapping_contract_20261020/reencoder_classes/com/xilinx/rapidwright/edif/partition/HierMappingWriter$1.class": "a1ba9a7d52e8f5694472e5560a32da212e0bdbc0c5787127e5ab8ce0887a0455",
+    "${WORKSPACE}/work/mapping_contract_20261020/reencoder_classes/com/xilinx/rapidwright/edif/partition/HierMappingWriter$Node.class": "88dfbf38610b534ec19e29912e737bd8a3ad3314ab93690fa1bd50878b511ef7",
+    "${WORKSPACE}/work/mapping_contract_20261020/reencoder_classes/com/xilinx/rapidwright/edif/partition/HierMappingWriter.class": "e5efabaa3c5721a8fd5c068eaae753f692fac16131c64205f14b9160f2ecbdc8",
+    "${WORKSPACE}/work/mapping_contract_20261020/reencoder_classes/com/xilinx/rapidwright/edif/partition/MappingContract.class": "cc8f77751329d36ac4f07a139202a6411292e48a4178340ebea825e4b4d241fc",
+    "${WORKSPACE}/work/mapping_contract_20261020/reencoder_classes/com/xilinx/rapidwright/edif/partition/MappingReencoder.class": "9889323c5f82c1062af644154d6671e0dd4fdcb5e026ff66d5d0cbf87cf14e09"
+  },
+  "post_execution_api_change": "MappingReencoder.reencode visibility narrowed from public to package-private after execution; CLI source loading and ownership logic unchanged. Executed class hashes are retained above, not relabeled as current bytecode.",
+  "tests": {
+    "windows_java": {
+      "status": "PASS",
+      "completed_utc": "2026-10-20T13:22:44.809993+00:00",
+      "runtime": "Windows Java21.0.1_12 Gradle8.14",
+      "command": [
+        "gradlew.bat",
+        "testJava",
+        "--tests",
+        "com.xilinx.rapidwright.edif.partition.*",
+        "-x",
+        "initSubmodules",
+        "--console=plain"
+      ],
+      "exit_code": 0,
+      "totals": {
+        "tests": 147,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "new_regression": "internalAliasesBelowCoarseFrontierAreEmittedOnceWithoutChangingCutCounters",
+      "test_source_sha256": "e03d56a3f732625850a678790f6cb1f19beea114803fd92ff13d6da490330746",
+      "log_sha256": "91e2b36cc5667869f34dd38ceb1de292880cc49be01870fd7228651e570779c3"
+    },
+    "linux_java": {
+      "runtime": "WSL Ubuntu Temurin Java 17.0.20.1+1",
+      "totals": {
+        "tests": 147,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xml_sha256": {
+        "TEST-com.xilinx.rapidwright.edif.partition.TestAcceptedQualityAnchor.xml": "6afed13bc71f7bfe83eddb9a3d3f3e697d3ca8adb37a4ad671ea77079bfd129b",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestBoundedBalancedSwaps.xml": "0db3897fcbeff72737129ac44a4bae1f413fbdf737adc2d52b532dfc91baf773",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestCombinationalPathAnalyzer.xml": "b59ac546e67444718f5ed843ef72927e6fce1a1c53496f8814cfd0781115880c",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestConstraintFrontier.xml": "4ff3b17c327577f92c1fdf829b6c56249928b90c901199830b7bafecf99dba27",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestFrontierWeightModel.xml": "0cbf7e5ba03797bfe6e4dfb8ca17d353300efd85cf426d93daaf542d0093c088",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestGroupedFrontierSwaps.xml": "0f97b8240e6fea7a8f6f22de2dec64c4934b8b522ffdef0b783c3ac14333f37b",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestHardwareMappingRefiner.xml": "c3a5b8355fea9190c7a85318497d0d4a7e8ef5fb9dfab65ec3e9ab484601f71d",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestHardwarePartitionGraph.xml": "f748352cee272cd78d0aefa2b7c00d857e22026d61429ec12785e5c2dc1cbe68",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestMappingConnectionsManifest.xml": "d1da0475b2422908c7225adac24efc89c710dfb09be426bb8afbfffb4667b2e9",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestMappingContract.xml": "7e068ec64f40595a1a69fccdb331b96871ebe16126545233ccfcf14b2f532137",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestMappingReencoder.xml": "019c9699be40c86db9c0ebc49f0ffca6eccf4093a26311ae45548ca5bba0c59f",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestMtKaHyParScalarCapacities.xml": "578861d42a118ebc91235c2756fd17b544569facd1509397a1ab8bb4bdfacb97",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestPartitionMetrics.xml": "e4c4b2ebccd4b68bfc47bfd14faa258231a56e560509d8af2bbc47e3f2598d63",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestPartitionTopology.xml": "b6b35fc69feaae6c770d44afdabdd625d1c2327850d06495c17b289007c6102e",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestPhysicalRouteHops.xml": "67b8a64a65012761dc786e331f9ccdb611cb35c5a6cd79c29229b321ee0c3d3c",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestPrimitiveTimingPolicy.xml": "6bc12f3fdc605c2c692ab07efc421e859f41e76c0c72a1e8f530a9291c697534",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestRankedQualityGuard.xml": "b11825c7012c4c69ce530652a46fe94a2b6cb1b38830a8772112e15e33b7b025",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestRetainedGreedySwapPhase.xml": "6aae7eca9ab82b4864bb64056880ac8083205124ee6cb37e1142d40c76c3f868",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestRouteAwareBalancedSwaps.xml": "73162825af56077572485cfb34691ff4446a322b1dee35a66968e592df72c8c5",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestSingletonPartitioner.xml": "b83c58a434fd5ee416e1f9b4a795fa6ca6d7a66ecf027b354c4074b4c9a6c4ec",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestTimingHmetisWeights.xml": "f7006294726afd02afd7618c7341704096a04bf22cda1e06e8f79a7532e7a001",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestTimingPathModel.xml": "41dbcf68d9d8bc378ddf62312b0f68bab5dd28fa4ef46016ba63bbc1af8a0edc",
+        "TEST-com.xilinx.rapidwright.edif.partition.TestVertexWeightModel.xml": "6ad9fff1ecd7323653745389c3e4af37474bbbf70917f12f5300fbd8475d6719"
+      }
+    },
+    "linux_python": {
+      "status": "PASS",
+      "completed_utc": "2026-10-20T13:18:59.338257+00:00",
+      "runtime": "WSL Ubuntu24.04.1 Python3.12.3",
+      "main_suite": {
+        "command": [
+          "wsl",
+          "-d",
+          "Ubuntu",
+          "--cd",
+          "/mnt/c/Users/Wrelks/Desktop/upgrade_partitioner_handle_large_designs/RapidWright",
+          "--exec",
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "scripts/partition",
+          "-p",
+          "test_*.py"
+        ],
+        "exit_code": 0,
+        "tests": 187,
+        "skipped": 2,
+        "seconds": 51.197
+      },
+      "optional_tools_suite": {
+        "status": "ENVIRONMENT_PREREQUISITE_UNAVAILABLE",
+        "tests_started": 8,
+        "errors": 2,
+        "reason": "WSL Python lacks tkinter; not a product test failure. No system packages installed. Windows17 helper tests passed separately."
+      },
+      "logs_sha256": {
+        "linux_python_tests.log": "c20658424dc6cf2f1525530f2ad81b2495cfe7d8b48ae206564fbd70f8504a46",
+        "linux_tools_python_tests.log": "13bf3737b951834033dd6a034f0420a6e833f24893bc68d335b960b898dbfc39"
+      }
+    },
+    "windows_python": {
+      "status": "PASS",
+      "tests": 187,
+      "skipped": 2,
+      "seconds": 38.094,
+      "log": {
+        "path": "${WORKSPACE}/RapidWright/build/partition-python-tests/mapping_contract_test_run.log",
+        "sha256": "c87072506a9a247e36ec5e07e873df3d2839e9e10c744fc909f63c5b90119534",
+        "bytes": 14926
+      },
+      "recorded_tail": "Ran 187 tests in 38.094s; OK (skipped=2)"
+    },
+    "windows_helpers": {
+      "status": "PASS",
+      "exit_code": 0,
+      "tests": 17,
+      "runtime": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+      "command": [
+        "C:/Python313/python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "test_*.py"
+      ],
+      "log_sha256": "4329bb1999dc9b057594e28f9e1305d27a9b417d7be3bd4c4b801db937b95f25",
+      "completed_utc": "2026-10-20T13:27:55.596258+00:00"
+    }
+  },
+  "raw_receipts": {
+    "java_partition_147_tests_receipt.json": {
+      "path": "${WORKSPACE}/work/mapping_contract_20261020/java_partition_147_tests_receipt.json",
+      "sha256": "32babccb829305dc5386a887785f17f64e0531e8085d9609b5d732a4a16d27ff",
+      "bytes": 704,
+      "receipt": {
+        "status": "PASS",
+        "completed_utc": "2026-10-20T13:22:44.809993+00:00",
+        "runtime": "Windows Java21.0.1_12 Gradle8.14",
+        "command": [
+          "gradlew.bat",
+          "testJava",
+          "--tests",
+          "com.xilinx.rapidwright.edif.partition.*",
+          "-x",
+          "initSubmodules",
+          "--console=plain"
+        ],
+        "exit_code": 0,
+        "totals": {
+          "tests": 147,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "new_regression": "internalAliasesBelowCoarseFrontierAreEmittedOnceWithoutChangingCutCounters",
+        "test_source_sha256": "e03d56a3f732625850a678790f6cb1f19beea114803fd92ff13d6da490330746",
+        "log_sha256": "91e2b36cc5667869f34dd38ceb1de292880cc49be01870fd7228651e570779c3"
+      }
+    },
+    "linux_python_tests_receipt.json": {
+      "path": "${WORKSPACE}/work/mapping_contract_20261020/linux_python_tests_receipt.json",
+      "sha256": "78209b71d3ccb5b53671eb0921fa1effffd647e1c85e28e50386e1546207d24c",
+      "bytes": 1077,
+      "receipt": {
+        "status": "PASS",
+        "completed_utc": "2026-10-20T13:18:59.338257+00:00",
+        "runtime": "WSL Ubuntu24.04.1 Python3.12.3",
+        "main_suite": {
+          "command": [
+            "wsl",
+            "-d",
+            "Ubuntu",
+            "--cd",
+            "/mnt/c/Users/Wrelks/Desktop/upgrade_partitioner_handle_large_designs/RapidWright",
+            "--exec",
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "scripts/partition",
+            "-p",
+            "test_*.py"
+          ],
+          "exit_code": 0,
+          "tests": 187,
+          "skipped": 2,
+          "seconds": 51.197
+        },
+        "optional_tools_suite": {
+          "status": "ENVIRONMENT_PREREQUISITE_UNAVAILABLE",
+          "tests_started": 8,
+          "errors": 2,
+          "reason": "WSL Python lacks tkinter; not a product test failure. No system packages installed. Windows17 helper tests passed separately."
+        },
+        "logs_sha256": {
+          "linux_python_tests.log": "c20658424dc6cf2f1525530f2ad81b2495cfe7d8b48ae206564fbd70f8504a46",
+          "linux_tools_python_tests.log": "13bf3737b951834033dd6a034f0420a6e833f24893bc68d335b960b898dbfc39"
+        }
+      }
+    },
+    "smoke_receipt.json": {
+      "path": "${WORKSPACE}/work/mapping_contract_20261020/smoke/smoke_receipt.json",
+      "sha256": "4be2c2b44b32f6dcfd6b23466867c4f325db60b9c8945b23fd954da45bc2f59f",
+      "bytes": 15446,
+      "receipt": {
+        "started_utc": "2026-10-20T13:07:13.773334+00:00",
+        "source_sha256": "2a46fd8d86cd90d8c5a570948a3bd5cf58cca9b8947fce9375271201bfeb13b2",
+        "topology_sha256": "f43148b6db6e1df9b29e45acc93df55db9fc2b062c3ff7329f9ae01cee334cb2",
+        "python": "C:/Python313/python.exe",
+        "frontend_sha256": "eff9d5c09fb4e646fe1d536ebf7a6c8a1a7406e679cc8fde71463e5dc862d9fd",
+        "mapping_validator_sha256": "9ebffae88f79b5e4e0df98a3584ed2316a4402d4fffb1be991b6f8fd1d78003c",
+        "cases": [
+          {
+            "case": "k1",
+            "returncode": 0,
+            "seconds": 103.044,
+            "status": "PASS",
+            "error": null,
+            "command": [
+              "C:/Python313/python.exe",
+              "${WORKSPACE}/RapidWright/scripts/partition/partitioner.py",
+              "--input",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke_source/synth.dcp",
+              "--system-topology",
+              "${WORKSPACE}/RapidWright/test/resources/partition/smoke/topology.json",
+              "--output",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke/k1",
+              "--quality",
+              "fast",
+              "--iterations",
+              "1",
+              "--starts",
+              "1",
+              "--refine-passes",
+              "1",
+              "--native-session",
+              "off",
+              "--native-artifacts",
+              "plain",
+              "--heap",
+              "4G",
+              "--fpga-count",
+              "1"
+            ],
+            "console_log": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k1.console.log",
+            "expect_success": true,
+            "mapping_published": true,
+            "contract": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "6c4c82742e4b56c367a02db9554d17cfea75684b696cc237f6922094ae189945",
+              "record_count": 1,
+              "logical_fpgas": [
+                "FPGA_A"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "functional_leaf_populations": {
+                "FPGA_A": 624
+              },
+              "contract_report_sha256": "ae8075b81352d2cb00effb0eb54f6153eef04fd144c9c36a1475976a596105bd",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 304
+            },
+            "mapping_sha256": "6c4c82742e4b56c367a02db9554d17cfea75684b696cc237f6922094ae189945",
+            "native_cap_check": "PASS",
+            "test_passed": true
+          },
+          {
+            "case": "k4",
+            "returncode": 0,
+            "seconds": 121.131,
+            "status": "PASS",
+            "error": null,
+            "command": [
+              "C:/Python313/python.exe",
+              "${WORKSPACE}/RapidWright/scripts/partition/partitioner.py",
+              "--input",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke_source/synth.dcp",
+              "--system-topology",
+              "${WORKSPACE}/RapidWright/test/resources/partition/smoke/topology.json",
+              "--output",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke/k4_native",
+              "--quality",
+              "fast",
+              "--iterations",
+              "1",
+              "--starts",
+              "1",
+              "--refine-passes",
+              "1",
+              "--native-session",
+              "off",
+              "--native-artifacts",
+              "plain",
+              "--heap",
+              "4G"
+            ],
+            "console_log": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k4.console.log",
+            "expect_success": true,
+            "mapping_published": true,
+            "contract": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "cb880c78229a89582dc36f55a565bd78790cbc471e0cacfa58018160c8742f76",
+              "record_count": 28,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B",
+                "FPGA_C",
+                "FPGA_D"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "functional_leaf_populations": {
+                "FPGA_A": 165,
+                "FPGA_B": 163,
+                "FPGA_C": 148,
+                "FPGA_D": 148
+              },
+              "contract_report_sha256": "050a17d1fa792af4f0689227e7af8337fac94b66e7a7b3eccb28ae9f45686462",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 85,
+              "FPGA_B": 83,
+              "FPGA_C": 68,
+              "FPGA_D": 68
+            },
+            "mapping_sha256": "cb880c78229a89582dc36f55a565bd78790cbc471e0cacfa58018160c8742f76",
+            "native_cap_check": "PASS",
+            "test_passed": true
+          },
+          {
+            "case": "k2",
+            "returncode": 0,
+            "seconds": 121.5,
+            "status": "PASS",
+            "error": null,
+            "command": [
+              "C:/Python313/python.exe",
+              "${WORKSPACE}/RapidWright/scripts/partition/partitioner.py",
+              "--input",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke_source/synth.dcp",
+              "--system-topology",
+              "${WORKSPACE}/RapidWright/test/resources/partition/smoke/topology.json",
+              "--output",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_native",
+              "--quality",
+              "fast",
+              "--iterations",
+              "1",
+              "--starts",
+              "1",
+              "--refine-passes",
+              "1",
+              "--native-session",
+              "off",
+              "--native-artifacts",
+              "plain",
+              "--heap",
+              "4G",
+              "--fpga-count",
+              "2"
+            ],
+            "console_log": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2.console.log",
+            "expect_success": true,
+            "mapping_published": true,
+            "contract": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+              "record_count": 8,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "functional_leaf_populations": {
+                "FPGA_A": 365,
+                "FPGA_B": 259
+              },
+              "contract_report_sha256": "b8a799d71cf4e3e0bd0780945ea01b13afa45009b6ab2011f35574770e92148e",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 185,
+              "FPGA_B": 119
+            },
+            "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+            "native_cap_check": "PASS",
+            "test_passed": true
+          },
+          {
+            "case": "k3",
+            "returncode": 0,
+            "seconds": 121.684,
+            "status": "PASS",
+            "error": null,
+            "command": [
+              "C:/Python313/python.exe",
+              "${WORKSPACE}/RapidWright/scripts/partition/partitioner.py",
+              "--input",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke_source/synth.dcp",
+              "--system-topology",
+              "${WORKSPACE}/RapidWright/test/resources/partition/smoke/topology.json",
+              "--output",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke/k3_native",
+              "--quality",
+              "fast",
+              "--iterations",
+              "1",
+              "--starts",
+              "1",
+              "--refine-passes",
+              "1",
+              "--native-session",
+              "off",
+              "--native-artifacts",
+              "plain",
+              "--heap",
+              "4G",
+              "--fpga-count",
+              "3"
+            ],
+            "console_log": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k3.console.log",
+            "expect_success": true,
+            "mapping_published": true,
+            "contract": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "724d0c1f57621b179c35b739e73e1c53540846b1d630a12b917338da6fd7d6c2",
+              "record_count": 27,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B",
+                "FPGA_C"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "functional_leaf_populations": {
+                "FPGA_A": 237,
+                "FPGA_B": 202,
+                "FPGA_C": 185
+              },
+              "contract_report_sha256": "3a52cfa45ef185cf2ca23b580dc82f00e31e97a8096b831473509f6ce7daf1ac",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 117,
+              "FPGA_B": 102,
+              "FPGA_C": 85
+            },
+            "mapping_sha256": "724d0c1f57621b179c35b739e73e1c53540846b1d630a12b917338da6fd7d6c2",
+            "native_cap_check": "PASS",
+            "test_passed": true
+          },
+          {
+            "case": "k2_rejected_cap",
+            "returncode": 1,
+            "seconds": 132.343,
+            "status": "FAIL",
+            "error": "No candidate satisfies every hard native LUT cap. No accepted mapping was published; this is not a proof of infeasibility.",
+            "command": [
+              "C:/Python313/python.exe",
+              "${WORKSPACE}/RapidWright/scripts/partition/partitioner.py",
+              "--input",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke_source/synth.dcp",
+              "--system-topology",
+              "${WORKSPACE}/RapidWright/test/resources/partition/smoke/topology.json",
+              "--output",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_rejected_cap_native",
+              "--quality",
+              "fast",
+              "--iterations",
+              "1",
+              "--starts",
+              "1",
+              "--refine-passes",
+              "1",
+              "--native-session",
+              "off",
+              "--native-artifacts",
+              "plain",
+              "--heap",
+              "4G",
+              "--fpga-count",
+              "2",
+              "--max-luts",
+              "1"
+            ],
+            "console_log": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_rejected_cap.console.log",
+            "expect_success": false,
+            "mapping_published": false,
+            "test_passed": true
+          },
+          {
+            "case": "k2_verbose",
+            "returncode": 0,
+            "seconds": 132.857,
+            "status": "PASS",
+            "error": null,
+            "command": [
+              "C:/Python313/python.exe",
+              "${WORKSPACE}/RapidWright/scripts/partition/partitioner.py",
+              "--input",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke_source/synth.dcp",
+              "--system-topology",
+              "${WORKSPACE}/RapidWright/test/resources/partition/smoke/topology.json",
+              "--output",
+              "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_verbose_native",
+              "--quality",
+              "fast",
+              "--iterations",
+              "1",
+              "--starts",
+              "1",
+              "--refine-passes",
+              "1",
+              "--native-session",
+              "off",
+              "--native-artifacts",
+              "plain",
+              "--heap",
+              "4G",
+              "--fpga-count",
+              "2",
+              "--verbose-mapping"
+            ],
+            "console_log": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_verbose.console.log",
+            "expect_success": true,
+            "mapping_published": true,
+            "contract": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+              "record_count": 8,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "functional_leaf_populations": {
+                "FPGA_A": 365,
+                "FPGA_B": 259
+              },
+              "contract_report_sha256": "704a26098ab53f76dd3490e95c5ca185e32b459efa168df94d938eef731689a2",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 185,
+              "FPGA_B": 119
+            },
+            "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+            "native_cap_check": "PASS",
+            "test_passed": true
+          }
+        ],
+        "first_attempt_receipt": "${WORKSPACE}/work/mapping_contract_20261020/smoke/smoke_receipt_first_attempt.json",
+        "harness_revision_reason": "Automatic source metadata is not a legacy supplied-pair receipt; use real direct-DCP import for every case",
+        "status": "PASS",
+        "completed_utc": "2026-10-20T13:11:27.803386+00:00",
+        "source_unchanged": true
+      }
+    },
+    "final_contract_audit.json": {
+      "path": "${WORKSPACE}/work/mapping_contract_20261020/smoke/final_contract_audit.json",
+      "sha256": "00682797885cf4f73341bdc101d1a89a2cdf69762d1cd89a196693c574e356a6",
+      "bytes": 8754,
+      "receipt": {
+        "status": "PASS",
+        "completed_utc": "2026-10-20T13:12:41.705147+00:00",
+        "final_validator_sha256": "16a9fe9191558b8947e4616173d695f8cc0023a4c8e9dfb30ec95a661a2a9931",
+        "smoke_execution_receipt_sha256": "4be2c2b44b32f6dcfd6b23466867c4f325db60b9c8945b23fd954da45bc2f59f",
+        "source_input_sha256": "2a46fd8d86cd90d8c5a570948a3bd5cf58cca9b8947fce9375271201bfeb13b2",
+        "scope": "Real Vivado source and native resource acceptance; final independent complete stream and CRC audit; downstream regroup NOT_RUN",
+        "cases": [
+          {
+            "case": "k1",
+            "output": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k1",
+            "native_returncode": 0,
+            "native_status": "PASS",
+            "native_cap_check": "PASS",
+            "mapping_published": true,
+            "audit": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "6c4c82742e4b56c367a02db9554d17cfea75684b696cc237f6922094ae189945",
+              "record_count": 1,
+              "logical_fpgas": [
+                "FPGA_A"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "source_connection_rows": {
+                "NET": 1074,
+                "ALIAS": 1618,
+                "ENDPOINT": 3378
+              },
+              "functional_leaf_populations": {
+                "FPGA_A": 624
+              },
+              "contract_report_sha256": "ae8075b81352d2cb00effb0eb54f6153eef04fd144c9c36a1475976a596105bd",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 304
+            },
+            "test_passed": true
+          },
+          {
+            "case": "k4",
+            "output": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k4_native",
+            "native_returncode": 0,
+            "native_status": "PASS",
+            "native_cap_check": "PASS",
+            "mapping_published": true,
+            "audit": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "cb880c78229a89582dc36f55a565bd78790cbc471e0cacfa58018160c8742f76",
+              "record_count": 28,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B",
+                "FPGA_C",
+                "FPGA_D"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "source_connection_rows": {
+                "NET": 1074,
+                "ALIAS": 1618,
+                "ENDPOINT": 3378
+              },
+              "functional_leaf_populations": {
+                "FPGA_A": 165,
+                "FPGA_B": 163,
+                "FPGA_C": 148,
+                "FPGA_D": 148
+              },
+              "contract_report_sha256": "050a17d1fa792af4f0689227e7af8337fac94b66e7a7b3eccb28ae9f45686462",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 85,
+              "FPGA_B": 83,
+              "FPGA_C": 68,
+              "FPGA_D": 68
+            },
+            "test_passed": true
+          },
+          {
+            "case": "k2",
+            "output": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_native",
+            "native_returncode": 0,
+            "native_status": "PASS",
+            "native_cap_check": "PASS",
+            "mapping_published": true,
+            "audit": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+              "record_count": 8,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "source_connection_rows": {
+                "NET": 1074,
+                "ALIAS": 1618,
+                "ENDPOINT": 3378
+              },
+              "functional_leaf_populations": {
+                "FPGA_A": 365,
+                "FPGA_B": 259
+              },
+              "contract_report_sha256": "b8a799d71cf4e3e0bd0780945ea01b13afa45009b6ab2011f35574770e92148e",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 185,
+              "FPGA_B": 119
+            },
+            "test_passed": true
+          },
+          {
+            "case": "k3",
+            "output": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k3_native",
+            "native_returncode": 0,
+            "native_status": "PASS",
+            "native_cap_check": "PASS",
+            "mapping_published": true,
+            "audit": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "724d0c1f57621b179c35b739e73e1c53540846b1d630a12b917338da6fd7d6c2",
+              "record_count": 27,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B",
+                "FPGA_C"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "source_connection_rows": {
+                "NET": 1074,
+                "ALIAS": 1618,
+                "ENDPOINT": 3378
+              },
+              "functional_leaf_populations": {
+                "FPGA_A": 237,
+                "FPGA_B": 202,
+                "FPGA_C": 185
+              },
+              "contract_report_sha256": "3a52cfa45ef185cf2ca23b580dc82f00e31e97a8096b831473509f6ce7daf1ac",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 117,
+              "FPGA_B": 102,
+              "FPGA_C": 85
+            },
+            "test_passed": true
+          },
+          {
+            "case": "k2_rejected_cap",
+            "output": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_rejected_cap_native",
+            "native_returncode": 1,
+            "native_status": "FAIL",
+            "native_cap_check": null,
+            "mapping_published": false,
+            "error": "No candidate satisfies every hard native LUT cap. No accepted mapping was published; this is not a proof of infeasibility.",
+            "test_passed": true
+          },
+          {
+            "case": "k2_verbose",
+            "output": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_verbose_native",
+            "native_returncode": 0,
+            "native_status": "PASS",
+            "native_cap_check": "PASS",
+            "mapping_published": true,
+            "audit": {
+              "status": "PASS",
+              "root_instance": "partition_smoke",
+              "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+              "record_count": 8,
+              "logical_fpgas": [
+                "FPGA_A",
+                "FPGA_B"
+              ],
+              "ancestry_source": "source_bound_EDIF_manifest",
+              "native_inventory_rows": 656,
+              "native_constant_rows": 32,
+              "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+              "functional_leaf_count": 624,
+              "local_constant_count": 32,
+              "empty_hierarchy_count": 0,
+              "source_connection_rows": {
+                "NET": 1074,
+                "ALIAS": 1618,
+                "ENDPOINT": 3378
+              },
+              "functional_leaf_populations": {
+                "FPGA_A": 365,
+                "FPGA_B": 259
+              },
+              "contract_report_sha256": "704a26098ab53f76dd3490e95c5ca185e32b459efa168df94d938eef731689a2",
+              "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+            },
+            "native_counts": {
+              "FPGA_A": 185,
+              "FPGA_B": 119
+            },
+            "test_passed": true
+          }
+        ]
+      }
+    },
+    "pending_alias_memory_check_receipt.json": {
+      "path": "${WORKSPACE}/work/mapping_contract_20261020/smoke/pending_alias_memory_check_receipt.json",
+      "sha256": "25343756419b5580f711e7a866d186659c91d985bb617ba0011a46b2097e2650",
+      "bytes": 1663,
+      "receipt": {
+        "status": "PASS",
+        "completed_utc": "2026-10-20T13:18:59.239798+00:00",
+        "old_directory": "${WORKSPACE}/work/mapping_contract_20261020/smoke/k2_native",
+        "new_directory": "${WORKSPACE}/work/mapping_contract_20261020/smoke/pending_alias_memory_check_k2",
+        "scope": "Real small source EDIF/final mapping reanalyzed after pending-alias memory change; full source rows compared as multisets because candidate scopes can change group order",
+        "java_exit_code": 0,
+        "canonical_nets": 1074,
+        "hierarchy_aliases": 1618,
+        "endpoints": 3378,
+        "complete_connection_row_multiset_identical": true,
+        "sorted_connection_rows_sha256": "2727471cfe4dec34ecf75fe1cac961695166c41f3e828bba2aeacf6d86663c13",
+        "old_manifest_gzip_sha256": "679ec237b5cf37393dade93d6781061381a36ce46817fa6dcb1e394a3d342a7c",
+        "new_manifest_gzip_sha256": "835264cc427b8bfcd25011a20b246dbde578af4d6f09e76803761d3a595e7b2b",
+        "source_edif_sha256": "de683f5b81ee0a4d51a709bf671578bd4b050a30576d017deed5efc288476771",
+        "mapping_sha256": "2867d596677d7a15d76019cef5d3a180575f81fa68e6d6214fa30dac421edc17",
+        "compiled_analyzer_sha256": "6287cff5e9897b2ba5077d18f79288c94dfcd0f0e644c627fc75d98220857b6c",
+        "report_comparisons": {
+          "fpga_net_crossings.tsv": {
+            "byte_identical": true,
+            "sha256": "0762a657e5c0a82c425b768fa1b4d0bb7d2fa972708df112ecdaa9ab9ff39fa6"
+          },
+          "fpga_control_categories.tsv": {
+            "byte_identical": true,
+            "sha256": "d38694a121aefa28210f6683a582bc0c7cd4e3a7d69f66bcddc58ed9c782b1a5"
+          }
+        }
+      }
+    },
+    "windows_tools_tests_receipt.json": {
+      "path": "${WORKSPACE}/work/mapping_contract_20261020/windows_tools_tests_receipt.json",
+      "sha256": "36551d230efe7ab6eda22d0f408d3030d568a470fec97627d1df3a315ffdf394",
+      "bytes": 454,
+      "receipt": {
+        "status": "PASS",
+        "exit_code": 0,
+        "tests": 17,
+        "runtime": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+        "command": [
+          "C:/Python313/python.exe",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "test_*.py"
+        ],
+        "log_sha256": "4329bb1999dc9b057594e28f9e1305d27a9b417d7be3bd4c4b801db937b95f25",
+        "completed_utc": "2026-10-20T13:27:55.596258+00:00"
+      }
+    }
+  },
+  "downstream_regroup_or_hardware_executed": false,
+  "fresh_large_successor_native_or_full_frontend_acceptance": false,
+  "preferred_delivery": "${WORKSPACE}/RESULTS FOR J4/CONTRACT_COMPLIANT_20261020/README.md"
+}

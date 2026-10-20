@@ -138,16 +138,23 @@ public class TestPartitionMetrics {
 
     @Test
     public void compressionPreservesPrimitiveOverrides(@TempDir Path dir) throws Exception {
+        EDIFNetlist netlist = EDIFTools.createNewNetlist("soc");
+        EDIFCell lut = primitive(netlist, "LUT1");
+        netlist.getTopCell().createChildCellInst("a_reg[0]", lut);
+        netlist.getTopCell().createChildCellInst("b_i_1", lut);
+        EDIFCell namedGnd = new EDIFCell(netlist.getWorkLibrary(), "ordinary_logic_type");
+        namedGnd.createChildCellInst("real_logic", lut);
+        netlist.getTopCell().createChildCellInst("GND", namedGnd);
         Files.write(dir.resolve("cells.txt"), Arrays.asList("FPGA_A", "FPGA_B"), StandardCharsets.UTF_8);
-        Files.write(dir.resolve("FPGA_A"), Arrays.asList("soc/a_reg[0]", "soc/GND/real_logic"), StandardCharsets.UTF_8);
-        Files.write(dir.resolve("FPGA_B"), Arrays.asList("soc/b_i_1"), StandardCharsets.UTF_8);
+        Files.write(dir.resolve("FPGA_A"), Arrays.asList("a_reg[0]", "GND/real_logic"), StandardCharsets.UTF_8);
+        Files.write(dir.resolve("FPGA_B"), Arrays.asList("b_i_1"), StandardCharsets.UTF_8);
         for (boolean optimize : new boolean[] {false, true}) {
-            List<String> lines = HierMappingWriter.buildMappingFromPartitionFiles(dir.toString(), dir.resolve("cells.txt").toString(), null, optimize);
+            List<String> lines = HierMappingWriter.buildMappingFromPartitionFiles(dir.toString(), dir.resolve("cells.txt").toString(), null, optimize, netlist);
             Assertions.assertTrue(lines.stream().anyMatch(s -> s.equals("soc/b_i_1 FPGA_B")));
             Assertions.assertFalse(lines.isEmpty());
         }
-        Files.write(dir.resolve("FPGA_B"), Arrays.asList("soc/a_reg[0]"), StandardCharsets.UTF_8);
-        Assertions.assertThrows(IllegalArgumentException.class, () -> HierMappingWriter.buildMappingFromPartitionFiles(dir.toString(), dir.resolve("cells.txt").toString(), null, true));
+        Files.write(dir.resolve("FPGA_B"), Arrays.asList("a_reg[0]"), StandardCharsets.UTF_8);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> HierMappingWriter.buildMappingFromPartitionFiles(dir.toString(), dir.resolve("cells.txt").toString(), null, true, netlist));
     }
 
     @Test
@@ -376,9 +383,10 @@ public class TestPartitionMetrics {
                 Files.readAllLines(dir.resolve("mapping.txt")));
         parts.put(0, new LinkedHashSet<>(Arrays.asList("parent")));
         b.remove("parent/tie_low"); b.remove("parent/tie_high");
-        HierMappingWriter.write(dir, netlist, parts, java.util.Collections.emptyMap(), true);
+        Path second = dir.resolve("coarse_frontier");
+        HierMappingWriter.write(second, netlist, parts, java.util.Collections.emptyMap(), true);
         Assertions.assertEquals(Arrays.asList("compact/parent FPGA_A", "compact FPGA_B"),
-                Files.readAllLines(dir.resolve("mapping.txt")));
+                Files.readAllLines(second.resolve("mapping.txt")));
     }
 
     @Test

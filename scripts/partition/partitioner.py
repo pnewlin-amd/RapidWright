@@ -208,7 +208,17 @@ SELECTED_REPORT_NAMES = (
     "hardware_quality.txt", "logical_resources.tsv", "logical_lut_report.txt", "primitive_counts.tsv", "native_candidates.tsv",
     "fpga_io_cuts.txt", "fpga_net_crossings.tsv", "io_cuts.txt", "metric_definitions.txt",
     "run_provenance.json", "worst_combinational_path.tsv", "refinement_passes.tsv", "swap_refinement_passes.tsv",
-    "final_assignment.part", "endpoint_kind_diagnostic.tsv", "fpga_control_categories.tsv", "cohort_refinement_passes.tsv")
+    "final_assignment.part", "endpoint_kind_diagnostic.tsv", "fpga_control_categories.tsv", "cohort_refinement_passes.tsv",
+    "mapping_contract.json", "mapping_records.tsv", "mapping_ownership.tsv.gz",
+    "mapping_connections.tsv.gz", "mapping_connections_manifest.json", "cells.txt")
+
+
+def mapping_contract_module():
+    specification = importlib.util.spec_from_file_location(
+        "partition_mapping_contract", Path(__file__).with_name("mapping_contract.py"))
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
 
 
 def freeze_selected_reports(selected):
@@ -218,7 +228,7 @@ def freeze_selected_reports(selected):
         path = selected / name
         if path.exists() and not path.is_file(): raise ValueError("Selected report must be a regular file: " + name)
         hashes[name] = sha256(path) if path.exists() else None
-    for name in ("hardware_quality.txt", "run_provenance.json"):
+    for name in ("hardware_quality.txt", "run_provenance.json", *mapping_contract_module().REQUIRED_ARTIFACTS):
         if hashes[name] is None: raise ValueError("Required selected report missing: " + name)
     return hashes
 
@@ -971,6 +981,10 @@ def execute(args):
                        and all(path.is_file() for path in session_files))
         tool_snapshots = {path: sha256(path) for path in session_files} if use_session else {}
         tool_snapshots[capacity_source] = capacity_source_sha
+        contract_source = Path(__file__).with_name("mapping_contract.py")
+        tool_snapshots[contract_source] = sha256(contract_source)
+        state["mapping_contract_validator_sha256"] = tool_snapshots[contract_source]
+        contract = mapping_contract_module()
         archive_tool = REPO / "tools/archive_native_request.py"
         archive_workspace = REPO.parent.resolve()
         archive_available = (archive_tool.is_file() and out.is_relative_to(archive_workspace)
@@ -984,7 +998,8 @@ def execute(args):
         state["native_oracle_mode"] = "adaptive_persistent_pending" if use_session else "batch"
         state["native_residency_policy"] = "Probe after Java; retain only when measured available RAM covers the next heap, 8 GiB overhead and a prior-HGR native solver reserve"
         state["native_residency_decisions"] = []
-        state["native_oracle_scripts_sha256"] = {str(path): digest for path, digest in tool_snapshots.items() if path != capacity_source}
+        state["native_oracle_scripts_sha256"] = {str(path): digest for path, digest in tool_snapshots.items()
+                                                 if path not in (capacity_source, contract_source)}
         weight_file = None
         scalar_caps_file = None
         accepted = []
@@ -1080,6 +1095,8 @@ def execute(args):
                 java_report_hashes[name] = sha256(path) if path.exists() else None
             expected_mapping_hash = candidate_mapping_hash(candidate, netlist_hash)
             verify_selected_reports(candidate, None, java_report_hashes)
+            contract_audit = contract.validate_bundle(candidate, inventory, netlist_hash, labels)
+            state["mapping_contract_last_candidate"] = contract_audit
             run_with_source_pair([sys.executable, REPO / "tools/prepare_native_resource_cells.py", "--mapping", candidate / "mapping.txt",
                  "--checkpoint", checkpoint, "--native-primitives", inventory, "--output", native], out,
                 candidate / "prepare_native.log")
@@ -1270,6 +1287,7 @@ def execute(args):
         shutil.copy2(out / "source_mapping.txt", staged_mapping)
         if sha256(staged_mapping) != selected_mapping_hash:
             raise ValueError("Native-validated mapping snapshot differs from the selected Java mapping")
+        contract_audit = contract.validate_bundle(out, inventory, netlist_hash, labels, staged_mapping)
         fully_qualified = soft_native_balance_met(best["target_imbalance"], search_balance) and best["path_analysis_complete"]
         state.update(status="PASS" if fully_qualified else "CAP_VALIDATED_WITH_LIMITATIONS",
                      selected_iteration=best["iteration"], native_cap_check="PASS" if caps else "NOT_REQUESTED",
@@ -1290,11 +1308,15 @@ def execute(args):
         state["input_snapshot_sha256"] = {str(path.relative_to(out)): digest for path, digest in snapshots.items()}
         state["accepted_mapping_sha256"] = selected_mapping_hash
         state["selected_report_sha256"] = selected_report_hashes
+        state["mapping_contract"] = contract_audit
         # Recheck after report/staged-mapping copies, immediately before publication.
         verify_snapshots(source_pair_snapshots)
         verify_selected_reports(selected, out, selected_report_hashes)
         verify_selected_reports(selected, None, best["java_immutable_report_sha256"])
         verify_selected_reports(selected, None, best["native_regenerated_report_sha256"])
+        if sha256(staged_mapping) != selected_mapping_hash:
+            raise ValueError("Staged mapping changed before publication")
+        verify_snapshots(tool_snapshots)
         os.replace(staged_mapping, out / "mapping.txt")
         published_mapping_hash = selected_mapping_hash
         status.write_text(json.dumps(state, indent=2))

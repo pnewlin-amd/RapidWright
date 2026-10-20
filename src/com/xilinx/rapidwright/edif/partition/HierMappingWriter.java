@@ -29,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -39,7 +38,6 @@ import java.util.Set;
 
 import com.xilinx.rapidwright.edif.EDIFHierCellInst;
 import com.xilinx.rapidwright.edif.EDIFCell;
-import com.xilinx.rapidwright.edif.EDIFCellInst;
 import com.xilinx.rapidwright.edif.EDIFNetlist;
 import com.xilinx.rapidwright.util.FileTools;
 
@@ -86,29 +84,17 @@ public final class HierMappingWriter {
         node.assignedPartition = chooseHomePartition(node.counts);
     }
 
-    /**
-     * Emits mapping lines only when the partition assignment changes from the parent.
-     * @param node The current node.
-     * @param parentPartition The partition assigned to the parent node.
-     * @param currentPath The current hierarchical path.
-     * @param out The list to collect mapping lines.
-     */
-    private static void emitOptimizedMappings(Node node, String parentPartition, String currentPath, List<String> out) {
-        // 1. Recurse to children first (Deepest-First)
+    /** Differential rules, including verbose mode, always obey the same move contract. */
+    private static void emitContractMappings(Node node, String inherited, String rootName,
+            String relative, List<String> out, boolean compact) {
+        String owner = relative.isEmpty() || compact || !node.leafCounts.isEmpty()
+                ? node.assignedPartition : inherited;
+        if (owner == null) throw new IllegalArgumentException("No functional source logic to map");
         for (Node child : node.children.values()) {
-            String childPath = currentPath.isEmpty() ? child.name : currentPath + "/" + child.name;
-            emitOptimizedMappings(child, node.assignedPartition, childPath, out);
+            String path = relative.isEmpty() ? child.name : relative + "/" + child.name;
+            emitContractMappings(child, owner, rootName, path, out, compact);
         }
-
-        // 2. Check for difference
-        boolean isRoot = parentPartition == null;
-        boolean isDifferent = isRoot || (node.assignedPartition != null && !node.assignedPartition.equals(parentPartition));
-
-        if (isDifferent && node.assignedPartition != null) {
-            if (!currentPath.isEmpty()) {
-                out.add(currentPath + " " + node.assignedPartition);
-            }
-        }
+        if (!owner.equals(inherited)) out.add(MappingContract.rooted(rootName, relative) + " " + owner);
     }
 
     /**
@@ -125,39 +111,28 @@ public final class HierMappingWriter {
             , String cellsFile
             , String defaultPartitionName
             , boolean optimize) {
-        return buildMappingFromPartitionFiles(partitionDir, cellsFile,
-                defaultPartitionName, optimize, null);
+        throw new IllegalArgumentException("Exact synthesized EDIF netlist is required; use the netlist-aware overload or --netlist");
     }
 
     /** Netlist-aware overload omits actual static-source primitives by type. */
     public static List<String> buildMappingFromPartitionFiles(String partitionDir,
             String cellsFile, String defaultPartitionName, boolean optimize,
             EDIFNetlist netlist) {
+        if (netlist == null) throw new IllegalArgumentException("Exact synthesized EDIF netlist is required");
         List<String> partitions = readPartitionNames(Paths.get(cellsFile));
         Map<String, Set<String>> partToPaths = readPartitionInstanceSets(Paths.get(partitionDir),
                 new LinkedHashSet<>(partitions));
         if (netlist != null) partToPaths = withoutConstants(partToPaths, netlist);
-        Node root = buildTrie(partToPaths);
+        Node root = buildTrie(partToPaths, netlist);
         computeCounts(root);
         List<String> out = new ArrayList<>();
-        if (optimize) {
-            assignPartitions(root);
-            // This API has no named root mapping. Each first-level subtree
-            // therefore needs an explicit default unless the caller supplies it.
-            for (Node child : root.children.values()) {
-                emitOptimizedMappings(child, defaultPartitionName, child.name, out);
-            }
-        } else {
-            selectAndEmitMappings(root, "", out, false);
-        }
-
         if (defaultPartitionName != null && !partitions.contains(defaultPartitionName)) {
-            PartitionTools.logPartitionerDebug(null,
-                    "warning: default partition '%s' not found in cells.txt",
-                    defaultPartitionName);
+            throw new IllegalArgumentException("Default partition is absent from cells.txt: " + defaultPartitionName);
         }
-
-        validateMappings(partToPaths, out, defaultPartitionName, "");
+        assignPartitions(root);
+        if (defaultPartitionName != null) root.assignedPartition = defaultPartitionName;
+        emitContractMappings(root, null, netlist.getTopCell().getName(), "", out, optimize);
+        MappingContract.validate(netlist, out, partitions, partToPaths);
         return out;
     }
 
@@ -170,15 +145,33 @@ public final class HierMappingWriter {
      * @param outputPath The path to the output file.
      */
     public static void writeMappingFile(List<String> lines, String outputPath) {
+        throw new IllegalArgumentException("Unchecked mapping writes are forbidden; supply the exact synthesized netlist");
+    }
+
+    /** Every emission path requires the exact source and emits ownership evidence. */
+    public static void writeMappingFile(List<String> lines, String outputPath,
+            EDIFNetlist netlist, List<String> destinations) {
+        publish(lines, Paths.get(outputPath), netlist, destinations, null);
+    }
+
+    private static void publish(List<String> lines, Path out, EDIFNetlist netlist,
+            List<String> destinations, Map<String, Set<String>> frontier) {
+        if (Files.exists(out, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            throw new IllegalArgumentException("Refusing to overwrite an existing mapping; use a fresh output directory: " + out);
+        }
+        Path staged = out.resolveSibling(out.getFileName() + ".pending");
         try {
-            Path out = Paths.get(outputPath);
-            Path parent = out.getParent();
+            Path parent = out.toAbsolutePath().getParent();
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            Files.write(out, lines, StandardCharsets.UTF_8);
-        } catch (IOException e) { // more guards the better.
-            throw new RuntimeException(e);
+            Files.write(staged, lines, StandardCharsets.UTF_8);
+            MappingContract.certify(netlist, lines, destinations, frontier, staged, parent);
+            Files.write(parent.resolve("cells.txt"), destinations, StandardCharsets.UTF_8);
+            Files.move(staged, out);
+        } catch (RuntimeException | IOException e) {
+            try { Files.deleteIfExists(staged); } catch (IOException ignored) { }
+            throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
         }
     }
 
@@ -200,19 +193,19 @@ public final class HierMappingWriter {
         // Ensure cells.txt has fpga_* names for all partitions based on indices;
         // will generate or extend labels when needed.
         // ============================================================================
-        Path cellsFile = outDir.resolve("cells.txt");
 
         int maxIdx = -1;
         for (Integer idx : partitions.keySet()) {
+            if (idx == null || idx < 0) throw new IllegalArgumentException("Invalid partition index");
             if (idx != null && idx > maxIdx) {
                 maxIdx = idx;
             }
         }
         int numParts = Math.max(0, maxIdx + 1);
+        if (partitions.size() != numParts) throw new IllegalArgumentException("Partition indices must be dense");
 
         // A reused output directory must not retain labels from an older run.
         List<String> names = CellsWriter.generateNames(numParts);
-        CellsWriter.write(outDir, names);
 
         // ============================================================================
         // STEP 2
@@ -234,109 +227,21 @@ public final class HierMappingWriter {
         // Build the trie and compute per-subtree counts, then select lines using the
         // containment + home rules.
         // ============================================================================
-        Node root = buildTrie(partToPaths);
+        Node root = buildTrie(partToPaths, netlist);
         computeCounts(root);
-        List<String> lines = new ArrayList<>();
-        if (optimize) {
-            assignPartitions(root);
-            emitOptimizedMappings(root, null, "", lines);
-        } else {
-            selectAndEmitMappings(root, "", lines, false);
-        }
+        assignPartitions(root);
 
         // ============================================================================
         // STEP 4
         // Prefix every path with the top cell name (prefer the top cell’s type name) and
         // append a single top 'home' line at the end for readability.
         // ============================================================================
-        String topName = null;
-        try {
-            EDIFHierCellInst topHierCellInst = netlist.getTopHierCellInst();
-            topName = (topHierCellInst != null) ? topHierCellInst.getCellName() : null;
-            if (topName == null || topName.isEmpty()) {
-                topName = (topHierCellInst != null) ? topHierCellInst.getInst().getName() : null;
-            }
-        } catch (Exception ignored) {
-            // ignore
-        }
-        if (topName == null || topName.isEmpty()) {
-            topName = "top";
-        }
-        List<String> prefixed = new ArrayList<>(lines.size() + 1);
-        for (String line : lines) {
-            int spaceIndex = line.indexOf(' ');
-            String path = spaceIndex >= 0 ? line.substring(0, spaceIndex) : line;
-            String destination = spaceIndex >= 0 ? line.substring(spaceIndex + 1) : "";
-            String fullSourcePath = topName + "/" + path;
-            prefixed.add(fullSourcePath + " " + destination);
-        }
-        String topHomePartition = optimize ? root.assignedPartition : chooseHomePartition(root.counts);
-        if (topHomePartition != null) {
-            prefixed.add(topName + " " + topHomePartition);
-        }
-        validateMappings(partToPaths, prefixed, null, topName);
-
-        // ============================================================================
-        // STEP 5
-        // Sort and debug print the mapping order.
-        // ============================================================================
-        int showLimit = Math.min(5, prefixed.size());
-        PartitionTools.logPartitionerDebug(null,
-                "MAPPING_ORDER_DEBUG: pre-sort -> totalLines=%d topName=%s topHome=%s",
-                prefixed.size(), topName, topHomePartition);
-        for (int i = 0; i < showLimit; i++) {
-            PartitionTools.logPartitionerDebug(null,
-                    "MAPPING_ORDER_DEBUG: pre-sort[%d] depth=%d line=%s",
-                    i, depthOfPath(prefixed.get(i)), prefixed.get(i));
-        }
-        if (prefixed.size() > 10) {
-            PartitionTools.logPartitionerDebug(null,
-                    "MAPPING_ORDER_DEBUG: pre-sort ... (middle lines omitted)");
-            for (int i = prefixed.size() - showLimit; i < prefixed.size(); i++) {
-                PartitionTools.logPartitionerDebug(null,
-                        "MAPPING_ORDER_DEBUG: pre-sort[%d] depth=%d line=%s",
-                        i, depthOfPath(prefixed.get(i)), prefixed.get(i));
-            }
-        }
-        prefixed = sortByPathDepth(prefixed);
-        PartitionTools.logPartitionerDebug(null,
-                "MAPPING_ORDER_DEBUG: post-sort -> totalLines=%d", prefixed.size());
-        for (int i = 0; i < showLimit; i++) {
-            PartitionTools.logPartitionerDebug(null,
-                    "MAPPING_ORDER_DEBUG: post-sort[%d] depth=%d line=%s",
-                    i, depthOfPath(prefixed.get(i)), prefixed.get(i));
-        }
-        if (prefixed.size() > 10) {
-            PartitionTools.logPartitionerDebug(null,
-                    "MAPPING_ORDER_DEBUG: post-sort ... (middle lines omitted)");
-            for (int i = prefixed.size() - showLimit; i < prefixed.size(); i++) {
-                PartitionTools.logPartitionerDebug(null,
-                        "MAPPING_ORDER_DEBUG: post-sort[%d] depth=%d line=%s",
-                        i, depthOfPath(prefixed.get(i)), prefixed.get(i));
-            }
-        }
-        java.util.Map<Integer, Integer> depthCounts = new java.util.HashMap<>();
-        int maxDepth = 0;
-        for (String line : prefixed) {
-            int d = depthOfPath(line);
-            depthCounts.put(d, depthCounts.getOrDefault(d, 0) + 1);
-            if (d > maxDepth) {
-                maxDepth = d;
-            }
-        }
-        PartitionTools.logPartitionerDebug(null,
-                "MAPPING_ORDER_DEBUG: depth-stats -> maxDepth=%d uniqueDepths=%d",
-                maxDepth, depthCounts.size());
-        for (int d = maxDepth; d >= 0; d--) {
-            Integer count = depthCounts.get(d);
-            if (count != null) {
-                PartitionTools.logPartitionerDebug(null,
-                        "MAPPING_ORDER_DEBUG: depth=%d count=%d", d, count);
-            }
-        }
+        String topName = netlist.getTopCell().getName();
+        List<String> prefixed = new ArrayList<>();
+        emitContractMappings(root, null, topName, "", prefixed, optimize);
 
         Path mappingFile = outDir.resolve("mapping.txt");
-        writeMappingFile(prefixed, mappingFile.toString());
+        publish(prefixed, mappingFile, netlist, names, partToPaths);
     }
 
     /**
@@ -355,27 +260,11 @@ public final class HierMappingWriter {
                 EDIFHierCellInst instance = path.isEmpty() ? netlist.getTopHierCellInst()
                         : netlist.getHierCellInstFromName(path);
                 if (instance == null) throw new IllegalArgumentException("Unknown mapping frontier path " + path);
-                if (hasNonconstantLeaf(instance.getCellType(), nonconstant)) paths.add(path);
+                if (MappingContract.hasFunctionalLeaf(instance.getCellType(), nonconstant)) paths.add(path);
             }
             result.put(entry.getKey(), paths);
         }
         return result;
-    }
-
-    private static boolean hasNonconstantLeaf(EDIFCell cell, Map<EDIFCell, Boolean> cache) {
-        Boolean old = cache.get(cell);
-        if (old != null) return old;
-        boolean value;
-        if (cell.isLeafCellOrBlackBox()) {
-            value = !(cell.isPrimitive() && ("GND".equals(cell.getName()) || "VCC".equals(cell.getName())));
-        } else {
-            value = false;
-            for (EDIFCellInst child : cell.getCellInsts()) {
-                if (hasNonconstantLeaf(child.getCellType(), cache)) { value = true; break; }
-            }
-        }
-        cache.put(cell, value);
-        return value;
     }
 
     /**
@@ -385,28 +274,27 @@ public final class HierMappingWriter {
      *             [defaultPartitionName].
      */
     public static void main(String[] args) {
-        if (args.length < 3 || args.length > 5) {
-            PartitionTools.logPartitionerDebug(null,
-                    "usage: <partitionDir> <cells.txt> <output_mapping.txt> " +
-                            "[defaultPartitionName] [--optimized]");
-            return;
-        }
+        if (args.length < 5) throw new IllegalArgumentException(
+                "usage: partitionDir cells.txt output_mapping.txt [defaultPartitionName] [--optimized] --netlist source.edf");
         String partitionDir = args[0];
         String cellsFile = args[1];
         String outputFile = args[2];
-        String defaultPartitionName = (args.length >= 4 && !args[3].startsWith("--")) ? args[3] : null;
+        String defaultPartitionName = null;
+        Path source = null;
         boolean optimize = false;
-        for (String arg : args) {
-            if ("--optimized".equals(arg)) {
-                optimize = true;
-            }
+        for (int i = 3; i < args.length; i++) {
+            if ("--optimized".equals(args[i])) optimize = true;
+            else if ("--netlist".equals(args[i]) && i + 1 < args.length) source = Paths.get(args[++i]);
+            else if (defaultPartitionName == null && !args[i].startsWith("--")) defaultPartitionName = args[i];
+            else throw new IllegalArgumentException("Unknown mapping argument: " + args[i]);
         }
-
+        if (source == null) throw new IllegalArgumentException("Exact synthesized EDIF --netlist is required");
+        EDIFNetlist netlist = com.xilinx.rapidwright.edif.EDIFTools.readEdifFile(source);
         List<String> mapping = buildMappingFromPartitionFiles(partitionDir,
                 cellsFile,
                 defaultPartitionName,
-                optimize);
-        writeMappingFile(mapping, outputFile);
+                optimize, netlist);
+        writeMappingFile(mapping, outputFile, netlist, readPartitionNames(Paths.get(cellsFile)));
     }
 
     /**
@@ -425,9 +313,13 @@ public final class HierMappingWriter {
                 if (trimmed.isEmpty()) {
                     continue;
                 }
+                if (!trimmed.matches("FPGA_[A-Za-z0-9_]+") || partitions.contains(trimmed)) {
+                    throw new IllegalArgumentException("Invalid or duplicate cells.txt destination: " + trimmed);
+                }
                 partitions.add(trimmed);
             }
         }
+        if (partitions.isEmpty()) throw new IllegalArgumentException("Empty or missing cells.txt");
         return partitions;
     }
 
@@ -482,9 +374,7 @@ public final class HierMappingWriter {
             }
 
             if (!readOk) {
-                PartitionTools.logPartitionerDebug(null,
-                        "info: no file found for partition '%s' in dir %s",
-                        p, partitionDir);
+                throw new IllegalArgumentException("Missing partition file for " + p);
             }
 
             partToPaths.put(p, paths);
@@ -555,66 +445,34 @@ public final class HierMappingWriter {
         return trimmed;
     }
 
-    /**
-     * Builds a trie over all instance paths for all partitions.
-     *
-     * @param partToPaths A map of partition names to sets of instance paths.
-     * @return The root node of the trie.
-     */
-    private static Node buildTrie(Map<String, Set<String>> partToPaths) {
+    /** Build only genuine EDIF ancestors, never prefixes invented by splitting '/' names. */
+    private static Node buildTrie(Map<String, Set<String>> partToPaths, EDIFNetlist netlist) {
         Node root = new Node();
         root.name = "";
-
         for (Map.Entry<String, Set<String>> entry : partToPaths.entrySet()) {
-            String partition = entry.getKey();
             for (String path : entry.getValue()) {
-                addPath(root, path, partition);
+                EDIFHierCellInst instance = netlist.getHierCellInstFromName(path);
+                if (instance == null || !instance.getFullHierarchicalInstName().equals(path)) {
+                    throw new IllegalArgumentException("Unknown exact synthesized frontier path: " + path);
+                }
+                List<EDIFHierCellInst> chain = new ArrayList<>();
+                for (EDIFHierCellInst part = instance; !part.isTopLevelInst(); part = part.getParent()) chain.add(part);
+                Collections.reverse(chain);
+                Node cursor = root;
+                for (EDIFHierCellInst part : chain) {
+                    if (!cursor.leafCounts.isEmpty()) throw new IllegalArgumentException("Overlapping frontier: " + path);
+                    String name = part.getInst().getName();
+                    Node child = cursor.children.get(name);
+                    if (child == null) { child = new Node(); child.name = name; cursor.children.put(name, child); }
+                    cursor = child;
+                }
+                if (!cursor.children.isEmpty() || !cursor.leafCounts.isEmpty()) {
+                    throw new IllegalArgumentException("Duplicate or overlapping frontier: " + path);
+                }
+                cursor.leafCounts.put(entry.getKey(), 1);
             }
         }
         return root;
-    }
-
-    /**
-     * Inserts an instance path into the trie and records a leaf contribution at the terminal
-     * node for the given partition.
-     *
-     * @param root The root node of the trie.
-     * @param fullPath The full instance path.
-     * @param partition The partition name.
-     */
-    private static void addPath(Node root, String fullPath, String partition) {
-        List<String> segs = splitPath(fullPath);
-        Node cur = root;
-        for (String seg : segs) {
-            if (!cur.leafCounts.isEmpty()) {
-                throw new IllegalArgumentException("Overlapping partition frontier at " + fullPath);
-            }
-            Node nxt = cur.children.get(seg);
-            if (nxt == null) {
-                nxt = new Node();
-                nxt.name = seg;
-                cur.children.put(seg, nxt);
-            }
-            cur = nxt;
-        }
-        if (!cur.children.isEmpty() || !cur.leafCounts.isEmpty()) {
-            throw new IllegalArgumentException("Duplicate or overlapping partition frontier at " + fullPath);
-        }
-        cur.leafCounts.put(partition, cur.leafCounts.getOrDefault(partition, 0) + 1);
-    }
-
-    /**
-     * Splits a hierarchical path on '/' while leaving each segment intact.
-     *
-     * @param path The path to split.
-     * @return A list of path segments.
-     */
-    private static List<String> splitPath(String path) {
-        if (path == null || path.isEmpty()) {
-            return Collections.emptyList();
-        }
-        String[] parts = path.split("/");
-        return Arrays.asList(parts);
     }
 
     /**
@@ -661,79 +519,8 @@ public final class HierMappingWriter {
     }
 
     /**
-     * Subtracts entries of mapB from mapA on a copy and prunes non-positive results.
-     *
-     * Useful to compute leftovers after child prints.
-     *
-     * @param mapA The map to subtract from.
-     * @param mapB The map to subtract.
-     * @return A new map containing the result.
-     */
-    private static Map<String, Integer> subtractCounts(Map<String, Integer> mapA
-            , Map<String, Integer> mapB) {
-        Map<String, Integer> out = new LinkedHashMap<>();
-        for (Map.Entry<String, Integer> entry : mapA.entrySet()) {
-            out.put(entry.getKey(), entry.getValue());
-        }
-        for (Map.Entry<String, Integer> entry : mapB.entrySet()) {
-            out.put(entry.getKey(), out.getOrDefault(entry.getKey(), 0) - entry.getValue());
-        }
-        pruneNonPositive(out);
-        return out;
-    }
-
-    /**
-     * Removes entries from a counts map where the value is null, zero, or negative.
-     *
-     * @param map The map to prune.
-     */
-    private static void pruneNonPositive(Map<String, Integer> map) {
-        List<String> toRemove = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : map.entrySet()) {
-            if (entry.getValue() == null || entry.getValue() <= 0) {
-                toRemove.add(entry.getKey());
-            }
-        }
-        for (String key : toRemove) {
-            map.remove(key);
-        }
-    }
-
-    /**
-     * Returns true if the counts map has exactly one partition present (wholly contained).
-     *
-     * @param counts The counts map.
-     * @return True if wholly contained, false otherwise.
-     */
-    private static boolean isWhollyContained(Map<String, Integer> counts) {
-        if (counts.isEmpty()) {
-            return false;
-        }
-        return counts.size() == 1;
-    }
-
-    /**
-     * Returns the sole partition label if counts are wholly contained; otherwise null.
-     *
-     * @param counts The counts map.
-     * @return The partition label, or null.
-     */
-    private static String singlePartition(Map<String, Integer> counts) {
-        if (!isWhollyContained(counts)) {
-            return null;
-        }
-        for (String key : counts.keySet()) {
-            return key;
-        }
-        return null;
-    }
-
-    /**
      * Picks the “home” partition for a node using
      * the largest count (ties broken lexicographically).
-     *
-     * TODO : May need revision based on requested changes to regroupinstances / mapping.txt
-     * needing to change based on that. this part is likely to change...
      *
      * @param counts The counts map.
      * @return The home partition label, or null.
@@ -753,89 +540,6 @@ public final class HierMappingWriter {
             }
         }
         return best;
-    }
-
-    /**
-     * Selects mapping lines by walking the trie and emits them into 'out'.
-     *
-     * @param node The current trie node.
-     * @param prefixPath The path prefix for this node.
-     * @param out The list to collect mapping lines.
-     * @param inSplit Whether we are currently in a split node.
-     * @return A map of relocated counts.
-     */
-    private static Map<String, Integer> selectAndEmitMappings(Node node
-            , String prefixPath
-            , List<String> out
-            , boolean inSplit) {
-        String currentPath = prefixPath;
-        if (node.name != null && !node.name.isEmpty()) {
-            if (currentPath.isEmpty()) {
-                currentPath = node.name;
-            } else {
-                currentPath = currentPath + "/" + node.name;
-            }
-        }
-
-        if (isWhollyContained(node.counts) && !currentPath.isEmpty()) {
-            String p = singlePartition(node.counts);
-            out.add(currentPath + " " + p);
-            return new LinkedHashMap<>(node.counts);
-        }
-
-        Map<String, Integer> relocatedFromChildren = new LinkedHashMap<>();
-        for (Node child : node.children.values()) {
-            Map<String, Integer> childRelocatedCounts = selectAndEmitMappings(child
-                    , currentPath
-                    , out
-                    , true);
-            mergeCounts(relocatedFromChildren, childRelocatedCounts);
-        }
-
-        Map<String, Integer> leftover = subtractCounts(node.counts, relocatedFromChildren);
-
-        if (!currentPath.isEmpty()) {
-            String home = chooseHomePartition(node.counts);
-            if (home != null && !leftover.isEmpty()) {
-                out.add(currentPath + " " + home);
-                return new LinkedHashMap<>(node.counts);
-            }
-        }
-
-        return relocatedFromChildren;
-    }
-
-    /** Verifies compression preserves every partitioned frontier assignment. */
-    private static void validateMappings(Map<String, Set<String>> partToPaths,
-            List<String> lines, String defaultPartition, String topName) {
-        Map<String, String> rules = new java.util.HashMap<>();
-        for (String line : lines) {
-            int space = line.lastIndexOf(' ');
-            if (space < 1) throw new IllegalArgumentException("Invalid mapping line: " + line);
-            String old = rules.put(line.substring(0, space), line.substring(space + 1));
-            if (old != null && !old.equals(line.substring(space + 1))) {
-                throw new IllegalArgumentException("Conflicting mapping rules: " + line);
-            }
-        }
-        for (Map.Entry<String, Set<String>> entry : partToPaths.entrySet()) {
-            for (String relative : entry.getValue()) {
-                String path = topName.isEmpty() ? relative : topName + (relative.isEmpty() ? "" : "/" + relative);
-                String candidate = path;
-                String resolved = null;
-                while (true) {
-                    resolved = rules.get(candidate);
-                    if (resolved != null) break;
-                    int slash = candidate.lastIndexOf('/');
-                    if (slash < 0) break;
-                    candidate = candidate.substring(0, slash);
-                }
-                if (resolved == null) resolved = defaultPartition;
-                if (!entry.getKey().equals(resolved)) {
-                    throw new IllegalStateException("Mapping compression changed " + path + " from "
-                            + entry.getKey() + " to " + resolved);
-                }
-            }
-        }
     }
 
     /**

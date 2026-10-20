@@ -190,7 +190,8 @@ class RecordedNativeAcceptance(unittest.TestCase):
                 elif FRONTEND.MAIN + "Partitioner" in command:
                     candidate = Path(command[command.index("--part_dir") + 1])
                     for name in ("mapping.txt", "hardware_quality.txt", "frontier.tsv", "final_assignment.part",
-                                 "lut_report.txt", "logical_resources.tsv", "primitive_counts.tsv", "run_provenance.json"):
+                                 "lut_report.txt", "logical_resources.tsv", "primitive_counts.tsv", "run_provenance.json",
+                                 *FRONTEND.mapping_contract_module().REQUIRED_ARTIFACTS):
                         if (fixture / name).exists():
                             shutil.copy2(fixture / name, candidate / name)
                 elif any(value.endswith("prepare_native_resource_cells.py") for value in command):

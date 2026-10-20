@@ -185,7 +185,7 @@ public class Partitioner {
         System.out.println("  --timing_paths FILE         Source-bound sampled Vivado STA paths for timing guidance");
         System.out.println("  --timing_weight W           Timing guidance weight (default 8; zero disables)");
         System.out.println("  --extra_delay_ns D          Explicit modeled transport delay per FPGA crossing");
-        System.out.println("  --verbose_mapping          Emit individual frontier rules (default: compact hierarchy)");
+        System.out.println("  --verbose_mapping          Emit legal frontier exceptions (default: compact hierarchy); contract always enforced");
         System.out.println("  --logical_epsilon E         Separate raw LUT imbalance when scalar weights are calibrated");
         System.out.println("  --snake_weight W            Excess crossing/reentry penalty (default 8)");
         System.out.println("  --cut_budget E              Allowed transfer growth fraction (default 0.10)");
@@ -939,7 +939,15 @@ public class Partitioner {
                 }
             }
             FpgaIoCutAnalyzer.writeReport(outDir,
-                    FpgaIoCutAnalyzer.analyze(netlist, leafInsts, nameToPartMap, topIoPartition));
+                    FpgaIoCutAnalyzer.analyze(netlist, leafInsts, nameToPartMap, topIoPartition,
+                            outDir.resolve("mapping_connections.tsv.gz")));
+            org.json.JSONObject mappingContract = new org.json.JSONObject(new String(
+                    Files.readAllBytes(outDir.resolve("mapping_contract.json")), java.nio.charset.StandardCharsets.UTF_8));
+            mappingContract.put("input_sha256", loadedInputHash);
+            mappingContract.put("connections_manifest_sha256", sha256(outDir.resolve("mapping_connections.tsv.gz")));
+            mappingContract.put("connections_receipt_sha256", sha256(outDir.resolve("mapping_connections_manifest.json")));
+            Files.write(outDir.resolve("mapping_contract.json"),
+                    java.util.Collections.singletonList(mappingContract.toString(2)));
             PartitionPairCounter.writePairCountsToFile(outDir.resolve("io_cuts.txt"),
                     PartitionPairCounter.countPartitionPairs(hMetisFile, instLookup, nameToPartMap));
             Files.write(outDir.resolve("metric_definitions.txt"), java.util.Arrays.asList(
@@ -968,6 +976,7 @@ public class Partitioner {
             provenance.put("input_sha256", loadedInputHash);
             provenance.put("hypergraph_sha256", sha256(hMetisFile));
             provenance.put("mapping_sha256", sha256(outDir.resolve("mapping.txt")));
+            provenance.put("mapping_contract_sha256", sha256(outDir.resolve("mapping_contract.json")));
             provenance.put("partitions", k);
             org.json.JSONObject usefulLogicByPartition = new org.json.JSONObject();
             for (int p = 0; p < k; p++) {
