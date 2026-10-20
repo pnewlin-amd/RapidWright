@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+  "font": {
+    "filename": "TitilliumWeb-Regular.ttf",
+    "sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+    "family": "Titillium Web"
+  },
+  "png_palette": [
+    "#F26522",
+    "#C4470C",
+    "#000000"
+  ],
+  "source_files_sha256": {
+    "vivado_resources.tsv": "7facb92771411619deb391eb554418ed9a3a9f81f158e8abebf852626d2e5375",
+    "lut_report.txt": "1a398ab97bf3819c9de2d53c2a5196b66cab10bebc1faee4b5fe07485d7453ae",
+    "fpga_control_categories.tsv": "484c24ab5d464ce940d64b07fc03bdd8060b1cdd96702b83d205978fccd68b08",
+    "hardware_quality.txt": "2a6075ef8dec9031d117a4c98a39619bb1f1d1662cf95a2b5d2a6712284165bd",
+    "run_provenance.json": "d4698f43ae33b280f45212be4cf25508021a9d3991019e4a52fb7d3f10250442",
+    "target_capacity.json": "b208ab5f1b8ef313f8f1fa2bb8a14bf67443b4926153c2b2511686c382438c87",
+    "native_lut_caps.tsv": "a163e0326abd57fe3f3d39287df58798d60ce55c48ce3b02f1f23050421ed1c6",
+    "cells.txt": "5cfe9781ac2b8c95a631ae49d33f3f6fdbc8c06b4040df71d9a995710da55a3b",
+    "topology_manifest.json": "3e1a64ae85d44a24bdacdc9c4f5cf37c3e140c6496e6110210ee78f73af50d7d"
+  },
+  "files_sha256": {
+    "lut_balance.png": "2bb252f2a2db73d5b7b848129710598e9c8a57d80692936021836193cdbd152c",
+    "io_cut_balance.png": "f02c908db4943d2833db5a7a403e1c25c7cb0ec68cce161f47a2e3c992c595f4",
+    "fpga_connectivity.png": "dcecb26844735679586281debe36263e4a64d07416f9529bbd291992837f6ee8",
+    "report.html": "69ec80afd6e563580b9f6ca3e4d0f19ecf3ca069d60e559cca5d36ecd2888dc7",
+    "report_data.json": "c75b5be7d098a09ff31a11352ee1adb0541fab949c2990cb8f4a097ebc566645"
+  },
+  "historical_evidence": {
+    "status": "HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE",
+    "fresh_native_measurement": false,
+    "historical_mapping_sha256": "206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6",
+    "successor_mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+    "functional_leaves_compared": 517282,
+    "ownership_mismatches": 0,
+    "top_port_owner_unchanged": true,
+    "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+    "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+    "proof_files_sha256": {
+      "prior_native_evidence.json": "5fa9f67a1b462cb647315462f88d268503872b4fd96ef8b0c4953def91d154cf",
+      "reencoding_equivalence.json": "e759862033184df9374c640293d0ffb88cef6cdf28937da81b27677511a3b8b4",
+      "mapping_contract.json": "bc2233d953c0a98aafefae613baa9a701b9654740e66da9ee3dc773dd87ef27b",
+      "mapping_records.tsv": "94e5de4c27dc07d4279de49e1f6a468170bdce327feade7f5f8201388b4fc88d",
+      "mapping_ownership.tsv.gz": "f1a5e475fe221f9c7fc9dd81c4a30731cf4cab08a3ba4da3c46d07be2949691c"
+    },
+    "historical_artifact_sha256": {
+      "cells.txt": "5cfe9781ac2b8c95a631ae49d33f3f6fdbc8c06b4040df71d9a995710da55a3b",
+      "endpoint_kind_diagnostic.tsv": "2594e75c18d8ee32ba9c60001720c4eb42da44f0c5527f46e90be6f0ae70c869",
+      "final_assignment.part": "7b7cab5975c79e69fdf09aae212bbcbeef4d42dfd4bcf07d8ef14be3a4c59df2",
+      "fpga_control_categories.tsv": "484c24ab5d464ce940d64b07fc03bdd8060b1cdd96702b83d205978fccd68b08",
+      "fpga_devices.tsv": "6c7187bec6802b2f569f8cf274073a1720353c74c8b176c7e72ae2159b9e5183",
+      "fpga_io_cuts.txt": "a5c8dd121b23df562ef41f6567d9fbe2bda7f2ae5a4cdb1ac03595f765f3b49a",
+      "fpga_net_crossings.tsv": "600a69481278529b7e6b4bd6d21de5e22e7e6c3020885588b434c907ca304f76",
+      "hardware_quality.txt": "2a6075ef8dec9031d117a4c98a39619bb1f1d1662cf95a2b5d2a6712284165bd",
+      "identity.json": "dbd24805400bf5e3666dbc48deefe048fa9a1415132d8525858e89d2894a1043",
+      "io_cuts.txt": "a64e1af04f8998155a82af9c99216d948d4b52c80dc59d1b6cf87792ca1180b7",
+      "logical_lut_report.txt": "af6604f9bb89ffd5c77737f275946432d20e3b8c3935affe7d2c4e969f8c3d71",
+      "logical_resources.tsv": "5dcddecf5b5cb95d977f02f6d9ab82816ba9b2ca65853a0fefa7ec685df71d0a",
+      "lut_report.txt": "1a398ab97bf3819c9de2d53c2a5196b66cab10bebc1faee4b5fe07485d7453ae",
+      "mapping.txt": "206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6",
+      "metric_definitions.txt": "28c1e87b6c622b819cb9908f3ad9f58277331314f7be645e2b80c10d99238ba8",
+      "native_candidates.tsv": "52d14709eb7c1507d1b5945c6cd289efee7605f3d535ce110c42e8d5a14b05ee",
+      "native_complete.txt": "ee1b9e8b04f1d910382cf7f90ed7c2285e9de4475d00024a35540f3a3ad75f47",
+      "native_lut_caps.tsv": "a163e0326abd57fe3f3d39287df58798d60ce55c48ce3b02f1f23050421ed1c6",
+      "parity_audit_final/00_complete_cut_category_parity.json": "8372e0b7ffd5b5a42904cdcefa93681fe13f8b78d81c37a36e6f3ebacb26f01d",
+      "parity_audit_final/01_comparison_receipt.json": "900d6eb9e55b048b02e1b3647031a2c9020a8364cc923881c016503fdcddb5e9",
+      "parity_audit_final/02_root_compare_k3_v5a.json": "a1e235e5f5bd76e3bc95cf595ceb81d60560e0d4a45401da5d59afd573db71eb",
+      "parity_audit_final/03_metadata_receipt.json": "da3a54f37cd8e4a7b136e345c21f368cf4fa19f3ff53cc0a20309934048f98a2",
+      "parity_audit_final/04_comparison_inputs.json": "c2eb4eb020812eb41d1082d29aa44a4dd6979069f5a30160779521e062a9a408",
+      "parity_audit_final/05_owned_process_receipt.json": "c35b0e1ef9c9a60f8073320fb0094b5bf91cf40c4bfbb1b683a6ed5680d16b66",
+      "parity_audit_final/compact_mapping_audit.json": "e1e49e2ccf23de3924c1197720f37c1843b7d2c02c10b468546759054baa480c",
+      "parity_audit_final/identity_receipt.json": "18b912d7f0ca89b73d274454753d30bbe544c418ddeced6b8bf089a5ad5541f0",
+      "primitive_counts.tsv": "034ee8a3e347d134357be6897115efd530da6a9ebfd7e75ff4eec5856390f787",
+      "QUALIFICATION.json": "134b3938ed1c07816eb560f39adf61de6ad46a07bd379a8d580d7afe24dd7e2f",
+      "refinement_passes.tsv": "68418d9329c7f546ea2809a1b9a3a8714f7f03cfa48da846c386884f558de99f",
+      "run_provenance.json": "d4698f43ae33b280f45212be4cf25508021a9d3991019e4a52fb7d3f10250442",
+      "source_mapping.txt": "206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6",
+      "STATUS.json": "80d8a059f4e719788e8c3ae045165b05cce92833449809c3023374786e900eaa",
+      "swap_refinement_passes.tsv": "6acc0a2098f52118afdedd88e63a4ebeadd873cf289ac7cd0bb5e3d84892d60e",
+      "target_capacity.json": "b208ab5f1b8ef313f8f1fa2bb8a14bf67443b4926153c2b2511686c382438c87",
+      "target_capacity_dependency_manifest.json": "18a3ac71857350176b8d15449e6cf21f106a9c902bd439a5a7d9d722c218d2c3",
+      "topology_manifest.json": "3e1a64ae85d44a24bdacdc9c4f5cf37c3e140c6496e6110210ee78f73af50d7d",
+      "vivado_resource_summary.txt": "64820ae08ae72023f6aaba94c6bc32706ae6099d806b9d3314985cbc6bfb9267",
+      "vivado_resources.tsv": "7facb92771411619deb391eb554418ed9a3a9f81f158e8abebf852626d2e5375",
+      "worst_combinational_path.tsv": "46bdf514d51437227f5dd048998c51659806780749ab12e48f65ed4cede148fc"
+    },
+    "historical_metrics_directory": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RESULTS FOR J4\\AES_FARM\\3 FPGAS",
+    "scope": "Historical source-netlist resource and connectivity measurements preserved by checked exact functional ownership and top-port owner equivalence; no new Vivado, regroup, wrapper or hardware validation"
+  }
+}

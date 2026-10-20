@@ -1,0 +1,23 @@
+{
+  "record_count": 1,
+  "descendants_before_ancestors": true,
+  "residual_root_explicit": true,
+  "cells_agreement": true,
+  "local_constant_leaf_count": 36939,
+  "downstream_regroup_verified": false,
+  "source_paths_exact": true,
+  "nearest_ancestor_redundancy_absent": true,
+  "functional_leaf_count": 11179638,
+  "empty_hierarchy_count": 0,
+  "schema_version": 1,
+  "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+  "records_manifest_sha256": "6b57bfbb3e84bd77048695a383a120915603dbe7fc93a549956eb4655d1c9328",
+  "functional_leaves_by_destination": {"FPGA_A": 11179638},
+  "mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+  "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+  "ownership_manifest_sha256": "a69cb5215175ecf8ea0e4694746546b9639bd5f3140f6a568f30ba0b7a3d2622",
+  "input_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+  "frontier_ownership_compared": true,
+  "root_instance": "picorv32_mesh_top",
+  "status": "PASS"
+}

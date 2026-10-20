@@ -1,0 +1,2250 @@
+{
+  "schema_version": 1,
+  "scope": "Paper/figure presentation extract only; no new partitioning, synthesis, timing, Native or hardware execution. Corrected mapping hashes identify representation repairs with zero ownership changes; Native measurements retain historical scope.",
+  "sources": {
+    "selected_case_snapshot": {
+      "path": "RapidWright/doc/partition/evidence/validation_evidence.json",
+      "sha256": "db580fd1d9c6f8413795fd64b2cefe46b40049beca6d9c06724b67f4bcbd9190"
+    },
+    "mapping_contract_snapshot": {
+      "path": "RapidWright/doc/partition/evidence/mapping_contract_validation.json",
+      "sha256": "e8edc8696a20d2cf8dbb05ea77847faf234e0d9a8727dfff50bc4990008bec5c"
+    },
+    "opentitan_final_summary": {
+      "path": "work/opentitan_j4_70pct_20261015/FINAL_EXPERIMENT_SUMMARY.json",
+      "sha256": "a48067c65b3369790d6c61dde05a43f2931b0c2508291421712b8a04c1f9fcd9"
+    },
+    "opentitan_iteration_csv": {
+      "path": "work/opentitan_j4_70pct_20261015/iteration_progress.csv",
+      "sha256": "a1864fdd697dd0910fbec3130027475521d4c67e0f17458f1ddf0a8a0b23d809"
+    }
+  },
+  "generator": {
+    "path": "doc/partition/evidence/build_presentation_evidence.py",
+    "sha256": "e33447e604509723ae530cdf29ac1a9057a073655e63640f959dc00373ff1f0c"
+  },
+  "metric_definitions": {
+    "worst_uncaptured_crossings": "Maximum FPGA-boundary changes before a register capture or modeled terminal; lower is better.",
+    "worst_minimum_physical_link_hops": "Maximum sum of declared minimum link counts along a modeled uncaptured path; a routing lower bound, not a chosen route.",
+    "extra_crossings_at_endpoints": "Sum over capture/terminal endpoints of max(0, that endpoint's worst incoming crossing count minus one); not a count of all paths.",
+    "combinational_transit_cells": "Combinational primitives reachable from a cut ingress and able to reach a cut egress within their FPGA without capture; not a path count.",
+    "optimization_transfers": "Optimizer's directed structural net-to-FPGA-destination count; narrower than full Native electrical boundary scope and not physical pins.",
+    "native_lut_imbalance_fraction": "Maximum original-source Native CLB LUT subset use divided by mean use minus one, for these equal VP1902 targets.",
+    "missing_values": "null means not measured or unavailable, never zero; rejected attempts retain their status."
+  },
+  "selected_j4_cases": [
+    {
+      "case": "OPENTITAN_EARL_GREY_k1",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 1,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 230543
+      },
+      "native_lut_imbalance_fraction": 0.0,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 0,
+        "worst_uncaptured_crossings": 0,
+        "extra_crossings_at_endpoints": 0,
+        "combinational_transit_cells": 0,
+        "optimization_transfers": 0,
+        "native_lut_imbalance_fraction": 0.0
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "dabf40d0fdfd0399c8f8d436e08bcc74f751df999ff4970ed3b55f455a2f1205"
+      },
+      "historical_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "corrected_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k2",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 2,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 116486,
+        "FPGA_B": 114070
+      },
+      "native_lut_imbalance_fraction": 0.01047901594406575,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 7950,
+        "combinational_transit_cells": 1119,
+        "optimization_transfers": 1869,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.01047901594406575
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 1989,
+        "directed_net_destinations": 1989,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 3,
+          "data_or_functional_sync_control": 1985
+        },
+        "raw_report_sha256": "aac62f62cc3f93f94dc2d5478700e8c63e10c6564832a5aed76fe859e06f1118"
+      },
+      "historical_mapping_sha256": "e936356c04c73c0d99bd11538e731007aa2ba28da84ccd12c47d49a608cee04a",
+      "corrected_mapping_sha256": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k3",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 3,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 98750,
+        "FPGA_B": 61885,
+        "FPGA_C": 70025
+      },
+      "native_lut_imbalance_fraction": 0.28435792941992544,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 36693,
+        "combinational_transit_cells": 2966,
+        "optimization_transfers": 3258,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.28435792941992544
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 3187,
+        "directed_net_destinations": 3277,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 14,
+          "data_or_functional_sync_control": 3261
+        },
+        "raw_report_sha256": "4ca16e954f2cbb38309e9d71828885bf2ff740b10fa4e8e6e977ed9991c9a24d"
+      },
+      "historical_mapping_sha256": "fa6fa3113fa99a3905c8ae3c6ee9ac1c427d3da5a4afaf52a6a73a479969ea92",
+      "corrected_mapping_sha256": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k4",
+      "design": "OPENTITAN_EARL_GREY",
+      "fpga_count": 4,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 48375,
+        "FPGA_B": 64288,
+        "FPGA_C": 59861,
+        "FPGA_D": 58040
+      },
+      "native_lut_imbalance_fraction": 0.11531722211620199,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216,
+        "FPGA_D": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 27667,
+        "combinational_transit_cells": 6002,
+        "optimization_transfers": 3529,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.11531722211620199
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 3352,
+        "directed_net_destinations": 3676,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 25,
+          "data_or_functional_sync_control": 3648
+        },
+        "raw_report_sha256": "c6b53be48ef62dcef7c6054443e3293f67e676379624bd19718edc39305e44e5"
+      },
+      "historical_mapping_sha256": "574a96b4079dce7d6c9ebb9a7908d3d3cfb835fba616a6e27c4320a807d6def9",
+      "corrected_mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+      "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 427171,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "NVDLA_k1",
+      "design": "NVDLA",
+      "fpga_count": 1,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 1703727
+      },
+      "native_lut_imbalance_fraction": 0.0,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 0,
+        "worst_uncaptured_crossings": 0,
+        "extra_crossings_at_endpoints": 0,
+        "combinational_transit_cells": 0,
+        "optimization_transfers": 0,
+        "native_lut_imbalance_fraction": 0.0
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+      "corrected_mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "NVDLA_k2",
+      "design": "NVDLA",
+      "fpga_count": 2,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 917761,
+        "FPGA_B": 785966
+      },
+      "native_lut_imbalance_fraction": 0.07735687701139904,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 1886,
+        "combinational_transit_cells": 1972,
+        "optimization_transfers": 3236,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.07735687701139904
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 3239,
+        "directed_net_destinations": 3239,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 2,
+          "data_or_functional_sync_control": 3236
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_mapping_sha256": "b9f20eccfbc28683314417a1d32fa0ff40928480a7553d2214cec28c4ad99e11",
+      "corrected_mapping_sha256": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "NVDLA_k3",
+      "design": "NVDLA",
+      "fpga_count": 3,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 511063,
+        "FPGA_B": 641556,
+        "FPGA_C": 551108
+      },
+      "native_lut_imbalance_fraction": 0.12968098762301716,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 37521,
+        "combinational_transit_cells": 3717,
+        "optimization_transfers": 6026,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.12968098762301716
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 6230,
+        "directed_net_destinations": 6234,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 4,
+          "data_or_functional_sync_control": 6228
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_mapping_sha256": "8466751633f900eb0f46491878d1f0294afa5e9eae002b9b8f2ac84840d9a5c1",
+      "corrected_mapping_sha256": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "NVDLA_k4",
+      "design": "NVDLA",
+      "fpga_count": 4,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 299097,
+        "FPGA_B": 490065,
+        "FPGA_C": 367183,
+        "FPGA_D": 547391
+      },
+      "native_lut_imbalance_fraction": 0.2851545075058577,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216,
+        "FPGA_D": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 733,
+        "combinational_transit_cells": 230,
+        "optimization_transfers": 8110,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.2851545075058577
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 8313,
+        "directed_net_destinations": 8320,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 5,
+          "data_or_functional_sync_control": 8312
+        },
+        "raw_report_sha256": "781ed9b1ac4aa4333e89852b4a137b40ef719c1bf42419bf4d9687548e1882e7"
+      },
+      "historical_mapping_sha256": "51de3c6b16c4f06c102b42c7a59262ec7f1e69ed56504ee9b13bc352905e0383",
+      "corrected_mapping_sha256": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+      "source_edif_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+      "source_checkpoint_sha256": "57ca6f144aa79af63daf8745d7b0e6020803feaed7062e61306859983565b454",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 2864063,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "RISCV_MESH_3072_k1",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 1,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 6314270
+      },
+      "native_lut_imbalance_fraction": 0.0,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 0,
+        "worst_uncaptured_crossings": 0,
+        "extra_crossings_at_endpoints": 0,
+        "combinational_transit_cells": 0,
+        "optimization_transfers": 0,
+        "native_lut_imbalance_fraction": 0.0
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+      "corrected_mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "RISCV_MESH_3072_k2",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 2,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 3156885,
+        "FPGA_B": 3157385
+      },
+      "native_lut_imbalance_fraction": 7.918571743048552e-05,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 1,
+        "worst_uncaptured_crossings": 1,
+        "extra_crossings_at_endpoints": 0,
+        "combinational_transit_cells": 0,
+        "optimization_transfers": 3663,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 7.918571743048552e-05
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 3715,
+        "directed_net_destinations": 3715,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 7,
+          "data_or_functional_sync_control": 3707
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_mapping_sha256": "6712b6b70b31e1726d633499171b94f048e0f4ed906229bb556bcce011b95470",
+      "corrected_mapping_sha256": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "RISCV_MESH_3072_k3",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 3,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 2631240,
+        "FPGA_B": 1578448,
+        "FPGA_C": 2104582
+      },
+      "native_lut_imbalance_fraction": 0.25013976279126493,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 32,
+        "combinational_transit_cells": 720,
+        "optimization_transfers": 6452,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.25013976279126493
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 6504,
+        "directed_net_destinations": 6549,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 10,
+          "data_or_functional_sync_control": 6537
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_mapping_sha256": "93fce6c9f77e7e39199a8a74b40d98132d9299545ac29f6be7c6149eda4dcb45",
+      "corrected_mapping_sha256": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "RISCV_MESH_3072_k4",
+      "design": "RISCV_MESH_3072",
+      "fpga_count": 4,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 1578440,
+        "FPGA_B": 1578950,
+        "FPGA_C": 1578441,
+        "FPGA_D": 1578439
+      },
+      "native_lut_imbalance_fraction": 0.00024230829533733456,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216,
+        "FPGA_B": 6345216,
+        "FPGA_C": 6345216,
+        "FPGA_D": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 32,
+        "combinational_transit_cells": 1440,
+        "optimization_transfers": 7131,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.00024230829533733456
+      },
+      "historical_boundary_proof": {
+        "kind": "joint_boundary_v2",
+        "full_native_census": false,
+        "coverage": "mapping_bound_crossing_incidence_all_logical_owners_and_top_ports",
+        "logical_cut_nets": 7178,
+        "directed_net_destinations": 7268,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 8,
+          "data_or_functional_sync_control": 7257
+        },
+        "raw_report_sha256": "593b40915c6dbae5997e0412f79b5d9231a1ebc45a1229f91a9ae79f178bd785"
+      },
+      "historical_mapping_sha256": "e200219ac0ef2c9ad7eb4f8712ffca177a090d7e7e168d1e162eec9d1476c37f",
+      "corrected_mapping_sha256": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+      "source_edif_sha256": "3a00511672cb0d14f0d48a2998c81825eda8ae8870c5a097695a9a33932c1fda",
+      "source_checkpoint_sha256": "5499f6380f77fdf96f31a10138fbe04398808a6664d8c4faefa160506079f7ac",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 11179638,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "AES_FARM_k1",
+      "design": "AES_FARM",
+      "fpga_count": 1,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 236741
+      },
+      "native_lut_imbalance_fraction": 0.0,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 6345216
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 0,
+        "worst_uncaptured_crossings": 0,
+        "extra_crossings_at_endpoints": 0,
+        "combinational_transit_cells": 0,
+        "optimization_transfers": 0,
+        "native_lut_imbalance_fraction": 0.0
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 0,
+        "directed_net_destinations": 0,
+        "directed_categories": {
+          "clock": 0,
+          "reset_only": 0,
+          "data_or_functional_sync_control": 0
+        },
+        "raw_report_sha256": "7b222431fae923317de0a5a3f1347d4f864f49ca1d2a2e9c2535d855df11ff29"
+      },
+      "historical_mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+      "corrected_mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "AES_FARM_k2",
+      "design": "AES_FARM",
+      "fpga_count": 2,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 148726,
+        "FPGA_B": 88064
+      },
+      "native_lut_imbalance_fraction": 0.2561848051015667,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 153881,
+        "FPGA_B": 153881
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 27942,
+        "combinational_transit_cells": 9205,
+        "optimization_transfers": 8440,
+        "sampled_source_timing_cost": 0.0,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.2561848051015667
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 8486,
+        "directed_net_destinations": 8486,
+        "directed_categories": {
+          "clock": 1,
+          "reset_only": 40,
+          "data_or_functional_sync_control": 8445
+        },
+        "raw_report_sha256": "6c3ee03bb3bcd82658f48ae802db4cea337854f75a05fb341b712e512ea0a891"
+      },
+      "historical_mapping_sha256": "cf236d659341e88c84cff660e58af2c50eed10fdb6e8834f8333560b4486c877",
+      "corrected_mapping_sha256": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "AES_FARM_k3",
+      "design": "AES_FARM",
+      "fpga_count": 3,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 100452,
+        "FPGA_B": 82724,
+        "FPGA_C": 53630
+      },
+      "native_lut_imbalance_fraction": 0.27258599866557454,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 102587,
+        "FPGA_B": 102587,
+        "FPGA_C": 102587
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 30604,
+        "combinational_transit_cells": 7723,
+        "optimization_transfers": 14133,
+        "sampled_source_timing_cost": 216.99802416768262,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.27258599866557454
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 13937,
+        "directed_net_destinations": 14227,
+        "directed_categories": {
+          "clock": 2,
+          "reset_only": 90,
+          "data_or_functional_sync_control": 14135
+        },
+        "raw_report_sha256": "8372e0b7ffd5b5a42904cdcefa93681fe13f8b78d81c37a36e6f3ebacb26f01d"
+      },
+      "historical_mapping_sha256": "206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6",
+      "corrected_mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0
+    },
+    {
+      "case": "AES_FARM_k4",
+      "design": "AES_FARM",
+      "fpga_count": 4,
+      "native_clb_luts_by_fpga": {
+        "FPGA_A": 75196,
+        "FPGA_B": 60621,
+        "FPGA_C": 72146,
+        "FPGA_D": 28921
+      },
+      "native_lut_imbalance_fraction": 0.26975228381824023,
+      "effective_hard_lut_caps": {
+        "FPGA_A": 76940,
+        "FPGA_B": 76940,
+        "FPGA_C": 76940,
+        "FPGA_D": 76940
+      },
+      "metrics": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 31342,
+        "combinational_transit_cells": 6193,
+        "optimization_transfers": 16800,
+        "sampled_source_timing_cost": 350.8142431563009,
+        "sampled_source_timing_path_count": 1000,
+        "native_lut_imbalance_fraction": 0.26975228381824023
+      },
+      "historical_boundary_proof": {
+        "kind": "matrix_full_census_v3",
+        "full_native_census": true,
+        "coverage": "complete_native_canonical_census",
+        "logical_cut_nets": 16326,
+        "directed_net_destinations": 16915,
+        "directed_categories": {
+          "clock": 3,
+          "reset_only": 109,
+          "data_or_functional_sync_control": 16803
+        },
+        "raw_report_sha256": "23f829a4aedc5a3af7ad82b563999e8e947b4937bd731ffcec3e3a19c8eab2be"
+      },
+      "historical_mapping_sha256": "5557dfb34e40a282e7a84127f4e24f416d8f3bf6de4b938e4d078d67810aeac2",
+      "corrected_mapping_sha256": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+      "source_edif_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+      "source_checkpoint_sha256": "b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300",
+      "measurement_scope": "HISTORICAL_SUBSETS_PRESERVED_BY_EQUIVALENCE_NO_NEW_MEASUREMENT",
+      "contract_status": "PASS",
+      "functional_leaves_compared": 517282,
+      "ownership_mismatches": 0
+    }
+  ],
+  "local_refinement_comparisons": [
+    {
+      "case": "OPENTITAN_EARL_GREY_k2",
+      "fpga_count": 2,
+      "before": {
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 18173,
+        "combinational_transit_cells": 1125,
+        "optimization_transfers": 1732,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 7950,
+        "combinational_transit_cells": 1119,
+        "optimization_transfers": 1869,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 1804,
+      "quality_report_sha256": "1bc0c8e0148312908b7a055340af3f3cc85db75882d9c8669d90beddf8a01141",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k3",
+      "fpga_count": 3,
+      "before": {
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 37872,
+        "combinational_transit_cells": 3851,
+        "optimization_transfers": 2755,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 36693,
+        "combinational_transit_cells": 2966,
+        "optimization_transfers": 3258,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 3117,
+      "quality_report_sha256": "83009ab5596a041a12991115328dfac5d7ce28eca3bb53004688e69b9bbe4867",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "OPENTITAN_EARL_GREY_k4",
+      "fpga_count": 4,
+      "before": {
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 43567,
+        "combinational_transit_cells": 5136,
+        "optimization_transfers": 3375,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 27667,
+        "combinational_transit_cells": 6002,
+        "optimization_transfers": 3529,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 3366,
+      "quality_report_sha256": "55c6ea4056f069f1b225b34355380a7aa266203de72663b464cd1cfc9166e309",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "NVDLA_k2",
+      "fpga_count": 2,
+      "before": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 4091,
+        "combinational_transit_cells": 19,
+        "optimization_transfers": 2942,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 1886,
+        "combinational_transit_cells": 1972,
+        "optimization_transfers": 3236,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 2942,
+      "quality_report_sha256": "f99ea57a99d953d40f47ea39703de8bcd662b10a7bfa6386c5390e4ebd8dc1ca",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "NVDLA_k3",
+      "fpga_count": 3,
+      "before": {
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 38568,
+        "combinational_transit_cells": 3716,
+        "optimization_transfers": 5768,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 37521,
+        "combinational_transit_cells": 3717,
+        "optimization_transfers": 6026,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 5780,
+      "quality_report_sha256": "fab05227638447eb1b13cb9264fbec384b9a711852bc230e8d59ccf425053509",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "NVDLA_k4",
+      "fpga_count": 4,
+      "before": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 1001,
+        "combinational_transit_cells": 266,
+        "optimization_transfers": 8093,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 733,
+        "combinational_transit_cells": 230,
+        "optimization_transfers": 8110,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 8093,
+      "quality_report_sha256": "6da0a9bef04d223a62660726f593f3d6e2612da37bf956a73abd3cbe8e8daa01",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "RISCV_MESH_3072_k2",
+      "fpga_count": 2,
+      "before": {
+        "worst_minimum_physical_link_hops": 1,
+        "worst_uncaptured_crossings": 1,
+        "extra_crossings_at_endpoints": 0,
+        "combinational_transit_cells": 0,
+        "optimization_transfers": 3663,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 1,
+        "worst_uncaptured_crossings": 1,
+        "extra_crossings_at_endpoints": 0,
+        "combinational_transit_cells": 0,
+        "optimization_transfers": 3663,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 3663,
+      "quality_report_sha256": "67f7001bbb6fbfafec1365db2491e0561862635f346599748b9e09d52d25548d",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "RISCV_MESH_3072_k3",
+      "fpga_count": 3,
+      "before": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 32,
+        "combinational_transit_cells": 1296,
+        "optimization_transfers": 6452,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 32,
+        "combinational_transit_cells": 720,
+        "optimization_transfers": 6452,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 6967,
+      "quality_report_sha256": "62152460c6d3d98f6ff20a3e31e2666f32ce1317cf310c03bacf361160302a42",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "RISCV_MESH_3072_k4",
+      "fpga_count": 4,
+      "before": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 32,
+        "combinational_transit_cells": 1440,
+        "optimization_transfers": 7131,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 2,
+        "worst_uncaptured_crossings": 2,
+        "extra_crossings_at_endpoints": 32,
+        "combinational_transit_cells": 1440,
+        "optimization_transfers": 7131,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 7131,
+      "quality_report_sha256": "b7346081943b49f2a98070f1b64d62abf8e7e54d14d3159d5abf1f19fb10243d",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "AES_FARM_k2",
+      "fpga_count": 2,
+      "before": {
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 176123,
+        "combinational_transit_cells": 12523,
+        "optimization_transfers": 7790,
+        "sampled_source_timing_cost": 0.0
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 27942,
+        "combinational_transit_cells": 9205,
+        "optimization_transfers": 8440,
+        "sampled_source_timing_cost": 0.0
+      },
+      "original_transfer_budget_reference": 7790,
+      "quality_report_sha256": "81a615ee417bb9bf0921283bb4cc0b1de3012aed4772986e9b483b630d9c929e",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "AES_FARM_k3",
+      "fpga_count": 3,
+      "before": {
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 151904,
+        "combinational_transit_cells": 7839,
+        "optimization_transfers": 13001,
+        "sampled_source_timing_cost": 216.99802416768262
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 30604,
+        "combinational_transit_cells": 7723,
+        "optimization_transfers": 14133,
+        "sampled_source_timing_cost": 216.99802416768262
+      },
+      "original_transfer_budget_reference": 12848,
+      "quality_report_sha256": "2a6075ef8dec9031d117a4c98a39619bb1f1d1662cf95a2b5d2a6712284165bd",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    },
+    {
+      "case": "AES_FARM_k4",
+      "fpga_count": 4,
+      "before": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 43831,
+        "combinational_transit_cells": 7470,
+        "optimization_transfers": 15506,
+        "sampled_source_timing_cost": 589.9085835087244
+      },
+      "after": {
+        "worst_minimum_physical_link_hops": 3,
+        "worst_uncaptured_crossings": 3,
+        "extra_crossings_at_endpoints": 31342,
+        "combinational_transit_cells": 6193,
+        "optimization_transfers": 16800,
+        "sampled_source_timing_cost": 350.8142431563009
+      },
+      "original_transfer_budget_reference": 15272,
+      "quality_report_sha256": "218d44a469f1eead0017a85c6829e8099d31266bf4e78dc086f88646f32265dd",
+      "scope": "Same candidate before/after refinement; before is not independently Native resource/boundary qualified; after is the historical selected result. Not an isolated causal ablation."
+    }
+  ],
+  "mesh_three_fpga_feedback": {
+    "source_status_sha256": "ae1cdcc660a3741fa6f6b2f15e077d12b6c7fb6738fb5dd6da10c1552a71dce7",
+    "scope": "Both iterations have actual Native subset resource validation. Only selected iteration 1 carries the final exact boundary proof; this is not a controlled causal ablation of feedback versus seed.",
+    "candidates": [
+      {
+        "iteration_zero_based": 0,
+        "selected": false,
+        "metrics": {
+          "worst_minimum_physical_link_hops": 2,
+          "worst_uncaptured_crossings": 2,
+          "extra_crossings_at_endpoints": 66,
+          "combinational_transit_cells": 813,
+          "optimization_transfers": 6988,
+          "sampled_source_timing_cost": 0.0,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.2501086823799612
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 2104646,
+          "FPGA_B": 2631175,
+          "FPGA_C": 1578450
+        },
+        "mapping_sha256": "b559cf6c02474d09f844b82c6bee4cc664c6adb5b008d22b3e62a47c60de8271"
+      },
+      {
+        "iteration_zero_based": 1,
+        "selected": true,
+        "metrics": {
+          "worst_minimum_physical_link_hops": 2,
+          "worst_uncaptured_crossings": 2,
+          "extra_crossings_at_endpoints": 32,
+          "combinational_transit_cells": 720,
+          "optimization_transfers": 6452,
+          "sampled_source_timing_cost": 0.0,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.25013976279126493
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 2631240,
+          "FPGA_B": 1578448,
+          "FPGA_C": 2104582
+        },
+        "mapping_sha256": "93fce6c9f77e7e39199a8a74b40d98132d9299545ac29f6be7c6149eda4dcb45"
+      }
+    ]
+  },
+  "aes_alternatives": {
+    "scope": "Read-only small completed receipts/reports only; selected V5maps are distinct from originalMAIN/coarse/V4alternatives. No native/payload/runtime/lease/Rootpublication action.",
+    "candidates": [
+      {
+        "case": "AES64_k2_followup_cap130_auto",
+        "comparison_role": "selected_followup",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 3,
+          "worst_uncaptured_crossings": 3,
+          "extra_crossings_at_endpoints": 27942,
+          "combinational_transit_cells": 9205,
+          "optimization_transfers": 8440,
+          "sampled_source_timing_cost": 0.0,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.2561848051015667
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 148726,
+          "FPGA_B": 88064
+        },
+        "status": "PASS",
+        "native_30_percent_envelope_met": true,
+        "mapping_sha256": "cf236d659341e88c84cff660e58af2c50eed10fdb6e8834f8333560b4486c877",
+        "source_quality_report_sha256": "81a615ee417bb9bf0921283bb4cc0b1de3012aed4772986e9b483b630d9c929e",
+        "boundary_proof": {
+          "status": "ACTUAL_EXACT_SELECTED_MAP_COMPLETE_NATIVE_CENSUS_CATEGORY_PASS",
+          "comparison_receipt": "workspace/work/a5c/k2/v5a/comparison_receipt.json",
+          "comparison_receipt_sha256": "e806c51f65a8917f8d6b1af22b12eaa4721f4b49c22b6f4ef7a1123d9794e38d",
+          "parity_report_sha256": "6c3ee03bb3bcd82658f48ae802db4cea337854f75a05fb341b712e512ea0a891",
+          "comparison_root_release": "workspace/work/aes_quality_followup_controller_v5/root_compare_k2_v5a.json",
+          "comparison_root_release_sha256": "d75ed56a287d4efbe3aa441b13de705ac3901c069399a0d45372b42998360411",
+          "owned_Python_receipt_sha256": "afa3b090efed9428188c0d08f515f4b67be4db8293b80451d7e5c2b84afc00a5",
+          "owned_Python_native_exit_code": 0,
+          "owned_Python_launcher_exit_code": 0,
+          "full_native_census": true,
+          "coverage": "complete_native_canonical_census",
+          "source_native_canonical_nets": 518407,
+          "source_logical_owners": 517544,
+          "source_nonconstant_logical_endpoints": 2864611,
+          "crossing_nets": 8486,
+          "all_directed_net_destinations": 8486,
+          "directed_destinations_by_category": {
+            "clock": 1,
+            "reset_only": 40,
+            "data_or_functional_sync_control": 8445
+          },
+          "mismatches": {
+            "missing": 0,
+            "extra": 0,
+            "pair": 0,
+            "category_missing": 0,
+            "category": 0,
+            "primitive_histogram_entries": 0
+          }
+        },
+        "effort_iterations_starts_passes": [
+          5,
+          3,
+          3
+        ]
+      },
+      {
+        "case": "AES64_k3_followup_cap130_auto",
+        "comparison_role": "selected_followup",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 3,
+          "worst_uncaptured_crossings": 3,
+          "extra_crossings_at_endpoints": 30604,
+          "combinational_transit_cells": 7723,
+          "optimization_transfers": 14133,
+          "sampled_source_timing_cost": 216.99802416768262,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.27258599866557454
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 100452,
+          "FPGA_B": 82724,
+          "FPGA_C": 53630
+        },
+        "status": "PASS",
+        "native_30_percent_envelope_met": true,
+        "mapping_sha256": "206ec1934041f63b0d98c27c1ba9357ba4d7c76832c288b234853746a5c501b6",
+        "source_quality_report_sha256": "2a6075ef8dec9031d117a4c98a39619bb1f1d1662cf95a2b5d2a6712284165bd",
+        "boundary_proof": {
+          "status": "ACTUAL_EXACT_SELECTED_MAP_COMPLETE_NATIVE_CENSUS_CATEGORY_PASS",
+          "comparison_receipt": "workspace/work/a5c/k3/v5a/comparison_receipt.json",
+          "comparison_receipt_sha256": "900d6eb9e55b048b02e1b3647031a2c9020a8364cc923881c016503fdcddb5e9",
+          "parity_report_sha256": "8372e0b7ffd5b5a42904cdcefa93681fe13f8b78d81c37a36e6f3ebacb26f01d",
+          "comparison_root_release": "workspace/work/aes_quality_followup_controller_v5/root_compare_k3_v5a.json",
+          "comparison_root_release_sha256": "a1e235e5f5bd76e3bc95cf595ceb81d60560e0d4a45401da5d59afd573db71eb",
+          "owned_Python_receipt_sha256": "c35b0e1ef9c9a60f8073320fb0094b5bf91cf40c4bfbb1b683a6ed5680d16b66",
+          "owned_Python_native_exit_code": 0,
+          "owned_Python_launcher_exit_code": 0,
+          "full_native_census": true,
+          "coverage": "complete_native_canonical_census",
+          "source_native_canonical_nets": 518407,
+          "source_logical_owners": 517544,
+          "source_nonconstant_logical_endpoints": 2864611,
+          "crossing_nets": 13937,
+          "all_directed_net_destinations": 14227,
+          "directed_destinations_by_category": {
+            "clock": 2,
+            "reset_only": 90,
+            "data_or_functional_sync_control": 14135
+          },
+          "mismatches": {
+            "missing": 0,
+            "extra": 0,
+            "pair": 0,
+            "category_missing": 0,
+            "category": 0,
+            "primitive_histogram_entries": 0
+          }
+        },
+        "effort_iterations_starts_passes": [
+          5,
+          3,
+          3
+        ]
+      },
+      {
+        "case": "AES64_k4_followup_cap130_auto",
+        "comparison_role": "selected_followup",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 3,
+          "worst_uncaptured_crossings": 3,
+          "extra_crossings_at_endpoints": 31342,
+          "combinational_transit_cells": 6193,
+          "optimization_transfers": 16800,
+          "sampled_source_timing_cost": 350.8142431563009,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.26975228381824023
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 75196,
+          "FPGA_B": 60621,
+          "FPGA_C": 72146,
+          "FPGA_D": 28921
+        },
+        "status": "PASS",
+        "native_30_percent_envelope_met": true,
+        "mapping_sha256": "5557dfb34e40a282e7a84127f4e24f416d8f3bf6de4b938e4d078d67810aeac2",
+        "source_quality_report_sha256": "218d44a469f1eead0017a85c6829e8099d31266bf4e78dc086f88646f32265dd",
+        "boundary_proof": {
+          "status": "ACTUAL_EXACT_SELECTED_MAP_COMPLETE_NATIVE_CENSUS_CATEGORY_PASS",
+          "comparison_receipt": "workspace/work/a5c/k4/v5a/comparison_receipt.json",
+          "comparison_receipt_sha256": "bd06edb2dfedfad7b7d09a8cb8c80859d93822d727da24d1a8292d5ebdec18e0",
+          "parity_report_sha256": "23f829a4aedc5a3af7ad82b563999e8e947b4937bd731ffcec3e3a19c8eab2be",
+          "comparison_root_release": "workspace/work/aes_quality_followup_controller_v5/root_compare_k4_v5a.json",
+          "comparison_root_release_sha256": "58eaada68177d0f6cdc3e18325915d57f27dd0a38496f21a066271e955528742",
+          "owned_Python_receipt_sha256": "56d0ce86de852ace54e7e1a89a1c46190a553e64747820eb0d71b6c5e0cf4e67",
+          "owned_Python_native_exit_code": 0,
+          "owned_Python_launcher_exit_code": 0,
+          "full_native_census": true,
+          "coverage": "complete_native_canonical_census",
+          "source_native_canonical_nets": 518407,
+          "source_logical_owners": 517544,
+          "source_nonconstant_logical_endpoints": 2864611,
+          "crossing_nets": 16326,
+          "all_directed_net_destinations": 16915,
+          "directed_destinations_by_category": {
+            "clock": 3,
+            "reset_only": 109,
+            "data_or_functional_sync_control": 16803
+          },
+          "mismatches": {
+            "missing": 0,
+            "extra": 0,
+            "pair": 0,
+            "category_missing": 0,
+            "category": 0,
+            "primitive_histogram_entries": 0
+          }
+        },
+        "effort_iterations_starts_passes": [
+          5,
+          3,
+          3
+        ]
+      },
+      {
+        "case": "AES64_k2",
+        "comparison_role": "earlier_outside_envelope",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 2,
+          "worst_uncaptured_crossings": 2,
+          "extra_crossings_at_endpoints": 37031,
+          "combinational_transit_cells": 5942,
+          "optimization_transfers": 8172,
+          "sampled_source_timing_cost": 13.021640682161758,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.3059659258883849
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 154612,
+          "FPGA_B": 82166
+        },
+        "status": "CAP_VALIDATED_WITH_LIMITATIONS",
+        "native_30_percent_envelope_met": false,
+        "mapping_sha256": "f0a001c2320d9854ef9aa38c4e56fed753adb43ae323330ce0afb027f1911950",
+        "source_quality_report_sha256": "a3f5a1500393050f8ed1f76f41e15e0d9f263b99e7a65856bd1d88735d2828a6",
+        "boundary_proof": "EXACT_MAIN_MAP_BASELINE_PARITY_PASS_PREVIOUSLY_RECORDED_NOT_TRANSFERRED",
+        "effort_iterations_starts_passes": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "case": "AES64_k3",
+        "comparison_role": "earlier_outside_envelope",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 3,
+          "worst_uncaptured_crossings": 3,
+          "extra_crossings_at_endpoints": 27097,
+          "combinational_transit_cells": 6812,
+          "optimization_transfers": 13804,
+          "sampled_source_timing_cost": 120.37452538122545,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.32849813137391526
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 79820,
+          "FPGA_B": 104865,
+          "FPGA_C": 52120
+        },
+        "status": "CAP_VALIDATED_WITH_LIMITATIONS",
+        "native_30_percent_envelope_met": false,
+        "mapping_sha256": "ddb2917d7b06dc95f29cd0353f388cfc1abbe47e61b86fa09c90f3605efdc38b",
+        "source_quality_report_sha256": "1e155de35b2f2e89a8a83b789135efa75ee3923a13e30e539d3e0614b3048d8f",
+        "boundary_proof": "EXACT_MAIN_MAP_BASELINE_PARITY_PASS_PREVIOUSLY_RECORDED_NOT_TRANSFERRED",
+        "effort_iterations_starts_passes": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "case": "AES64_k4",
+        "comparison_role": "earlier_outside_envelope",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 3,
+          "worst_uncaptured_crossings": 3,
+          "extra_crossings_at_endpoints": 32990,
+          "combinational_transit_cells": 7177,
+          "optimization_transfers": 15997,
+          "sampled_source_timing_cost": 239.92169555743715,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.30794760710394975
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 49334,
+          "FPGA_B": 49252,
+          "FPGA_C": 77439,
+          "FPGA_D": 60801
+        },
+        "status": "CAP_VALIDATED_WITH_LIMITATIONS",
+        "native_30_percent_envelope_met": false,
+        "mapping_sha256": "bdd1809a2724daf9d283e4a8ad2ac1496ac5a83220b315d0233b190bfade73b8",
+        "source_quality_report_sha256": "8d8b08a4e4b827b8cfe07019a59efab554d78677408f2f6d744d32b8ea380e44",
+        "boundary_proof": "EXACT_MAIN_MAP_BASELINE_PARITY_PASS_PREVIOUSLY_RECORDED_NOT_TRANSFERRED",
+        "effort_iterations_starts_passes": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "case": "AES64_k2_followup_cap130_leaf4096",
+        "comparison_role": "alternate_followup",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 3,
+          "worst_uncaptured_crossings": 3,
+          "extra_crossings_at_endpoints": 66939,
+          "combinational_transit_cells": 3826,
+          "optimization_transfers": 8132,
+          "sampled_source_timing_cost": 57.61823325780263,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.28998500812939465
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 152731,
+          "FPGA_B": 84064
+        },
+        "status": "PASS",
+        "native_30_percent_envelope_met": true,
+        "mapping_sha256": "0262383e71977dcf296df06a371259671d372ec8cd4136189b8038009eaad215",
+        "source_quality_report_sha256": "3c1c4085715ec8fef6b726ce92dddd7f6f6137d54c3832cba0d2c4de4bcf6f57",
+        "boundary_proof": {
+          "status": "ACTUAL_EXACT_SELECTED_MAP_COMPLETE_NATIVE_CENSUS_CATEGORY_PASS",
+          "comparison_receipt": "workspace/work/a4c/k2/v4a/comparison_receipt.json",
+          "comparison_receipt_sha256": "da7746ffd84d87b153dc8c508cb31b09634685983051db34f7c9571e2816ced5",
+          "parity_report_sha256": "0aa99548c9437f0b51d0ee07efa602e6b36090c54ca662574a5bc96e311143d9",
+          "comparison_root_release": "workspace/work/aes_quality_followup_controller_v4/root_compare_k2_v4a.json",
+          "comparison_root_release_sha256": "0ecd7599719a2572a41681125594c6ba6487b5ed8da6298191fbf7fe0fe105db",
+          "owned_Python_receipt_sha256": "c793f5b6567156042e65560fa6571dd072c3f1685da2dfff1ca336c7325e2c01",
+          "owned_Python_native_exit_code": 0,
+          "owned_Python_launcher_exit_code": 0,
+          "full_native_census": true,
+          "coverage": "complete_native_canonical_census",
+          "source_native_canonical_nets": 518407,
+          "source_logical_owners": 517544,
+          "source_nonconstant_logical_endpoints": 2864611,
+          "crossing_nets": 8135,
+          "all_directed_net_destinations": 8135,
+          "directed_destinations_by_category": {
+            "clock": 1,
+            "reset_only": 0,
+            "data_or_functional_sync_control": 8134
+          },
+          "mismatches": {
+            "missing": 0,
+            "extra": 0,
+            "pair": 0,
+            "category_missing": 0,
+            "category": 0,
+            "primitive_histogram_entries": 0
+          }
+        },
+        "effort_iterations_starts_passes": [
+          5,
+          3,
+          3
+        ]
+      },
+      {
+        "case": "AES64_k2_followup_thorough_leaf4096_30",
+        "comparison_role": "coarse_outside_envelope_not_qualified",
+        "metrics": {
+          "worst_minimum_physical_link_hops": 2,
+          "worst_uncaptured_crossings": 2,
+          "extra_crossings_at_endpoints": 18871,
+          "combinational_transit_cells": 3769,
+          "optimization_transfers": 7650,
+          "sampled_source_timing_cost": 110.89254759886353,
+          "sampled_source_timing_path_count": 1000,
+          "native_lut_imbalance_fraction": 0.31170108991710554
+        },
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 155310,
+          "FPGA_B": 81497
+        },
+        "status": "CAP_VALIDATED_WITH_LIMITATIONS",
+        "native_30_percent_envelope_met": false,
+        "mapping_sha256": "9c21660d164cb1283207e90a22d3b04b51e71f9cde1e1a7bbd09c2bf5fc21e5a",
+        "source_quality_report_sha256": "4bcd428ed38391449aeb6ab574842ac6a244509b65e7e5e707769a107c2abb66",
+        "boundary_proof": "PENDING_NO_MAP_SPECIFIC_PROOF_BOUND_HERE",
+        "effort_iterations_starts_passes": [
+          5,
+          7,
+          6
+        ]
+      }
+    ]
+  },
+  "opentitan_iterative_search": {
+    "total_attempts": 23,
+    "total_starting_solutions": 276,
+    "scope": [
+      "70% is permitted imbalance, not a requested load target. All four devices must contain useful logic and satisfy hard capacity limits.",
+      "Native LUT measured rows outside the 70% envelope are explicitly identified, not relabelled qualified mappings.",
+      "Rejected attempts contain blank metric columns and do not inherit an earlier candidate's numbers.",
+      "Only each selected final mapping and the qualified baseline have the recorded independent Native endpoint/category proof; intermediate rows have Native LUT measurements and emitted cut reports.",
+      "T optimizes internal transfers; complete unique data cuts and directed destinations are separately reported and can move in opposite directions.",
+      "Default structural rank considers H, C, sampled timing, E, V, envelope, transfers and topology before fine balance. A lower V or fewer cuts alone does not establish a better overall mapping.",
+      "The coarse profile changes both hierarchy threshold and cut allowance; this experiment does not isolate one parameter's causal effect or prove a global optimum/routed clock improvement."
+    ],
+    "profiles": [
+      {
+        "name": "main_auto1044_cut10",
+        "selected_iteration_zero_based": 5,
+        "completed_attempts": 12,
+        "native_lut_measured_rows": 2,
+        "quality_anchor_rejections": 10,
+        "other_rejections": 0,
+        "backend_solution_files": 144,
+        "starts_per_attempt": 12,
+        "actual_native_boundary_category_comparison_exit_code": 0,
+        "native_boundary_result": {
+          "name": "OT70_k4",
+          "passed": true,
+          "vivado_crossing_nets": 3414,
+          "rapidwright_crossing_nets": 3414,
+          "vivado_directed_net_destinations": 3612,
+          "rapidwright_directed_net_destinations": 3612,
+          "missing_count": 0,
+          "extra_count": 0,
+          "pair_mismatch_count": 0,
+          "missing_sample": [],
+          "extra_sample": [],
+          "pair_mismatch_sample": [],
+          "primitive_histogram_mismatch": []
+        },
+        "native_category_result": {
+          "name": "OT70_k4",
+          "passed": true,
+          "compared": 3414,
+          "missing_count": 0,
+          "category_mismatch_count": 0,
+          "mismatch_sample": [],
+          "directed_destinations_by_category": {
+            "clock": 3,
+            "reset_only": 15,
+            "data_or_functional_sync_control": 3594
+          }
+        }
+      },
+      {
+        "name": "coarse4096_cut15",
+        "selected_iteration_zero_based": 5,
+        "completed_attempts": 8,
+        "native_lut_measured_rows": 4,
+        "quality_anchor_rejections": 4,
+        "other_rejections": 0,
+        "backend_solution_files": 96,
+        "starts_per_attempt": 12,
+        "actual_native_boundary_category_comparison_exit_code": 0,
+        "native_boundary_result": {
+          "name": "OT70_k4",
+          "passed": true,
+          "vivado_crossing_nets": 3782,
+          "rapidwright_crossing_nets": 3782,
+          "vivado_directed_net_destinations": 4219,
+          "rapidwright_directed_net_destinations": 4219,
+          "missing_count": 0,
+          "extra_count": 0,
+          "pair_mismatch_count": 0,
+          "missing_sample": [],
+          "extra_sample": [],
+          "pair_mismatch_sample": [],
+          "primitive_histogram_mismatch": []
+        },
+        "native_category_result": {
+          "name": "OT70_k4",
+          "passed": true,
+          "compared": 3782,
+          "missing_count": 0,
+          "category_mismatch_count": 0,
+          "mismatch_sample": [],
+          "directed_destinations_by_category": {
+            "clock": 3,
+            "reset_only": 8,
+            "data_or_functional_sync_control": 4208
+          }
+        }
+      },
+      {
+        "name": "guard20_auto1044_cut20",
+        "selected_iteration_zero_based": 2,
+        "completed_attempts": 3,
+        "native_lut_measured_rows": 2,
+        "quality_anchor_rejections": 1,
+        "other_rejections": 0,
+        "backend_solution_files": 36,
+        "starts_per_attempt": 12,
+        "actual_native_boundary_category_comparison_exit_code": 0,
+        "native_boundary_result": {
+          "name": "OT70_k4",
+          "passed": true,
+          "vivado_crossing_nets": 3503,
+          "rapidwright_crossing_nets": 3503,
+          "vivado_directed_net_destinations": 3826,
+          "rapidwright_directed_net_destinations": 3826,
+          "missing_count": 0,
+          "extra_count": 0,
+          "pair_mismatch_count": 0,
+          "missing_sample": [],
+          "extra_sample": [],
+          "pair_mismatch_sample": [],
+          "primitive_histogram_mismatch": []
+        },
+        "native_category_result": {
+          "name": "OT70_k4",
+          "passed": true,
+          "compared": 3503,
+          "missing_count": 0,
+          "category_mismatch_count": 0,
+          "mismatch_sample": [],
+          "directed_destinations_by_category": {
+            "clock": 3,
+            "reset_only": 25,
+            "data_or_functional_sync_control": 3798
+          }
+        }
+      }
+    ],
+    "rows": [
+      {
+        "profile": "prior_qualified_J4_four_FPGA",
+        "row_kind": "PRIOR_QUALIFIED_BASELINE",
+        "iteration_zero_based": 2,
+        "attempt_one_based": null,
+        "selected_final": true,
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 27667,
+        "combinational_transit_cells": 6002,
+        "optimization_transfers": 3529,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 11.531722211620199,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 48375,
+          "FPGA_B": 64288,
+          "FPGA_C": 59861,
+          "FPGA_D": 58040
+        },
+        "unique_data_control_crossing_nets": 3331,
+        "directed_data_control_destinations": 3648,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 20,
+        "boundary_comparison_scope": "SELECTED_FINAL_MAP_PASS",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "NATIVE_LUT_VALIDATED_WITHIN_ENVELOPE",
+        "iteration_zero_based": 0,
+        "attempt_one_based": 1,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 23786,
+        "combinational_transit_cells": 6842,
+        "optimization_transfers": 3481,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 16.269225097372452,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 67017,
+          "FPGA_B": 47250,
+          "FPGA_C": 58029,
+          "FPGA_D": 58262
+        },
+        "unique_data_control_crossing_nets": 3208,
+        "directed_data_control_destinations": 3600,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 19,
+        "boundary_comparison_scope": "NOT_INDEPENDENTLY_AUDITED",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 1,
+        "attempt_one_based": 2,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 2,
+        "attempt_one_based": 3,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 3,
+        "attempt_one_based": 4,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 4,
+        "attempt_one_based": 5,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "NATIVE_LUT_VALIDATED_WITHIN_ENVELOPE",
+        "iteration_zero_based": 5,
+        "attempt_one_based": 6,
+        "selected_final": true,
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 41688,
+        "combinational_transit_cells": 5469,
+        "optimization_transfers": 3476,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 3.422903422903434,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 59667,
+          "FPGA_B": 56071,
+          "FPGA_C": 57913,
+          "FPGA_D": 57118
+        },
+        "unique_data_control_crossing_nets": 3402,
+        "directed_data_control_destinations": 3594,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 11,
+        "boundary_comparison_scope": "SELECTED_FINAL_MAP_PASS",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 6,
+        "attempt_one_based": 7,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 7,
+        "attempt_one_based": 8,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 8,
+        "attempt_one_based": 9,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 9,
+        "attempt_one_based": 10,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 10,
+        "attempt_one_based": 11,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "main_auto1044_cut10",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 11,
+        "attempt_one_based": 12,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "NATIVE_LUT_MEASURED_OUTSIDE_ENVELOPE",
+        "iteration_zero_based": 0,
+        "attempt_one_based": 1,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": 6,
+        "worst_uncaptured_crossings": 6,
+        "extra_crossings_at_endpoints": 22472,
+        "combinational_transit_cells": 2957,
+        "optimization_transfers": 4211,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 71.03377686796316,
+        "within_search_envelope": false,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 93815,
+          "FPGA_B": 2205,
+          "FPGA_C": 98589,
+          "FPGA_D": 35963
+        },
+        "unique_data_control_crossing_nets": 4012,
+        "directed_data_control_destinations": 4329,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 3,
+        "boundary_comparison_scope": "NOT_INDEPENDENTLY_AUDITED",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 1,
+        "attempt_one_based": 2,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 2,
+        "attempt_one_based": 3,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "NATIVE_LUT_VALIDATED_WITHIN_ENVELOPE",
+        "iteration_zero_based": 3,
+        "attempt_one_based": 4,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 42371,
+        "combinational_transit_cells": 4928,
+        "optimization_transfers": 4185,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 69.00709804142619,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 59284,
+          "FPGA_B": 30877,
+          "FPGA_C": 97444,
+          "FPGA_D": 43022
+        },
+        "unique_data_control_crossing_nets": 4170,
+        "directed_data_control_destinations": 4304,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 14,
+        "boundary_comparison_scope": "NOT_INDEPENDENTLY_AUDITED",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "NATIVE_LUT_VALIDATED_WITHIN_ENVELOPE",
+        "iteration_zero_based": 4,
+        "attempt_one_based": 5,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 28213,
+        "combinational_transit_cells": 5501,
+        "optimization_transfers": 4160,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 54.799991327537235,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 72974,
+          "FPGA_B": 46075,
+          "FPGA_C": 22318,
+          "FPGA_D": 89248
+        },
+        "unique_data_control_crossing_nets": 3937,
+        "directed_data_control_destinations": 4278,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 7,
+        "boundary_comparison_scope": "NOT_INDEPENDENTLY_AUDITED",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "NATIVE_LUT_VALIDATED_WITHIN_ENVELOPE",
+        "iteration_zero_based": 5,
+        "attempt_one_based": 6,
+        "selected_final": true,
+        "worst_minimum_physical_link_hops": 5,
+        "worst_uncaptured_crossings": 5,
+        "extra_crossings_at_endpoints": 20323,
+        "combinational_transit_cells": 2404,
+        "optimization_transfers": 4090,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 48.48166812674015,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 85593,
+          "FPGA_B": 12699,
+          "FPGA_C": 57742,
+          "FPGA_D": 74548
+        },
+        "unique_data_control_crossing_nets": 3776,
+        "directed_data_control_destinations": 4208,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 5,
+        "boundary_comparison_scope": "SELECTED_FINAL_MAP_PASS",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 6,
+        "attempt_one_based": 7,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "coarse4096_cut15",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 7,
+        "attempt_one_based": 8,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "guard20_auto1044_cut20",
+        "row_kind": "NATIVE_LUT_VALIDATED_WITHIN_ENVELOPE",
+        "iteration_zero_based": 0,
+        "attempt_one_based": 1,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 39994,
+        "combinational_transit_cells": 5532,
+        "optimization_transfers": 3683,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 14.512591565168398,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 66048,
+          "FPGA_B": 47841,
+          "FPGA_C": 64381,
+          "FPGA_D": 52440
+        },
+        "unique_data_control_crossing_nets": 3424,
+        "directed_data_control_destinations": 3801,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 12,
+        "boundary_comparison_scope": "NOT_INDEPENDENTLY_AUDITED",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      },
+      {
+        "profile": "guard20_auto1044_cut20",
+        "row_kind": "QUALITY_ANCHOR_REJECTION",
+        "iteration_zero_based": 1,
+        "attempt_one_based": 2,
+        "selected_final": false,
+        "worst_minimum_physical_link_hops": null,
+        "worst_uncaptured_crossings": null,
+        "extra_crossings_at_endpoints": null,
+        "combinational_transit_cells": null,
+        "optimization_transfers": null,
+        "sampled_source_timing_cost": null,
+        "native_lut_imbalance_percent": null,
+        "within_search_envelope": null,
+        "hard_native_caps_pass": null,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": null,
+          "FPGA_B": null,
+          "FPGA_C": null,
+          "FPGA_D": null
+        },
+        "unique_data_control_crossing_nets": null,
+        "directed_data_control_destinations": null,
+        "clock_crossing_nets": null,
+        "reset_only_crossing_nets": null,
+        "boundary_comparison_scope": "NOT_APPLICABLE",
+        "cut_report_authority": ""
+      },
+      {
+        "profile": "guard20_auto1044_cut20",
+        "row_kind": "NATIVE_LUT_VALIDATED_WITHIN_ENVELOPE",
+        "iteration_zero_based": 2,
+        "attempt_one_based": 3,
+        "selected_final": true,
+        "worst_minimum_physical_link_hops": 4,
+        "worst_uncaptured_crossings": 4,
+        "extra_crossings_at_endpoints": 27768,
+        "combinational_transit_cells": 7833,
+        "optimization_transfers": 3679,
+        "sampled_source_timing_cost": 0.0,
+        "native_lut_imbalance_percent": 7.302520607582208,
+        "within_search_envelope": true,
+        "hard_native_caps_pass": true,
+        "native_clb_luts_by_fpga": {
+          "FPGA_A": 51058,
+          "FPGA_B": 61865,
+          "FPGA_C": 57933,
+          "FPGA_D": 59763
+        },
+        "unique_data_control_crossing_nets": 3482,
+        "directed_data_control_destinations": 3798,
+        "clock_crossing_nets": 1,
+        "reset_only_crossing_nets": 20,
+        "boundary_comparison_scope": "SELECTED_FINAL_MAP_PASS",
+        "cut_report_authority": "Partitioner emitted summary; independent Native boundary parity applies only where proof column says PASS"
+      }
+    ]
+  }
+}

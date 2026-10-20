@@ -64,7 +64,7 @@ class LogicalBalanceAcceptance(unittest.TestCase):
         # exercise propagation of the distinct hard ceilings through feedback.
         self.force_feedback = True
         state = self.execute("--iterations", "2")
-        self.assert_policy(state, 1.0, "automatic_heterogeneous_native_caps")
+        self.assert_policy(state, 1.0, "automatic_capacity_first")
         self.assertEqual(len(self.fixture.partition_commands), 2)
         self.assertIsNone(state["logical_balance_requested"])
         self.assertEqual(state["hard_native_clb_lut_caps"], {"FPGA_A": 90, "FPGA_B": 10})
@@ -76,24 +76,24 @@ class LogicalBalanceAcceptance(unittest.TestCase):
         file = self.fixture.root / "caps.json"
         file.write_text(json.dumps({"FPGA_A": 90, "FPGA_B": 10}))
         state = self.execute("--fpga-lut-caps", str(file))
-        self.assert_policy(state, 1.0, "automatic_heterogeneous_native_caps")
+        self.assert_policy(state, 1.0, "automatic_capacity_first")
         self.assertEqual(state["hard_native_clb_lut_caps"], {"FPGA_A": 90, "FPGA_B": 10})
 
     def test_global_maximum_can_make_unequal_resolved_caps_equal(self):
         self.set_topology_caps(90, 10)
         state = self.execute("--max-luts", "10")
-        self.assert_policy(state, 0.5, "automatic_uniform_or_unspecified_native_caps")
+        self.assert_policy(state, 1.0, "automatic_capacity_first")
         self.assertEqual(state["hard_native_clb_lut_caps"], {"FPGA_A": 10, "FPGA_B": 10})
 
-    def test_equal_native_caps_preserve_existing_default(self):
+    def test_equal_native_caps_leave_physical_capacity_in_control(self):
         state = self.execute()
-        self.assert_policy(state, 0.5, "automatic_uniform_or_unspecified_native_caps")
+        self.assert_policy(state, 1.0, "automatic_capacity_first")
         self.assertIsNone(state["logical_balance_requested"])
 
     def test_absent_explicit_caps_keep_logical_default_and_physical_device_cap(self):
         self.set_topology_caps()
         state = self.execute()
-        self.assert_policy(state, 0.5, "automatic_uniform_or_unspecified_native_caps")
+        self.assert_policy(state, 1.0, "automatic_capacity_first")
         self.assertEqual(state["hard_native_clb_lut_caps"], {"FPGA_A": 6345216, "FPGA_B": 6345216})
         self.assertEqual(state["native_cap_check"], "PASS")
 
@@ -114,7 +114,7 @@ class LogicalBalanceAcceptance(unittest.TestCase):
         data = b"0 75 90 2 3 4 5\n1 75 10 2 3 4 5\n"
         caps.write_bytes(data)
         state = self.execute("--logical-resource-capacities", str(caps))
-        self.assert_policy(state, 1.0, "automatic_heterogeneous_native_caps")
+        self.assert_policy(state, 1.0, "automatic_capacity_first")
         self.assertTrue(state["logical_resource_capacities_explicit"])
         copied = self.fixture.output / "inputs/logical_resource_capacities.txt"
         self.assertEqual(copied.read_bytes(), data)
@@ -147,10 +147,10 @@ class LogicalBalanceAcceptance(unittest.TestCase):
 
     def test_automatic_heterogeneous_default_scales_to_four_and_sixty_four_parts(self):
         self.assertEqual(FRONTEND.resolve_logical_balance(None, 4, {"A": 90, "B": 10, "C": 10, "D": 10}),
-                         (3.0, "automatic_heterogeneous_native_caps"))
+                         (3.0, "automatic_capacity_first"))
         caps = {"P" + str(index): int(index != 0) for index in range(64)}
         self.assertEqual(FRONTEND.resolve_logical_balance(None, 64, caps),
-                         (63.0, "automatic_heterogeneous_native_caps"))
+                         (63.0, "automatic_capacity_first"))
         self.assertEqual(FRONTEND.resolve_logical_balance(0.125, 4, {"A": 90, "B": 10}),
                          (0.125, "explicit_user"))
 

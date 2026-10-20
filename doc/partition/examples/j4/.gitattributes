@@ -1,0 +1,3 @@
+# These review files are copied proof artifacts. Preserve their exact bytes
+# on every host because the archive and original receipts hash line endings.
+*/k[1-4]/* -text

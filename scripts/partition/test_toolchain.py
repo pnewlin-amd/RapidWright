@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -94,6 +95,44 @@ class ToolchainContract(unittest.TestCase):
         with patch.object(TOOLS.subprocess, "run", return_value=result) as run:
             TOOLS.backend_version("mtkahypar", library="/opt/custom libs")
             self.assertEqual(run.call_args.kwargs["env"]["LD_LIBRARY_PATH"], "/opt/custom libs")
+
+    def test_report_renderer_preflight_uses_bundled_font_and_local_cache(self):
+        observed = {}
+        def preflight(font):
+            observed["font"] = font
+            observed["cache"] = os.environ["MPLCONFIGDIR"]
+            return {"font_family": "Titillium Web", "font_sha256": "f" * 64}
+        with patch.dict(os.environ, {"MPLCONFIGDIR": "old-home-cache"}), patch.object(TOOLS, "_reporting_module", return_value=SimpleNamespace(preflight=preflight)):
+            result = TOOLS.check_reporting(self.root)
+            self.assertEqual(os.environ["MPLCONFIGDIR"], "old-home-cache")
+        self.assertEqual(observed["font"], self.root / "scripts/partition/assets/fonts/TitilliumWeb-Regular.ttf")
+        self.assertEqual(Path(observed["cache"]), self.root / "build/partition-report-cache")
+        self.assertEqual(result["font_family"], "Titillium Web")
+
+    def test_renderer_preflight_preserves_environment_on_dependency_failure(self):
+        def fail(font):
+            raise RuntimeError("Matplotlib is missing")
+        with patch.dict(os.environ, {}, clear=True), patch.object(TOOLS, "_reporting_module", return_value=SimpleNamespace(preflight=fail)):
+            with self.assertRaisesRegex(RuntimeError, "Matplotlib"):
+                TOOLS.check_reporting(self.root, self.root / "explicit-output-cache")
+            self.assertNotIn("MPLCONFIGDIR", os.environ)
+
+    def test_check_tools_contains_report_failure_without_running_a_design(self):
+        for name in ("bin/com/xilinx/rapidwright/edif/partition/Partitioner.class",
+                     "bin/com/xilinx/rapidwright/edif/partition/VivadoResourceOracle.class", "jars/runtime.jar"):
+            self.file(name)
+        fake_tcl = SimpleNamespace(Tcl=lambda: SimpleNamespace(call=lambda *args: "8.6"))
+        with patch.object(TOOLS.importlib, "import_module", return_value=fake_tcl), \
+             patch.object(TOOLS, "find_java", return_value="java"), \
+             patch.object(TOOLS, "java_version", return_value="17"), \
+             patch.object(TOOLS, "find_vivado", return_value="vivado"), \
+             patch.object(TOOLS, "output", return_value="PARTITION_TOOLCHAIN_VIVADO_VERSION=2025.1"), \
+             patch.object(TOOLS, "resolve_backend", return_value=("mtkahypar", None)), \
+             patch.object(TOOLS, "check_reporting", side_effect=RuntimeError("missing report font")):
+            result = TOOLS.check_tools(self.root)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["checks"]["reporting"], {"status": "FAIL", "error": "missing report font"})
+        self.assertEqual(result["checks"]["vivado"]["source_design_loaded"], False)
 
 
 if __name__ == "__main__":

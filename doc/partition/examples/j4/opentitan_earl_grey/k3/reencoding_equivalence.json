@@ -1,0 +1,15 @@
+{
+  "functional_leaves_compared": 427171,
+  "constant_policy": "GND/VCC separately local; no explicit move records",
+  "ownership_mismatches": 0,
+  "schema_version": 1,
+  "final_assignment_sha256": "3dadbde5fb7ed84f6bf01d410125493d9baabcbbfe2d97088fb846edc023b040",
+  "mapping_sha256": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+  "scope": "exact_functional_leaf_ownership_equivalence; source netlist unchanged; no regroup execution",
+  "frontier_sha256": "311c13aab01cbe2998a9fd84ef4042d4949f19153265a7711f62c41f8304cb06",
+  "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+  "native_measurement_scope": "No new Vivado measurement: identical source leaf ownership preserves prior resource subsets and cut endpoints; original hash-bound evidence stays historical",
+  "legacy_mapping_sha256": "fa6fa3113fa99a3905c8ae3c6ee9ac1c427d3da5a4afaf52a6a73a479969ea92",
+  "status": "PASS",
+  "top_port_owner_unchanged": true
+}

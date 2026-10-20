@@ -4,6 +4,7 @@ Explicit options take precedence over environment configuration and PATH.
 No experiment folders or machine-specific installation paths are searched.
 """
 import importlib
+import importlib.util
 import os
 from pathlib import Path
 import re
@@ -122,8 +123,38 @@ def resolve_backend(explicit=None, wsl=None, library=None):
     return binary, library
 
 
+def _reporting_module():
+    spec = importlib.util.spec_from_file_location("partition_reporting_toolchain", Path(__file__).with_name("reporting.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def check_reporting(repo, cache_directory=None):
+    """Check the bundled font and renderer before starting an expensive solve.
+
+    Matplotlib's font cache belongs to the distribution build directory, or to
+    the caller's explicit output cache, rather than an implicit home directory.
+    This check may write that cache; it never writes a mapping or runs a solver.
+    """
+    repo = Path(repo).resolve()
+    cache = Path(cache_directory).resolve() if cache_directory is not None else repo / "build/partition-report-cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    previous = os.environ.get("MPLCONFIGDIR")
+    os.environ["MPLCONFIGDIR"] = str(cache)
+    try:
+        font = repo / "scripts/partition/assets/fonts/TitilliumWeb-Regular.ttf"
+        return {**_reporting_module().preflight(font), "cache_directory": str(cache),
+                "scope": "Bundled open font and local PNG renderer; no design or partition generated"}
+    finally:
+        if previous is None:
+            os.environ.pop("MPLCONFIGDIR", None)
+        else:
+            os.environ["MPLCONFIGDIR"] = previous
+
+
 def check_tools(repo, java=None, vivado=None, binary=None, wsl=None, library=None):
-    """Read-only preflight: no netlist export, solver job or output directory."""
+    """No netlist export or solve; renderer may write its local build cache."""
     checks = {}
     def check(name, action):
         try:
@@ -136,6 +167,7 @@ def check_tools(repo, java=None, vivado=None, binary=None, wsl=None, library=Non
         interpreter = importlib.import_module("tkinter").Tcl()
         return {"version": interpreter.call("info", "patchlevel"), "scope": "Tcl parsing; no GUI window"}
     check("tcl", tcl)
+    check("reporting", lambda: check_reporting(repo))
     def jvm():
         path = find_java(java)
         return {"executable": path, "version": java_version(path)}

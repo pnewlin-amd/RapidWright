@@ -1,0 +1,120 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>
+<title>FPGA partition report</title><style>html{color:#111;background:white;font:17px/1.6 Georgia,'Times New Roman',serif}body{max-width:1180px;margin:3rem auto;padding:0 1.5rem}h1,h2,h3{font-weight:normal;line-height:1.2}h1,h2{border-bottom:1px solid #999;padding-bottom:.3em}h1{font-size:2.4rem}h2{margin-top:2.5rem}a{color:#111}p,li{max-width:95ch}.lede{font-size:1.15rem}.notice{border:1px solid #888;padding:1rem;background:#fafafa;overflow-wrap:anywhere}.meta{font:13px/1.5 monospace;overflow-wrap:anywhere}pre.meta{white-space:pre-wrap;overflow-wrap:anywhere}figure{margin:2rem 0}img{max-width:100%;height:auto;display:block}figcaption{margin:.5rem 0;color:#222;font-size:.92rem}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid #bbb;vertical-align:top}th{background:#eee;border-top:1px solid #555}.table-scroll{overflow-x:auto}code{font-size:.9em;overflow-wrap:anywhere}summary{cursor:pointer}footer{border-top:1px solid #999;margin-top:3rem;padding-top:1rem;font-size:.85rem}@media print{body{margin:0;font-size:11pt}h2,figure,table{break-inside:avoid}a{text-decoration:none}}</style>
+<h1>FPGA partition report</h1><p class=lede>Selected mapping for <strong>1 FPGAs</strong>. The plots and resource counts describe the selected best accepted mapping, even when the final search attempt was worse.</p>
+<p class=notice><strong>Status:</strong> HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE. <strong>Selected iteration:</strong> 0 (search indices start at zero). <strong>Mapping:</strong> <a href='mapping.txt'>mapping.txt</a>. Hard capacity checks and mapping contract checks remain acceptance gates; these plots do not replace them.</p>
+<p class=notice><strong>Historical measurements preserved by exact ownership equivalence.</strong> This mapping is a contract-compliant re-encoding of an earlier assignment. Its leaf owners and top-port owner are unchanged. The resource, cut, path and iteration measurements below come from that historical run; they are <strong>not a fresh Vivado measurement or a new frontend acceptance run</strong>. Both mapping hashes and the checked equivalence proof are retained in report_data.json. Downstream regroup and hardware remain unverified.</p>
+<h2>Resources and I/O on each FPGA</h2>
+<div class=table-scroll><table><thead><tr><th>Logical FPGA</th><th>Native Vivado CLB LUTs</th><th>Device LUT utilization</th><th>Hard LUT cap</th><th>Outgoing net bits</th><th>Incoming net bits</th><th>Total I/O net bits</th></tr></thead><tbody><tr><td>FPGA_A</td><td>236,741</td><td>2.798%</td><td>6,345,216</td><td>0</td><td>0</td><td>0</td></tr></tbody></table></div>
+<details><summary>Registers, memories, arithmetic blocks and target devices</summary><div class=table-scroll><table><thead><tr><th>Logical FPGA</th><th>Target device</th><th>Registers</th><th>Block RAM tiles</th><th>DSP blocks</th><th>UltraRAM blocks</th></tr></thead><tbody><tr><td>FPGA_A</td><td>xcvp1902</td><td>232,541</td><td>4.0</td><td>0</td><td>0</td></tr></tbody></table></div></details>
+<figure><a href='lut_balance.png'><img src='lut_balance.png' alt='Native Vivado LUT count and signed percentage deviation from the mean for every selected FPGA'></a><figcaption>Native Vivado CLB LUT count. The dashed horizontal line is the arithmetic mean. The lower chart is 100 × (FPGA count / mean − 1). All-zero designs have 0% deviation. Deviation from the mean is different from device utilization.</figcaption></figure>
+<figure><a href='io_cut_balance.png'><img src='io_cut_balance.png' alt='Unique incoming plus outgoing data/control net bits and signed percentage deviation from the mean'></a><figcaption>Per-FPGA I/O cut load: unique outgoing plus unique incoming canonical data/control net bits. A multicast A→B,C counts once at A and once at each receiver. Clock-only and reset-only nets are listed separately below.</figcaption></figure>
+<h2>What an I/O cut means</h2><p>A cut is a signal bit that crosses an FPGA ownership boundary. These counts describe the logical payload that a later prototyping transport or pinmux flow must carry. They are <strong>not physical package pin counts</strong>, bus counts, transport routing, a pinmux compression ratio, or a DUT clock prediction. A bus contributes one canonical net per connected bit. These charts count FPGA-to-FPGA connections; top-level external ports have no invented FPGA home. A cut hypergraph edge is an optimization-model connection; hypergraph transfers can differ from the complete net-bit census.</p>
+<div class=table-scroll><table><thead><tr><th>Signal category</th><th>Unique net bits crossing any boundary</th><th>Directed source/destination net-bit pairs</th></tr></thead><tbody><tr><td>Data and functional synchronous control</td><td>0</td><td>0</td></tr><tr><td>Clock only</td><td>0</td><td>0</td></tr><tr><td>Reset only</td><td>0</td><td>0</td></tr></tbody></table></div>
+<h2>Target system topology</h2><p>Board: j4.phd; selected FPGA count: 1; direct connected pairs: 0. Logical FPGA labels in mapping.txt are separate from physical board locations. The declared link counts guide placement and relative communication cost; these reports do not route transport or certify physical link capacity.</p><details><summary>Selected devices and declared direct links</summary><div class=table-scroll><table><thead><tr><th>Logical FPGA</th><th>Physical topology location</th><th>Direct selected neighbors</th></tr></thead><tbody><tr><td>FPGA_A</td><td>C01/S01/E</td><td>0</td></tr></tbody></table></div><div class=table-scroll><table><thead><tr><th>FPGA</th><th>Neighbor</th><th>Declared lanes</th><th>Wires at topology minimum compression</th></tr></thead><tbody></tbody></table></div></details>
+<h2>Communication between FPGAs</h2><figure><a href='fpga_connectivity.png'><img src='fpga_connectivity.png' alt='Directed FPGA communication matrix with exact data/control net-bit counts'></a><figcaption>Rows transmit; columns receive. Each cell counts one canonical data/control net bit for that source/destination pair. The matrix reports logical communication, not physical topology link bandwidth. Larger systems use the matrix alone so every FPGA remains readable.</figcaption></figure>
+<h2>Snake paths and timing</h2><p>A snake path crosses between FPGAs and passes through combinational logic before a register captures it. Repeated crossings on the same register-free path can reduce the usable DUT clock. The partitioner compares several complementary measurements rather than equating a lower total cut count with a faster design.</p>
+<div class=table-scroll><table><thead><tr><th>Measurement</th><th>Before local cleanup</th><th>Selected result</th><th>Meaning and limit</th></tr></thead><tbody><tr><td>Worst minimum physical link hops without a register</td><td>0</td><td>0</td><td>Lower bound from the declared topology; not a routed transport path.</td></tr><tr><td>Worst FPGA boundary crossings without a register</td><td>0</td><td>0</td><td>Largest number of ownership changes on a modeled combinational path.</td></tr><tr><td>Extra crossings summed over modeled endpoints</td><td>0</td><td>0</td><td>For each endpoint, add crossings beyond the first; this counts path severity, not distinct nets.</td></tr><tr><td>Combinational primitives on transit paths</td><td>0</td><td>0</td><td>Logic that receives a remote signal and can forward it to another FPGA without a register capture.</td></tr><tr><td>Directed hypergraph transfers</td><td>0</td><td>0</td><td>Sum of destination partitions beyond the first over modeled hyperedges; not the full net-bit I/O census.</td></tr><tr><td>Sampled source timing paths scored</td><td>Unavailable</td><td>Unavailable</td><td>Sampled Vivado paths only; this is not all-path timing closure.</td></tr><tr><td>Weighted cost on sampled source timing paths</td><td>Unavailable</td><td>Unavailable</td><td>A relative ranking cost; not measured FPGA-to-FPGA delay or achieved DUT frequency.</td></tr></tbody></table></div>
+<p>Before local cleanup refers to the selected candidate before its local refinement passes. It is not necessarily the first iteration or a separate baseline partitioner. The search-history table below compares complete iterations.</p>
+<p><strong>Timing sample coverage:</strong> Unavailable. <strong>Path model:</strong> primitive conservative data arcs; top IO has no FPGA home. Timing and topology values are model guidance, not post-regroup timing closure.</p>
+<h2>Search progress</h2><p>More iterations give the solver additional opportunities; improvement is not guaranteed. The accepted best candidate is retained. A later row can be worse or rejected. The table distinguishes hard cap failures and reported model/search limitations; a nonselected row is not automatically invalid.</p>
+<div class=table-scroll><table><thead><tr><th>Iteration</th><th>Disposition</th><th>Worst register-free crossings</th><th>Extra endpoint crossings</th><th>Transit primitives</th><th>Hypergraph transfers</th><th>Utilization imbalance</th></tr></thead><tbody><tr><td>0</td><td>Selected best accepted mapping</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0.00%</td></tr></tbody></table></div>
+<h2>Reproducibility and scope</h2><p>Every figure describes the exact mapping identified below. Native resources count the original synthesized design assigned to each FPGA; future wrapper, transport, clocking and debug resources are outside this count. The 75% LUT policy, when selected, is an engineering capacity bound rather than a guarantee of routing or timing closure. Mapping ordering, exact paths, residual ownership and nearest-ancestor redundancy rules are checked separately before publication.</p>
+<p class=meta>Mapping SHA256: b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23</p>
+<details><summary>Run settings and source identities</summary><pre class=meta>{
+  &quot;status&quot;: &quot;HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE&quot;,
+  &quot;backend_version&quot;: null,
+  &quot;partition_preset_requested&quot;: &quot;default&quot;,
+  &quot;frontend_sha256&quot;: &quot;d4dd69ef7849e0e5770e1ea0173f2106b1f1ec13ccc9303f7e8eaf9f3bc7237c&quot;,
+  &quot;native_timeout_seconds&quot;: 7200.0,
+  &quot;native_timeout_scope&quot;: &quot;persistent checkpoint startup and each resource request; batch commands unaffected&quot;,
+  &quot;topology_sha256&quot;: &quot;efd4489efbcf9ddc64257c8c484bb7409117585e95496f2a9dc5c19242a0fafc&quot;,
+  &quot;topology_source_sha256&quot;: &quot;6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83&quot;,
+  &quot;fpga_count&quot;: 1,
+  &quot;native_backend_invoked&quot;: false,
+  &quot;mapping_strategy&quot;: &quot;single_fpga_assignment_no_external_partition_solver&quot;,
+  &quot;preferred_native_balance&quot;: 0.2,
+  &quot;selection_policy_version&quot;: 3,
+  &quot;native_balance_absolute_tolerance&quot;: 1e-12,
+  &quot;effective_solver_epsilon&quot;: 0.3,
+  &quot;effective_refiner_scalar_balance&quot;: 0.3,
+  &quot;native_balance_search_envelope&quot;: 0.3,
+  &quot;target_capacity_dependency_manifest_sha256&quot;: &quot;18a3ac71857350176b8d15449e6cf21f106a9c902bd439a5a7d9d722c218d2c3&quot;,
+  &quot;target_capacity_dependencies_sha256&quot;: {
+    &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\scripts\\partition\\target_capacity.py&quot;: &quot;652db231c4c19cfb2aa7bea140c1184d6f51162be857358b94152b3a2661f992&quot;,
+    &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\topologies\\j4_board_topology.json&quot;: &quot;6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83&quot;,
+    &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\topologies\\j4_board_topology.json.targets.json&quot;: &quot;25db82ebe61166d1d1998042eaa07ad9c843238119e5dd6e16e70695249afcd4&quot;,
+    &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\scripts\\partition\\part_catalog\\vivado_2025_1_parts.tsv&quot;: &quot;a402de944fbd660743f6a7ff12403060e886627439826186600da78618e6a1fe&quot;,
+    &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\scripts\\partition\\part_catalog\\vivado_2025_1_parts.tsv.identity.json&quot;: &quot;c5937f61bb02a289745eee9e8cc359b56692ed908e206cf549830da035957707&quot;
+  },
+  &quot;effective_logical_balance&quot;: 0.5,
+  &quot;logical_balance_policy&quot;: &quot;automatic_uniform_or_unspecified_native_caps&quot;,
+  &quot;logical_balance_requested&quot;: null,
+  &quot;logical_resource_capacities_explicit&quot;: false,
+  &quot;engine_manifest_sha256&quot;: &quot;b64272b8c469cffdf98ea76b1afcae5799a0fa0bc63d855ece820af18d841f8a&quot;,
+  &quot;source_pair_association&quot;: {
+    &quot;version&quot;: 1,
+    &quot;mode&quot;: &quot;supplied_manifest_legacy&quot;,
+    &quot;original_receipt&quot;: &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\aes64_96951b4_reference\\export_receipt.json&quot;,
+    &quot;receipt_snapshot&quot;: &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\final_j4_matrix_controller_v3\\evidence\\AES64_k1\\installed_serial_default_20261014_c90bf8ae\\inputs\\source_pair_receipt.json&quot;,
+    &quot;original_receipt_sha256&quot;: &quot;51706b8a9698d70d0b4b27916824b373e4d04003fe5670dbd1d3e8bd9ba2b9dd&quot;,
+    &quot;receipt_snapshot_sha256&quot;: &quot;51706b8a9698d70d0b4b27916824b373e4d04003fe5670dbd1d3e8bd9ba2b9dd&quot;,
+    &quot;input_edif&quot;: &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\aes64_96951b4_reference\\post_synth.edf&quot;,
+    &quot;input_edif_sha256&quot;: &quot;7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78&quot;,
+    &quot;checkpoint&quot;: &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\aes_farm\\partition_input_c64_96951b4\\mapped.dcp&quot;,
+    &quot;checkpoint_sha256&quot;: &quot;b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300&quot;,
+    &quot;native_primitives&quot;: &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\aes64_96951b4_reference\\leaf_primitives.tsv&quot;,
+    &quot;native_primitives_sha256&quot;: &quot;6ab9a32004084fa5edf922a5e353fbc3b101a00063cd318309d4fa31fd152fa3&quot;,
+    &quot;producer_evidence_verified&quot;: false,
+    &quot;export_run_association&quot;: &quot;Supplied PASS manifest asserts one export association; producer command, actual native exit0 and completion are not verified&quot;,
+    &quot;scope&quot;: &quot;Exact payload and receipt-byte consistency; no arbitrary EDIF/checkpoint electrical-equivalence or cryptographic-authenticity proof&quot;
+  },
+  &quot;source_pair_provenance_sha256&quot;: &quot;2f89cfda8112d258f54bc3c618c0f0fcadf292febb93d5171067d315fba21a97&quot;,
+  &quot;java_heap&quot;: &quot;16G&quot;,
+  &quot;expanded_native_leaf_count&quot;: 517544,
+  &quot;timing_guidance&quot;: &quot;disabled&quot;,
+  &quot;native_artifact_storage&quot;: &quot;verified_lossless_compression&quot;,
+  &quot;native_oracle_mode&quot;: &quot;batch&quot;,
+  &quot;native_residency_policy&quot;: &quot;Probe after Java; retain only when measured available RAM covers the next heap, 8 GiB overhead and a prior-HGR native solver reserve&quot;,
+  &quot;native_residency_decisions&quot;: [],
+  &quot;native_oracle_scripts_sha256&quot;: {
+    &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\tools\\archive_native_request.py&quot;: &quot;1053024a0794942eeb12bcdd77827541220f05d7355089f8113cac90f42eeb6b&quot;
+  },
+  &quot;capture_cohort_cleanup&quot;: {
+    &quot;requested&quot;: &quot;off&quot;,
+    &quot;effective&quot;: &quot;off&quot;,
+    &quot;backend_supported&quot;: true,
+    &quot;reason&quot;: &quot;requested_off&quot;
+  },
+  &quot;native_feedback_quality_guard&quot;: &quot;accepted_mapping_anchor&quot;,
+  &quot;quality_guard_policy&quot;: &quot;ranked&quot;,
+  &quot;minimum_link_hop_analysis_available&quot;: true,
+  &quot;selected_iteration&quot;: 0,
+  &quot;native_cap_check&quot;: &quot;PASS&quot;,
+  &quot;native_balance_target_met&quot;: true,
+  &quot;preferred_native_balance_target_met&quot;: true,
+  &quot;native_search_envelope_met&quot;: true,
+  &quot;new_policy_complete_within_search_envelope&quot;: true,
+  &quot;source_input&quot;: &quot;C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\aes64_96951b4_reference\\post_synth.edf&quot;,
+  &quot;source_sha256&quot;: &quot;7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78&quot;,
+  &quot;checkpoint_sha256&quot;: &quot;b70f97edb03784c4c50bf3d5de1c434666f8929e9acdb2f9d4de2e77a8933300&quot;,
+  &quot;native_inventory_sha256&quot;: &quot;6ab9a32004084fa5edf922a5e353fbc3b101a00063cd318309d4fa31fd152fa3&quot;,
+  &quot;hard_native_clb_lut_caps&quot;: {
+    &quot;FPGA_A&quot;: 6345216
+  },
+  &quot;selection_policy&quot;: &quot;Hard capacities and one cut/topology budget; complete paths; worst minimum-link hop lower bound, logical register-free crossings, sampled source timing cost, endpoint excess, transit; native search-envelope limitation tier, transfers, topology cost, then fine balance; preferred balance remains soft&quot;,
+  &quot;minimum_link_hop_scope&quot;: &quot;Declared selected adjacency shortest-link lower bounds; not actual transport routing, congestion or nanoseconds&quot;,
+  &quot;scope&quot;: &quot;Original synthesized netlist subset utilization; no future wrapper/transport resources included&quot;,
+  &quot;accepted_mapping_sha256&quot;: &quot;b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23&quot;,
+  &quot;historical_metrics_scope&quot;: &quot;Original native and source-graph measurements preserved by exact ownership equivalence; not rerun&quot;
+}</pre><pre class=meta>{
+  &quot;vivado_resources.tsv&quot;: &quot;1a42b503e71bfd3a355f5cc0dd0a9e71ff050f654258397ce1eba390a0c9decb&quot;,
+  &quot;lut_report.txt&quot;: &quot;b9a25e724846053d5009aa0e2c5fb1d4f1580f59ddc0870821253740cef27547&quot;,
+  &quot;fpga_control_categories.tsv&quot;: &quot;25e1514c689c2ad761b296a72369d483cb3a652bed8709cbb7f3f903bd725c62&quot;,
+  &quot;hardware_quality.txt&quot;: &quot;ff92cb677a29813c7be88785fe17bf638bdf36d2c77e4d92d174791728d20e1e&quot;,
+  &quot;run_provenance.json&quot;: &quot;b32d889dda2aea7138ff3cb152cd7858b60bf3b86e4b210c33bf85443e37d64c&quot;,
+  &quot;target_capacity.json&quot;: &quot;992287febce6b4f5c7fab0890356859893398630561b555be3b570b5a31d904e&quot;,
+  &quot;native_lut_caps.tsv&quot;: &quot;443ebbe69d21de3e77aea6bd380dcea80702ea5c1f73da2e5f8c37d9cbf4f146&quot;,
+  &quot;cells.txt&quot;: &quot;9b46c8c3256a2c6b469dbce94029be89423f659d287e60d8290f141e2040635b&quot;,
+  &quot;topology_manifest.json&quot;: &quot;f9b6fe3e9bf1f7d2d3df8343bf4536dcf462f3c07aacb046099f9afff70506a4&quot;
+}</pre></details>
+<p><a href='report_data.json'>Machine-readable report data</a> · <a href='report_manifest.json'>Report file hashes</a></p><footer>Figures use the bundled font and only light orange #F26522, dark orange #C4470C, and black #000000. This page uses a separate black-and-white document style. No external scripts, fonts, or network resources are required to read it.</footer></html>

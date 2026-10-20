@@ -123,13 +123,28 @@ task mainJar(type: Jar, dependsOn: classes) {
 compileJava.finalizedBy(mainJar)
 
 // Mapping-only runtime bundle. Vendor tools, Mt-KaHyPar, source checkpoints,
-// experiment outputs and caches are deliberately external to the distribution.
+// full experiment evidence and caches are external. Small J4 review examples
+// and the report's source assets are included with the documentation.
 tasks.register('partitionerDistZip', Zip) {
     group = 'distribution'
     description = 'Build a portable hardware-aware partitioner runtime ZIP.'
     dependsOn classes, copyJars, restoreScripts
     archiveFileName = 'rapidwright-partitioner-extreme-overhaul.zip'
     destinationDirectory = layout.buildDirectory.dir('distributions')
+    outputs.file(layout.buildDirectory.file('distributions/rapidwright-partitioner-extreme-overhaul.zip.sha256'))
+    doFirst {
+        [
+            'scripts/partition/requirements.txt',
+            'scripts/partition/assets/fonts/TitilliumWeb-Regular.ttf',
+            'scripts/partition/assets/fonts/TitilliumWeb-OFL.txt',
+            'doc/partition/VALIDATION_REPORT.tex',
+            'doc/partition/VALIDATION_REPORT.pdf'
+        ].each { required ->
+            if (!file(required).isFile()) {
+                throw new GradleException("Partitioner distribution requires ${required}")
+            }
+        }
+    }
     into('rapidwright-partitioner') {
         from('partitioner') {
             filePermissions { unix('rwxr-xr-x') }
@@ -141,13 +156,31 @@ tasks.register('partitionerDistZip', Zip) {
         into('jars') { from(configurations.runtimeClasspath) }
         into('scripts/partition') {
             from('scripts/partition') {
-                include '*.py', 'part_catalog/**'
+                include '*.py', 'requirements.txt', 'part_catalog/**', 'assets/**'
                 exclude 'test_*.py', '**/__pycache__/**'
             }
         }
         into('tools') { from('tools') { include '*.py', '*.tcl', '*.md'; exclude 'test_*.py' } }
-        into('doc/partition') { from('doc/partition') { exclude '*.aux', '*.log', '*.out', '*.toc', '*.pdf' } }
+        into('doc/partition') {
+            from('doc/partition') {
+                // Include the readable PDF, its figures and build sources.
+                exclude '*.aux', '*.log', '*.out', '*.toc', '*.fls', '*.fdb_latexmk', '**/__pycache__/**'
+            }
+        }
         into('test/resources/partition/smoke') { from('test/resources/partition/smoke') }
+    }
+    doLast {
+        def archive = archiveFile.get().asFile
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        archive.withInputStream { stream ->
+            byte[] buffer = new byte[65536]
+            int count
+            while ((count = stream.read(buffer)) != -1) {
+                digest.update(buffer, 0, count)
+            }
+        }
+        new File(archive.parentFile, archive.name + '.sha256').setText(
+            digest.digest().encodeHex().toString() + '  ' + archive.name + '\n', 'UTF-8')
     }
 }
 

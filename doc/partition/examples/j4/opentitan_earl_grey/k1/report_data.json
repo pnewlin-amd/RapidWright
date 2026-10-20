@@ -1,0 +1,672 @@
+{
+  "schema_version": 1,
+  "status": "HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE",
+  "fpga_labels": [
+    "FPGA_A"
+  ],
+  "mapping_file": "mapping.txt",
+  "mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+  "source_files_sha256": {
+    "vivado_resources.tsv": "907c342c4de3b26bcaa9d840b8beeda67b415cc6d47908a095cbef42ecbb2a13",
+    "lut_report.txt": "d0d4021a7618d65acd52cb7e88519254ed24d7dc0e11ed2e0571e24015d18c99",
+    "fpga_control_categories.tsv": "25e1514c689c2ad761b296a72369d483cb3a652bed8709cbb7f3f903bd725c62",
+    "hardware_quality.txt": "f6fe61541eea822bf3591846db480454f4e12114ac16dc30c800d5559fef1fab",
+    "run_provenance.json": "34a210c87035d7581f3fa49c39a2de99f563b3985b9abe1890f5a60ed3ec5c8d",
+    "target_capacity.json": "992287febce6b4f5c7fab0890356859893398630561b555be3b570b5a31d904e",
+    "native_lut_caps.tsv": "443ebbe69d21de3e77aea6bd380dcea80702ea5c1f73da2e5f8c37d9cbf4f146",
+    "cells.txt": "9b46c8c3256a2c6b469dbce94029be89423f659d287e60d8290f141e2040635b",
+    "topology_manifest.json": "f9b6fe3e9bf1f7d2d3df8343bf4536dcf462f3c07aacb046099f9afff70506a4"
+  },
+  "selected_iteration": 0,
+  "resources": {
+    "FPGA_A": {
+      "clb_luts": 230543,
+      "logical_lut_primitives": 267266,
+      "lut_as_logic": 230004,
+      "lut_as_memory": 539,
+      "registers": 146801,
+      "flip_flops": 146801,
+      "latches": 0,
+      "dsps": 24,
+      "uram": 12,
+      "primitive_leaves": 434666,
+      "block_ram_tiles": 343.0
+    }
+  },
+  "capacities": {
+    "FPGA_A": {
+      "device": "xcvp1902",
+      "physical_lut_capacity": 8460288,
+      "hard_lut_cap": 6345216
+    }
+  },
+  "lut_mean": 230543.0,
+  "lut_deviation_percent": {
+    "FPGA_A": 0.0
+  },
+  "io_cuts": {
+    "by_category": {
+      "data_or_functional_sync_control": {
+        "FPGA_A": {
+          "incoming": 0,
+          "outgoing": 0,
+          "total": 0
+        }
+      },
+      "clock": {
+        "FPGA_A": {
+          "incoming": 0,
+          "outgoing": 0,
+          "total": 0
+        }
+      },
+      "reset_only": {
+        "FPGA_A": {
+          "incoming": 0,
+          "outgoing": 0,
+          "total": 0
+        }
+      }
+    },
+    "directed_matrices": {
+      "data_or_functional_sync_control": {
+        "FPGA_A": {
+          "FPGA_A": 0
+        }
+      },
+      "clock": {
+        "FPGA_A": {
+          "FPGA_A": 0
+        }
+      },
+      "reset_only": {
+        "FPGA_A": {
+          "FPGA_A": 0
+        }
+      }
+    },
+    "unique_crossing_nets": {
+      "data_or_functional_sync_control": 0,
+      "clock": 0,
+      "reset_only": 0
+    },
+    "directed_net_destinations": {
+      "data_or_functional_sync_control": 0,
+      "clock": 0,
+      "reset_only": 0
+    },
+    "source": "fpga_control_categories.tsv",
+    "authority": "Source-netlist logical canonical net bits, not placed package pins or achieved pinmux ratio",
+    "per_fpga_definition": "Unique outgoing data/control net bits plus unique incoming data/control net bits; one multicast source counted once",
+    "matrix_definition": "One canonical data/control net bit per directed source/destination FPGA pair",
+    "excluded_from_data_charts": [
+      "clock",
+      "reset_only"
+    ]
+  },
+  "quality": {
+    "backend": "trivial_single_fpga_assignment",
+    "transfer_growth_reference": "0",
+    "topology_growth_reference": "0.0",
+    "quality_guard_policy_version": "1",
+    "quality_guard_policy": "ranked",
+    "quality_guard_anchor_policy_metadata": "not_used",
+    "quality_guard_reference": "current_native_baseline",
+    "minimum_link_hop_analysis_available": "true",
+    "minimum_link_hop_scope": "declared selected topology shortest links; lower bound, not actual routed transport",
+    "quality_guard_max_minimum_link_hops": "0",
+    "before_max_minimum_link_hops": 0,
+    "after_max_minimum_link_hops": 0,
+    "before_max_minimum_relay_traversals": "0",
+    "after_max_minimum_relay_traversals": "0",
+    "quality_guard_max_crossings": "0",
+    "quality_guard_endpoint_excess": "0",
+    "quality_guard_transit": "0",
+    "baseline_satisfies_quality_guard": "true",
+    "path_model": "primitive conservative data arcs; top IO has no FPGA home",
+    "path_model_scope": "functional_synchronous_controls_v2_UNISIM_2025_1",
+    "path_model_default_authority": "AMD_VIVADO_2025_1_UNISIM_SYNCHRONOUS_CONTROL_DEFAULTS_V2",
+    "complete": "true",
+    "opaque_primitives": "0",
+    "resource_coverage_complete": "true",
+    "native_transfers": "0",
+    "native_max_crossings": "0",
+    "native_endpoint_excess": "0",
+    "native_transit_primitives": "0",
+    "unanchored_input_nets": "18",
+    "cycle_nodes": "0",
+    "sampled_path_witnesses": "4096",
+    "proposed_moves": "0",
+    "swap_refinement": "bounded_post_greedy_exchange",
+    "swap_phase_accepted": "false",
+    "retained_swap_pass": "-1",
+    "swap_cost_probes": "0",
+    "swap_feasibility_rejects": "0",
+    "proposed_swaps": "0",
+    "swap_scan_units": "0",
+    "swap_work_budget_skips": "0",
+    "swap_limits": "64 vertices,16 feasible partners,4096 probes,8000000 total scan units,65536 indices per neighborhood,4 swaps per pass",
+    "refinement_accepted": "false",
+    "retained_pass": "-1",
+    "candidate_transfers": "0",
+    "candidate_topology_distance": "0.0",
+    "candidate_max_crossings": "0",
+    "candidate_endpoint_excess": "0",
+    "candidate_transit_primitives": "0",
+    "before_transfers": 0,
+    "after_transfers": 0,
+    "before_topology_distance": "0.0",
+    "after_topology_distance": 0.0,
+    "before_max_register_free_crossings": 0,
+    "after_max_register_free_crossings": 0,
+    "before_endpoint_excess_crossings": 0,
+    "after_endpoint_excess_crossings": 0,
+    "before_transit_primitives": 0,
+    "after_transit_primitives": 0,
+    "known_logical_capacities_and_fixed_constraints": "PASS",
+    "configured_scalar_balance": "PASS",
+    "configured_scalar_capacities": "[347445]",
+    "configured_scalar_loads": "[267266]"
+  },
+  "topology": {
+    "schema": "c/1",
+    "board": "j4.phd",
+    "source": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\topologies\\j4_board_topology.json",
+    "source_sha256": "6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83",
+    "fpga_count": 1,
+    "connected_pairs": 0,
+    "missing_pairs": 0,
+    "source_fpga_count": 4,
+    "source_connected_pairs": 6,
+    "selected_ids": [
+      0
+    ],
+    "rapidwright_cost_scale": 1,
+    "native_order": "sorted nonnegative physical ID",
+    "cost_policy": {
+      "kind": "hop_dominant_then_quantized_inverse_lanes",
+      "hop_base": 1,
+      "rapidwright_cost_scale": 1,
+      "inverse_scale": 1024,
+      "penalty_common_divisor": 1,
+      "cost_by_lanes": {},
+      "route_guarantee": "One extra link outweighs secondary penalties on any simple route or Steiner tree with at most k-1 links",
+      "scope": "Scalar native objective across all nets; not a global lexicographic guarantee, measured latency, or hard routed link capacity"
+    },
+    "fpgas": [
+      {
+        "id": 0,
+        "path": "C01/S01/E",
+        "chassis": "C01",
+        "slot": "S01",
+        "position": "E",
+        "degree": 3,
+        "partition": "FPGA_A",
+        "partition_index": 0,
+        "metis_vertex": 1,
+        "source_degree": 3,
+        "selected_degree": 0
+      }
+    ],
+    "edges": [],
+    "source_document": {
+      "schema": "c/1",
+      "board": "j4.phd",
+      "note": "vertex = physical FPGA, edge = pair is physically connected, weight = lane count. Absent pair = NOT connected: traffic between it must relay through a third FPGA, costing an extra DUT_CLK cycle and a full socket delay.",
+      "fpga_count": 4,
+      "possible_pairs": 6,
+      "connected_pairs": 6,
+      "connectivity_fraction": 1.0,
+      "lane_min": 16,
+      "lane_max": 16,
+      "lane_uniform": true,
+      "complete_graph": true,
+      "wires_per_lane_at_min_compression": 64,
+      "fpgas": [
+        {
+          "id": 0,
+          "path": "C01/S01/E",
+          "chassis": "C01",
+          "slot": "S01",
+          "position": "E",
+          "degree": 3
+        },
+        {
+          "id": 1,
+          "path": "C01/S01/F",
+          "chassis": "C01",
+          "slot": "S01",
+          "position": "F",
+          "degree": 3
+        },
+        {
+          "id": 2,
+          "path": "C01/S01/G",
+          "chassis": "C01",
+          "slot": "S01",
+          "position": "G",
+          "degree": 3
+        },
+        {
+          "id": 3,
+          "path": "C01/S01/H",
+          "chassis": "C01",
+          "slot": "S01",
+          "position": "H",
+          "degree": 3
+        }
+      ],
+      "edges": [
+        {
+          "a": "C01/S01/E",
+          "b": "C01/S01/F",
+          "a_id": 0,
+          "b_id": 1,
+          "lanes": 16,
+          "wires_at_min_compression": 1024,
+          "cross_slot": false
+        },
+        {
+          "a": "C01/S01/E",
+          "b": "C01/S01/G",
+          "a_id": 0,
+          "b_id": 2,
+          "lanes": 16,
+          "wires_at_min_compression": 1024,
+          "cross_slot": false
+        },
+        {
+          "a": "C01/S01/E",
+          "b": "C01/S01/H",
+          "a_id": 0,
+          "b_id": 3,
+          "lanes": 16,
+          "wires_at_min_compression": 1024,
+          "cross_slot": false
+        },
+        {
+          "a": "C01/S01/F",
+          "b": "C01/S01/G",
+          "a_id": 1,
+          "b_id": 2,
+          "lanes": 16,
+          "wires_at_min_compression": 1024,
+          "cross_slot": false
+        },
+        {
+          "a": "C01/S01/F",
+          "b": "C01/S01/H",
+          "a_id": 1,
+          "b_id": 3,
+          "lanes": 16,
+          "wires_at_min_compression": 1024,
+          "cross_slot": false
+        },
+        {
+          "a": "C01/S01/G",
+          "b": "C01/S01/H",
+          "a_id": 2,
+          "b_id": 3,
+          "lanes": 16,
+          "wires_at_min_compression": 1024,
+          "cross_slot": false
+        }
+      ],
+      "adjacency": {
+        "C01/S01/E": {
+          "C01/S01/F": 16,
+          "C01/S01/G": 16,
+          "C01/S01/H": 16
+        },
+        "C01/S01/F": {
+          "C01/S01/E": 16,
+          "C01/S01/G": 16,
+          "C01/S01/H": 16
+        },
+        "C01/S01/G": {
+          "C01/S01/E": 16,
+          "C01/S01/F": 16,
+          "C01/S01/H": 16
+        },
+        "C01/S01/H": {
+          "C01/S01/E": 16,
+          "C01/S01/F": 16,
+          "C01/S01/G": 16
+        }
+      }
+    },
+    "graph_sha256": "efd4489efbcf9ddc64257c8c484bb7409117585e95496f2a9dc5c19242a0fafc",
+    "devices_sha256": "50f7a25fc43bb81f209a53853c3097e2f9c09732e306dc162274ebf0234220c8",
+    "wires_semantics": "Declared minimum-compression metadata preserved and arithmetic checked; not assumed to be raw pins, achievable per-cycle capacity, a TDM ratio or measured latency",
+    "hard_routed_bandwidth_enforced": false,
+    "measured_link_delay_ns": null
+  },
+  "candidates": [
+    {
+      "iteration": 0,
+      "directory": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\final_j4_matrix_controller_v3\\evidence\\OT_k1\\installed_serial_default_20261014_e700d56e\\candidate_00",
+      "native_clb_luts": {
+        "FPGA_A": 230543
+      },
+      "selection_policy_version": 3,
+      "native_balance_search_envelope": 0.3,
+      "native_balance_absolute_tolerance": 1e-12,
+      "preferred_native_balance": 0.2,
+      "native_imbalance": 0.0,
+      "target_imbalance": 0.0,
+      "cap_violations": {},
+      "target_device_utilizations": {
+        "FPGA_A": 0.027250017966291454
+      },
+      "preferred_balance_target_met": true,
+      "within_native_search_envelope": true,
+      "transfers": 0,
+      "topology_distance": 0.0,
+      "guard_reference_transfers": 0,
+      "guard_reference_topology": 0.0,
+      "max_crossings": 0,
+      "endpoint_excess": 0,
+      "transit_primitives": 0,
+      "path_analysis_complete": true,
+      "quality_guard_policy": "ranked",
+      "quality_guard_policy_confirmed": true,
+      "minimum_link_hop_analysis_available": true,
+      "max_minimum_link_hops": 0,
+      "max_minimum_relay_traversals": 0,
+      "mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "frontier_sha256": "5062bb832b7ec555705622bf6cf40a074a483f3cb1112a7fc218c01d94b64e69",
+      "assignment_sha256": "f4e5066b3e0b56a18fe5e942de6fd4185f4dbf8e447f823f3c544b4e110d54a5",
+      "native_completion_sha256": "979b696cdb5dacb23cdb5c330bd13daa69a6b87d408ae1aab41ac033c83a2b97",
+      "selected_report_sha256": {
+        "hardware_quality.txt": "f6fe61541eea822bf3591846db480454f4e12114ac16dc30c800d5559fef1fab",
+        "logical_resources.tsv": "f5dab7144cf2ee1e0aa458a65b7c3946497630458fd276b8ffafd1f779b4eb78",
+        "logical_lut_report.txt": "15016e49d4207ab10de6b805924da764b38dcb7f97f1f06585e3139b3980e6c8",
+        "primitive_counts.tsv": "b7d4454fb4d1ad6a18ffe284367e36d9737aa95b927d6bf78e6e1d7b8d1255c7",
+        "native_candidates.tsv": "92e6b01ba78aae39478fcf32ea5fbd26d5b85290342417e1a98ec8fdf188a1c0",
+        "fpga_io_cuts.txt": "fa0b3c907fb8117a2c3dee8031a203036c26e56c420894fdce4743bef069a5ab",
+        "fpga_net_crossings.tsv": "46e26558d6ce9c72fb5d83cfc9b5e40575faf500060b1fda9e51fbecc78ad074",
+        "io_cuts.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "metric_definitions.txt": "28c1e87b6c622b819cb9908f3ad9f58277331314f7be645e2b80c10d99238ba8",
+        "run_provenance.json": "34a210c87035d7581f3fa49c39a2de99f563b3985b9abe1890f5a60ed3ec5c8d",
+        "worst_combinational_path.tsv": "40c47e1edb5617c106cdd1d6e68bee12ba9257a6c27bccdc80d337626c5624cb",
+        "refinement_passes.tsv": "35e7337e3fda53f0ee20e213013549aaa32a5c9e2ad7bb3962f739a755e85800",
+        "swap_refinement_passes.tsv": "6acc0a2098f52118afdedd88e63a4ebeadd873cf289ac7cd0bb5e3d84892d60e",
+        "final_assignment.part": "f4e5066b3e0b56a18fe5e942de6fd4185f4dbf8e447f823f3c544b4e110d54a5",
+        "endpoint_kind_diagnostic.tsv": "55ab3e0dd0f4bf0a8408ff07d4118612df8b16182b0b7212630fa5a6af77832a",
+        "fpga_control_categories.tsv": "25e1514c689c2ad761b296a72369d483cb3a652bed8709cbb7f3f903bd725c62",
+        "cohort_refinement_passes.tsv": null
+      },
+      "java_immutable_report_sha256": {
+        "hardware_quality.txt": "f6fe61541eea822bf3591846db480454f4e12114ac16dc30c800d5559fef1fab",
+        "logical_resources.tsv": "f5dab7144cf2ee1e0aa458a65b7c3946497630458fd276b8ffafd1f779b4eb78",
+        "primitive_counts.tsv": "b7d4454fb4d1ad6a18ffe284367e36d9737aa95b927d6bf78e6e1d7b8d1255c7",
+        "native_candidates.tsv": "92e6b01ba78aae39478fcf32ea5fbd26d5b85290342417e1a98ec8fdf188a1c0",
+        "fpga_io_cuts.txt": "fa0b3c907fb8117a2c3dee8031a203036c26e56c420894fdce4743bef069a5ab",
+        "fpga_net_crossings.tsv": "46e26558d6ce9c72fb5d83cfc9b5e40575faf500060b1fda9e51fbecc78ad074",
+        "io_cuts.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run_provenance.json": "34a210c87035d7581f3fa49c39a2de99f563b3985b9abe1890f5a60ed3ec5c8d",
+        "worst_combinational_path.tsv": "40c47e1edb5617c106cdd1d6e68bee12ba9257a6c27bccdc80d337626c5624cb",
+        "refinement_passes.tsv": "35e7337e3fda53f0ee20e213013549aaa32a5c9e2ad7bb3962f739a755e85800",
+        "swap_refinement_passes.tsv": "6acc0a2098f52118afdedd88e63a4ebeadd873cf289ac7cd0bb5e3d84892d60e",
+        "final_assignment.part": "f4e5066b3e0b56a18fe5e942de6fd4185f4dbf8e447f823f3c544b4e110d54a5",
+        "endpoint_kind_diagnostic.tsv": "55ab3e0dd0f4bf0a8408ff07d4118612df8b16182b0b7212630fa5a6af77832a",
+        "fpga_control_categories.tsv": "25e1514c689c2ad761b296a72369d483cb3a652bed8709cbb7f3f903bd725c62",
+        "cohort_refinement_passes.tsv": null,
+        "frontier.tsv": "5062bb832b7ec555705622bf6cf40a074a483f3cb1112a7fc218c01d94b64e69",
+        "mapping.txt": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16"
+      },
+      "native_regenerated_report_sha256": {
+        "lut_report.txt": "d0d4021a7618d65acd52cb7e88519254ed24d7dc0e11ed2e0571e24015d18c99",
+        "vivado_resources.tsv": "907c342c4de3b26bcaa9d840b8beeda67b415cc6d47908a095cbef42ecbb2a13",
+        "source_mapping.txt": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+        "native_complete.txt": "979b696cdb5dacb23cdb5c330bd13daa69a6b87d408ae1aab41ac033c83a2b97",
+        "vivado_resource_summary.txt": "ff72fb311f3d0cd02e60a526e96e56dc38bcca06ab5ed7cfd718c92572609567"
+      }
+    }
+  ],
+  "historical_evidence": {
+    "status": "HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE",
+    "fresh_native_measurement": false,
+    "historical_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+    "successor_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+    "functional_leaves_compared": 427171,
+    "ownership_mismatches": 0,
+    "top_port_owner_unchanged": true,
+    "source_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+    "source_checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+    "proof_files_sha256": {
+      "prior_native_evidence.json": "bd21da4f5f315b694ecd37b5a8cd17efa9be52f2d99b87f12cc4beb01e9b118e",
+      "reencoding_equivalence.json": "298c0c252cc1d75749f5bc62f18e9ea857cb0b977aa538a2e99ffa19b33069f5",
+      "mapping_contract.json": "79d4b1a55c887e8439e73c48b9d8e7ebecfa19b312394c2ed786084c1ac2e54a",
+      "mapping_records.tsv": "82307e8b262a36c9b1e78eae5e1d00f59cfefe655b4fdab3c8f6e2e5785020fd",
+      "mapping_ownership.tsv.gz": "e4e42e462320e936929d490cf8395de9b1aa84eac9252a5c0ca44c3d20fb064c"
+    },
+    "historical_artifact_sha256": {
+      "cells.txt": "9b46c8c3256a2c6b469dbce94029be89423f659d287e60d8290f141e2040635b",
+      "endpoint_kind_diagnostic.tsv": "55ab3e0dd0f4bf0a8408ff07d4118612df8b16182b0b7212630fa5a6af77832a",
+      "final_assignment.part": "f4e5066b3e0b56a18fe5e942de6fd4185f4dbf8e447f823f3c544b4e110d54a5",
+      "fpga_control_categories.tsv": "25e1514c689c2ad761b296a72369d483cb3a652bed8709cbb7f3f903bd725c62",
+      "fpga_devices.tsv": "50f7a25fc43bb81f209a53853c3097e2f9c09732e306dc162274ebf0234220c8",
+      "fpga_io_cuts.txt": "fa0b3c907fb8117a2c3dee8031a203036c26e56c420894fdce4743bef069a5ab",
+      "fpga_net_crossings.tsv": "46e26558d6ce9c72fb5d83cfc9b5e40575faf500060b1fda9e51fbecc78ad074",
+      "hardware_quality.txt": "f6fe61541eea822bf3591846db480454f4e12114ac16dc30c800d5559fef1fab",
+      "identity.json": "ff70cb487bf6dc330e6a79290aa9c02b4c3e9030a728785f30662b6be3c8ec67",
+      "io_cuts.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logical_lut_report.txt": "15016e49d4207ab10de6b805924da764b38dcb7f97f1f06585e3139b3980e6c8",
+      "logical_resources.tsv": "f5dab7144cf2ee1e0aa458a65b7c3946497630458fd276b8ffafd1f779b4eb78",
+      "lut_report.txt": "d0d4021a7618d65acd52cb7e88519254ed24d7dc0e11ed2e0571e24015d18c99",
+      "mapping.txt": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "metric_definitions.txt": "28c1e87b6c622b819cb9908f3ad9f58277331314f7be645e2b80c10d99238ba8",
+      "native_candidates.tsv": "92e6b01ba78aae39478fcf32ea5fbd26d5b85290342417e1a98ec8fdf188a1c0",
+      "native_complete.txt": "979b696cdb5dacb23cdb5c330bd13daa69a6b87d408ae1aab41ac033c83a2b97",
+      "native_lut_caps.tsv": "443ebbe69d21de3e77aea6bd380dcea80702ea5c1f73da2e5f8c37d9cbf4f146",
+      "parity_audit_final/00_complete_cut_category_parity.json": "dabf40d0fdfd0399c8f8d436e08bcc74f751df999ff4970ed3b55f455a2f1205",
+      "parity_audit_final/01_comparison_receipt.json": "fab4b77ce12620939e860ff9a995ae4adf0f6d5abf2275d01aaf351de9c139bb",
+      "parity_audit_final/02_OT_k1.json": "dc7f9fd7e5180155c0eb4ca40f31e92c617ab6d13ab5ac8ff129729638892d23",
+      "parity_audit_final/03_metadata_receipt.json": "f0df29698563c161f2f3930c667c036415bc1962cf5e7c12d7e67451e1762d58",
+      "parity_audit_final/04_comparison_inputs.json": "79d032d0aafad6e25b45334e1fd021158df879dd56e7d0720b3b0bfba645257e",
+      "parity_audit_final/05_owned_process_receipt.json": "e664996803e7088bb08e6bfa5f313eaf21d42d812b850394a2fd4378d5fa9cc0",
+      "parity_audit_final/compact_mapping_audit.json": "49d96563fa706f6f96ad76b3f32c3b12112c12318c53617b66aa9fc44b530a2b",
+      "parity_audit_final/identity_receipt.json": "91c1b7b5dd1efa11e3720e38d4a4f166ecf0c9e80c68f3632281c1da6b6bb450",
+      "primitive_counts.tsv": "b7d4454fb4d1ad6a18ffe284367e36d9737aa95b927d6bf78e6e1d7b8d1255c7",
+      "QUALIFICATION.json": "04556e2e0e09e2727c18d682be970d94f99da128f9124bffc6a55a6fe3829239",
+      "refinement_passes.tsv": "35e7337e3fda53f0ee20e213013549aaa32a5c9e2ad7bb3962f739a755e85800",
+      "run_provenance.json": "34a210c87035d7581f3fa49c39a2de99f563b3985b9abe1890f5a60ed3ec5c8d",
+      "source_mapping.txt": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "STATUS.json": "a88a3a8ae680090cff72a93510ae80ed46da67fb50f0df9e9de1b41d924e1f6c",
+      "swap_refinement_passes.tsv": "6acc0a2098f52118afdedd88e63a4ebeadd873cf289ac7cd0bb5e3d84892d60e",
+      "target_capacity.json": "992287febce6b4f5c7fab0890356859893398630561b555be3b570b5a31d904e",
+      "target_capacity_dependency_manifest.json": "18a3ac71857350176b8d15449e6cf21f106a9c902bd439a5a7d9d722c218d2c3",
+      "topology_manifest.json": "f9b6fe3e9bf1f7d2d3df8343bf4536dcf462f3c07aacb046099f9afff70506a4",
+      "vivado_resource_summary.txt": "15ce957eabec22df23cf8af9828557d1ff4fc6c20b3c816db1e3f1253c8461b5",
+      "vivado_resources.tsv": "907c342c4de3b26bcaa9d840b8beeda67b415cc6d47908a095cbef42ecbb2a13",
+      "worst_combinational_path.tsv": "40c47e1edb5617c106cdd1d6e68bee12ba9257a6c27bccdc80d337626c5624cb"
+    },
+    "historical_metrics_directory": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RESULTS FOR J4\\OPENTITAN_EARL_GREY\\1 FPGA",
+    "scope": "Historical source-netlist resource and connectivity measurements preserved by checked exact functional ownership and top-port owner equivalence; no new Vivado, regroup, wrapper or hardware validation"
+  },
+  "run_settings": {
+    "status": "HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE",
+    "backend_version": null,
+    "partition_preset_requested": "default",
+    "frontend_sha256": "d4dd69ef7849e0e5770e1ea0173f2106b1f1ec13ccc9303f7e8eaf9f3bc7237c",
+    "native_timeout_seconds": 7200.0,
+    "native_timeout_scope": "persistent checkpoint startup and each resource request; batch commands unaffected",
+    "topology_sha256": "efd4489efbcf9ddc64257c8c484bb7409117585e95496f2a9dc5c19242a0fafc",
+    "topology_source_sha256": "6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83",
+    "fpga_count": 1,
+    "native_backend_invoked": false,
+    "mapping_strategy": "single_fpga_assignment_no_external_partition_solver",
+    "preferred_native_balance": 0.2,
+    "selection_policy_version": 3,
+    "native_balance_absolute_tolerance": 1e-12,
+    "effective_solver_epsilon": 0.3,
+    "effective_refiner_scalar_balance": 0.3,
+    "native_balance_search_envelope": 0.3,
+    "target_capacity_dependency_manifest_sha256": "18a3ac71857350176b8d15449e6cf21f106a9c902bd439a5a7d9d722c218d2c3",
+    "target_capacity_dependencies_sha256": {
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\scripts\\partition\\target_capacity.py": "652db231c4c19cfb2aa7bea140c1184d6f51162be857358b94152b3a2661f992",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\topologies\\j4_board_topology.json": "6f393e7eee76cbf20cd96e46f52c8c0a34be2365c7222aa6cf7abfe87c7e1b83",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\topologies\\j4_board_topology.json.targets.json": "25db82ebe61166d1d1998042eaa07ad9c843238119e5dd6e16e70695249afcd4",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\scripts\\partition\\part_catalog\\vivado_2025_1_parts.tsv": "a402de944fbd660743f6a7ff12403060e886627439826186600da78618e6a1fe",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\scripts\\partition\\part_catalog\\vivado_2025_1_parts.tsv.identity.json": "c5937f61bb02a289745eee9e8cc359b56692ed908e206cf549830da035957707"
+    },
+    "effective_logical_balance": 0.5,
+    "logical_balance_policy": "automatic_uniform_or_unspecified_native_caps",
+    "logical_balance_requested": null,
+    "logical_resource_capacities_explicit": false,
+    "engine_manifest_sha256": "b64272b8c469cffdf98ea76b1afcae5799a0fa0bc63d855ece820af18d841f8a",
+    "source_pair_association": {
+      "version": 1,
+      "mode": "supplied_manifest_legacy",
+      "original_receipt": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\opentitan_reference\\export_receipt.json",
+      "receipt_snapshot": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\final_j4_matrix_controller_v3\\evidence\\OT_k1\\installed_serial_default_20261014_e700d56e\\inputs\\source_pair_receipt.json",
+      "original_receipt_sha256": "dcbd895cbef9f2a72ca4e66cdb97530e69c5af3d9716b1912afd87470de129c8",
+      "receipt_snapshot_sha256": "dcbd895cbef9f2a72ca4e66cdb97530e69c5af3d9716b1912afd87470de129c8",
+      "input_edif": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\opentitan_reference\\post_synth.edf",
+      "input_edif_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+      "checkpoint": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\opentitan\\vivado_xcu250-figd2104-2-e\\synth.dcp",
+      "checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+      "native_primitives": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\opentitan_reference\\leaf_primitives.tsv",
+      "native_primitives_sha256": "a7ffc23cadb60b8f6a002552d388a8b78a25b691a682e5d5eda01370ea0ddd7c",
+      "producer_evidence_verified": false,
+      "export_run_association": "Supplied PASS manifest asserts one export association; producer command, actual native exit0 and completion are not verified",
+      "scope": "Exact payload and receipt-byte consistency; no arbitrary EDIF/checkpoint electrical-equivalence or cryptographic-authenticity proof"
+    },
+    "source_pair_provenance_sha256": "367bb17c27532fd8c1b07e045e8cca1b22aefd584c8ab0fb381d3f010f0c5361",
+    "java_heap": "16G",
+    "expanded_native_leaf_count": 435034,
+    "timing_guidance": "disabled",
+    "native_artifact_storage": "verified_lossless_compression",
+    "native_oracle_mode": "batch",
+    "native_residency_policy": "Probe after Java; retain only when measured available RAM covers the next heap, 8 GiB overhead and a prior-HGR native solver reserve",
+    "native_residency_decisions": [],
+    "native_oracle_scripts_sha256": {
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\RapidWright\\tools\\archive_native_request.py": "1053024a0794942eeb12bcdd77827541220f05d7355089f8113cac90f42eeb6b"
+    },
+    "capture_cohort_cleanup": {
+      "requested": "off",
+      "effective": "off",
+      "backend_supported": true,
+      "reason": "requested_off"
+    },
+    "native_feedback_quality_guard": "accepted_mapping_anchor",
+    "quality_guard_policy": "ranked",
+    "minimum_link_hop_analysis_available": true,
+    "selected_iteration": 0,
+    "native_cap_check": "PASS",
+    "native_balance_target_met": true,
+    "preferred_native_balance_target_met": true,
+    "native_search_envelope_met": true,
+    "new_policy_complete_within_search_envelope": true,
+    "source_input": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\opentitan_reference\\post_synth.edf",
+    "source_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+    "checkpoint_sha256": "bad3c31ed88515a4269c7d378463b3fc31322341856079aba0434ec2bea2658b",
+    "native_inventory_sha256": "a7ffc23cadb60b8f6a002552d388a8b78a25b691a682e5d5eda01370ea0ddd7c",
+    "hard_native_clb_lut_caps": {
+      "FPGA_A": 6345216
+    },
+    "selection_policy": "Hard capacities and one cut/topology budget; complete paths; worst minimum-link hop lower bound, logical register-free crossings, sampled source timing cost, endpoint excess, transit; native search-envelope limitation tier, transfers, topology cost, then fine balance; preferred balance remains soft",
+    "minimum_link_hop_scope": "Declared selected adjacency shortest-link lower bounds; not actual transport routing, congestion or nanoseconds",
+    "scope": "Original synthesized netlist subset utilization; no future wrapper/transport resources included",
+    "accepted_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+    "historical_metrics_scope": "Original native and source-graph measurements preserved by exact ownership equivalence; not rerun"
+  },
+  "run_provenance": {
+    "primary_weight_scheme": "logical_lut_primitives",
+    "minimum_link_hop_analysis_version": 1,
+    "dependency_sha256": {
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\final_j4_matrix_controller_v3\\evidence\\OT_k1\\installed_serial_default_20261014_e700d56e\\system.graph": "efd4489efbcf9ddc64257c8c484bb7409117585e95496f2a9dc5c19242a0fafc"
+    },
+    "timing_guidance": "structural_only",
+    "hypergraph_sha256": "49085afad3d4d3c58d72b67eb7d4c0a7e4377eb696a7f7a7968aacacfa8a0501",
+    "useful_logic_occupancy_status": "PASS",
+    "capture_cohort_protection_scope": "fixed_explicit_source_policy_and_atomic_HDI_frontier_v1",
+    "capture_cohort_source_protected_owners": 0,
+    "quality_guard_reference": "current_native_baseline",
+    "minimum_link_hop_scope": "Lower bounds on declared selected adjacency; not actual transport routing, congestion or nanoseconds",
+    "backend_version": null,
+    "useful_logic_occupancy_pass": true,
+    "capture_cohort_mode_requested": "off",
+    "capture_cohort_caller_reason": "requested_off",
+    "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+    "physical_utilization_authority": "Native Vivado subset report required separately",
+    "useful_logic_definition": "Sum of HardwarePartitionGraph.realLogic over final frontier assignments; excludes trusted constant/clock/I/O infrastructure and synthetic capture endpoints; not LUT count or packed area",
+    "starts": 1,
+    "quality_guard_policy": "ranked",
+    "partitions": 1,
+    "source_input": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\opentitan_reference\\post_synth.edf",
+    "resource_coverage_complete": true,
+    "leaf_lut_limit": 4176,
+    "quality_guard_policy_version": 1,
+    "useful_logic_by_partition": {
+      "FPGA_A": 427171
+    },
+    "args": [
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\LSUT_2\\work\\partition_experiment\\opentitan_reference\\post_synth.edf",
+      "1",
+      "auto",
+      "--target_graph",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\final_j4_matrix_controller_v3\\evidence\\OT_k1\\installed_serial_default_20261014_e700d56e\\system.graph",
+      "--part_dir",
+      "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\final_j4_matrix_controller_v3\\evidence\\OT_k1\\installed_serial_default_20261014_e700d56e\\candidate_00",
+      "--skip_detailed_reports",
+      "--threads",
+      "4",
+      "--starts",
+      "1",
+      "--refine_passes",
+      "0",
+      "--epsilon",
+      "0.3",
+      "--logical_epsilon",
+      "0.5",
+      "--cut_budget",
+      "0.1",
+      "--snake_weight",
+      "8.0",
+      "--quality_guard",
+      "ranked",
+      "--seed",
+      "1",
+      "--mtkahypar_bin",
+      "/mnt/c/Users/Wrelks/Desktop/upgrade_partitioner_handle_large_designs/work/mtkahypar-1.6.2/usr/bin/mtkahypar",
+      "--capture_cohorts",
+      "off",
+      "--wsl",
+      "Ubuntu",
+      "--mtkahypar_lib",
+      "/mnt/c/Users/Wrelks/Desktop/upgrade_partitioner_handle_large_designs/work/mtkahypar-1.6.2/usr/lib/x86_64-linux-gnu"
+    ],
+    "minimum_link_hop_analysis_available": true,
+    "mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+    "known_logical_resource_constraints_pass": true,
+    "useful_logic_occupancy_version": 1,
+    "native_backend_invoked": false,
+    "quality_guard_anchor_policy_metadata": "not_used",
+    "capture_cohort_caller_enabled": false
+  },
+  "font": {
+    "filename": "TitilliumWeb-Regular.ttf",
+    "sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+    "family": "Titillium Web"
+  },
+  "renderer": {
+    "matplotlib_version": "3.10.8",
+    "pillow_version": "12.0.0",
+    "font_filename": "TitilliumWeb-Regular.ttf",
+    "font_sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+    "font_family": "Titillium Web"
+  },
+  "png_palette": [
+    "#F26522",
+    "#C4470C",
+    "#000000"
+  ],
+  "deviation_definition": "100*(per-FPGA value/arithmetic mean - 1); all-zero values have 0% deviation",
+  "scope": "Selected source-netlist mapping only; no downstream regroup, package-pin allocation, implemented timing or hardware claim",
+  "io_mean": 0.0,
+  "io_deviation_percent": {
+    "FPGA_A": 0.0
+  }
+}

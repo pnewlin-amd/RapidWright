@@ -89,6 +89,39 @@ class OrderedMappingContract(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "explicit constant"):
                     self.validate()
 
+    def test_real_logic_named_like_constant_primitives_still_gets_an_owner(self):
+        # Instance spelling must not cause functional logic to disappear from
+        # the mapping; only actual GND/VCC primitive types are local constants.
+        self.inventory.write_text("name\tref_name\nVCC\tFDRE\nGND\tLUT2\nlocal\tFDRE\n")
+        self.write("top/VCC FPGA_2\ntop/GND FPGA_3\ntop FPGA_1\n")
+        audit = self.validate(expected_destinations={"FPGA_1", "FPGA_2", "FPGA_3"})
+        self.assertEqual(audit["native_constant_rows"], 0)
+        self.assertEqual(audit["native_inventory_rows"], 3)
+
+    def test_prefix_lookalike_cannot_stand_in_for_a_missing_real_instance(self):
+        self.inventory.write_text("name\tref_name\ncluster_extra/helper\tFDRE\nlocal\tFDRE\n")
+        self.write("top/cluster FPGA_2\ntop FPGA_1\n")
+        with self.assertRaisesRegex(ValueError, "absent.*native"):
+            self.validate()
+
+    def test_repeated_nested_returns_to_root_keep_every_real_exception(self):
+        self.inventory.write_text("name\tref_name\ncluster/local\tFDRE\n"
+                                  "cluster/compute/local\tFDRE\n"
+                                  "cluster/compute/deep/local\tFDRE\n"
+                                  "cluster/compute/deep/status\tFDRE\nlocal\tFDRE\n")
+        self.write("top/cluster/compute/deep/status FPGA_1\n"
+                   "top/cluster/compute/deep FPGA_2\n"
+                   "top/cluster/compute FPGA_1\n"
+                   "top/cluster FPGA_2\ntop FPGA_1\n")
+        self.assertEqual(self.validate()["record_count"], 5)
+
+    def test_paths_cannot_be_repaired_with_filesystem_style_normalization(self):
+        for source in ("/top/cluster", "top//cluster", "top/./cluster", "top/local/../cluster"):
+            with self.subTest(source=source):
+                self.write(source + " FPGA_2\ntop FPGA_1\n")
+                with self.assertRaisesRegex(ValueError, "invalid literal instance path"):
+                    self.validate()
+
     def test_comments_and_blank_lines_are_parsed_without_affecting_order(self):
         self.write("# Whole line comment\n\n top/cluster FPGA_2\n\n# Root residual\ntop FPGA_1\n")
         self.validate()

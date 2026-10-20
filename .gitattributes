@@ -6,3 +6,23 @@
 # Launchers must retain the line endings expected by their host shells.
 /partitioner text eol=lf
 /partitioner.cmd text eol=crlf
+
+# Versioned presentation artifacts contain byte-based provenance hashes.
+/scripts/partition/assets/fonts/** -text
+/doc/partition/evidence/presentation_evidence.json -text
+/doc/partition/evidence/presentation_validation.json -text
+/doc/partition/figures/** -text
+/doc/partition/VALIDATION_REPORT.pdf binary
+/scripts/partition/assets/fonts/*.ttf binary
+/doc/partition/figures/*.png binary
+/doc/partition/examples/j4/**/*.png binary
+
+# Audited generated text may retain Windows line endings. Keep the usual
+# whitespace checks, while recognizing CR as part of the line ending.
+/scripts/partition/*.py whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Preserve the upstream license verbatim, including its original whitespace.
+/scripts/partition/assets/fonts/TitilliumWeb-OFL.txt -whitespace
+/doc/partition/**/*.py whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/doc/partition/evidence/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/doc/partition/figures/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/doc/partition/examples/j4/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

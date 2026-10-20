@@ -1,0 +1,12 @@
+{
+  "family": "Titillium Web",
+  "style": "Regular",
+  "purpose": "Openly redistributable visual approximation for the requested Klavika Regular chart font",
+  "font_source": "https://raw.githubusercontent.com/google/fonts/main/ofl/titilliumweb/TitilliumWeb-Regular.ttf",
+  "license_source": "https://raw.githubusercontent.com/google/fonts/main/ofl/titilliumweb/OFL.txt",
+  "license": "SIL Open Font License 1.1; retained in TitilliumWeb-OFL.txt",
+  "font_sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+  "license_sha256": "c0562e066174197902a4a10606673d189f067970ef89c6013943b9cf182aadbc",
+  "runtime_download_required": false,
+  "system_font_installation_required": false
+}

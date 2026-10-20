@@ -1,0 +1,255 @@
+{
+  "schema": "partition_presentation_validation_20261020_v1",
+  "status": "PASS",
+  "scope": "Reporting, plain-English documentation, mapping-contract regressions and capacity-first defaults; no new large-design optimization or downstream wrapping/hardware measurement",
+  "windows": {
+    "python": "3.13.3",
+    "partition_suite": {
+      "tests_run": 228,
+      "failures": 0,
+      "errors": 0,
+      "optional_recorded_native_skips": 2,
+      "log_sha256": "bbe6429f6798e77bff7d3dedb6e40ec96448e193a4b70c70fa575315b51e07ee"
+    },
+    "native_reference_helpers": {
+      "tests_run": 17,
+      "failures": 0,
+      "errors": 0,
+      "log_sha256": "87ee8b8189c34babd58ba04761fec5162c4ff2d2f151999a99a9c272125dac03"
+    }
+  },
+  "linux": {
+    "python": "3.12.3 (main, Nov  6 2024, 18:32:19) [GCC 13.2.0]",
+    "partition_suite": {
+      "suite": "partition_python",
+      "tests_run": 228,
+      "failures": 0,
+      "errors": 0,
+      "skips": [
+        {
+          "test": "test_final_native_gate_rejects_changed_caps_before_mapping_publication (test_partition_frontend.RecordedNativeAcceptance.test_final_native_gate_rejects_changed_caps_before_mapping_publication)",
+          "reason": "Recorded-native integration needs PARTITION_FRONTEND_NATIVE_FIXTURE"
+        },
+        {
+          "test": "test_native_cap_success_publishes_only_validated_mapping (test_partition_frontend.RecordedNativeAcceptance.test_native_cap_success_publishes_only_validated_mapping)",
+          "reason": "Recorded-native integration needs PARTITION_FRONTEND_NATIVE_FIXTURE"
+        }
+      ],
+      "passed": true,
+      "elapsed_seconds": 60.9643017999997,
+      "log": "linux_partition_python.log",
+      "log_sha256": "e707098a5f467980ed15a6ae7c41b4a73d7de82ea267893a4ac31fdf0029266b"
+    },
+    "native_reference_helpers": {
+      "suite": "native_reference_helpers",
+      "tests_run": 17,
+      "failures": 0,
+      "errors": 0,
+      "skips": [],
+      "passed": true,
+      "elapsed_seconds": 2.418718099999751,
+      "log": "linux_native_reference_helpers.log",
+      "log_sha256": "1af1b35512bcb23e89a7fd245da25efe468225931782e445a4ef61a4422cd603"
+    },
+    "receipt_sha256": "893eb841a6f529d1acc58b018a4a7773e668bd2d7b1270c84caabe467d093f35",
+    "source_manifest_sha256": "9e83558fb435b3cb30380620e94b9bcf66815bad66d4e2db264764357775e9f1",
+    "dependencies": {
+      "matplotlib": "3.10.8",
+      "pillow": "12.0.0",
+      "tcl": "8.6.14"
+    }
+  },
+  "actual_native_four_fpga_integration": {
+    "status": "PASS",
+    "scope": "Actual Vivado 2025.1 and Mt-KaHyPar v1.6.2 frontend integration; small original-source fixture, no hardware/DUT-clock claim",
+    "output": "C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\reporting_validation_20261020\\native_k4_complete",
+    "source_checkpoint_sha256": "2a46fd8d86cd90d8c5a570948a3bd5cf58cca9b8947fce9375271201bfeb13b2",
+    "selected_iteration": 0,
+    "iterations_requested": 3,
+    "iterations_attempted": 3,
+    "native_luts": {
+      "FPGA_A": 165,
+      "FPGA_B": 1,
+      "FPGA_C": 137,
+      "FPGA_D": 1
+    },
+    "useful_populations": {
+      "FPGA_A": 325,
+      "FPGA_B": 1,
+      "FPGA_C": 297,
+      "FPGA_D": 1
+    },
+    "accepted_mapping_sha256": "5f485751c856dec3a5111498f082397b34afe297c24715819e6e558c35fab5e5",
+    "mapping_contract": {
+      "status": "PASS",
+      "root_instance": "partition_smoke",
+      "mapping_sha256": "5f485751c856dec3a5111498f082397b34afe297c24715819e6e558c35fab5e5",
+      "record_count": 12,
+      "logical_fpgas": [
+        "FPGA_A",
+        "FPGA_B",
+        "FPGA_C",
+        "FPGA_D"
+      ],
+      "ancestry_source": "source_bound_EDIF_manifest",
+      "native_inventory_rows": 656,
+      "native_constant_rows": 32,
+      "native_presence_scope": "mapped strings and census prefixes; actual ancestry verified by EDIF producer",
+      "functional_leaf_count": 624,
+      "local_constant_count": 32,
+      "empty_hierarchy_count": 0,
+      "source_connection_rows": {
+        "NET": 1074,
+        "ALIAS": 1618,
+        "ENDPOINT": 3378
+      },
+      "functional_leaf_populations": {
+        "FPGA_A": 325,
+        "FPGA_B": 1,
+        "FPGA_C": 297,
+        "FPGA_D": 1
+      },
+      "contract_report_sha256": "27f56434224cb44b780c3123dbdcf89f85c299e16f8f92a9140222ff8c330004",
+      "scope": "pre_regroup_source_manifest; no transformed_netlist_or_wrapper_validation"
+    },
+    "report_files_sha256": {
+      "lut_balance.png": "8f5cd5015a1a97e83a140296e49e752ab25cbdcd7e71b18fbc302471b154be92",
+      "io_cut_balance.png": "ed21a1ae9c61356473421d1bc0379a1ac025e37ed44f0f3f08af44fb052ed157",
+      "fpga_connectivity.png": "d68406340d56de1f6cb6c56f2e28a47d1c2c58d6508d1781c0d14f2feb2f63c1",
+      "report.html": "15982d11afd67e0f9363691d2f8cec3ceece4f25d718151e8d9a02bfb64f0c1b",
+      "report_data.json": "e2d2f79dcd06a43257f8037e91e2b7168691cc9ecc35d7c3170bbeb861a85bba",
+      "report_manifest.json": "ab1e5c992be87ce7b403f0ce71a6ec8daa3af55a9f5530d0ae030705a408d162"
+    },
+    "report_renderer": {
+      "matplotlib_version": "3.10.8",
+      "pillow_version": "12.0.0",
+      "font_filename": "TitilliumWeb-Regular.ttf",
+      "font_sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+      "font_family": "Titillium Web"
+    },
+    "images": {
+      "lut_balance.png": {
+        "sha256": "8f5cd5015a1a97e83a140296e49e752ab25cbdcd7e71b18fbc302471b154be92",
+        "size": [
+          2100,
+          1350
+        ],
+        "colors": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            196,
+            71,
+            12
+          ],
+          [
+            242,
+            101,
+            34
+          ]
+        ]
+      },
+      "io_cut_balance.png": {
+        "sha256": "ed21a1ae9c61356473421d1bc0379a1ac025e37ed44f0f3f08af44fb052ed157",
+        "size": [
+          2100,
+          1350
+        ],
+        "colors": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            196,
+            71,
+            12
+          ],
+          [
+            242,
+            101,
+            34
+          ]
+        ]
+      },
+      "fpga_connectivity.png": {
+        "sha256": "d68406340d56de1f6cb6c56f2e28a47d1c2c58d6508d1781c0d14f2feb2f63c1",
+        "size": [
+          2100,
+          1050
+        ],
+        "colors": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            196,
+            71,
+            12
+          ],
+          [
+            242,
+            101,
+            34
+          ]
+        ]
+      }
+    },
+    "candidate_statuses": [
+      {
+        "iteration": 0,
+        "status": "NATIVE_CHECKED",
+        "error": null
+      },
+      {
+        "iteration": 1,
+        "status": "REJECTED",
+        "error": "Command failed (1); C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\reporting_validation_20261020\\native_k4_complete\\candidate_01\\partition.log\n    + FM                                      = 0.0073438 s\n       + Initialize Data for Unc. FM          = 4.19e-05 s\n       + Collect Border Nodes                 = 3.45e-05 s\n       + Find Moves                           = 0.0069082 s\n       + Rebalance                            = 0.0001905 s\n       + Rollback to Best Solution            = 0.0001127 s\n    + Rebalance                               = 6.05e-05 s\n + Postprocessing                             = 3.4e-06 s\n \nPARTITIONER DEBUG: rapidwright mem usg after partitioner run -> used=11 MB total=256 MB free=244 MB\n         Run Partitioner:     0.412s\nException in thread \"main\" java.lang.IllegalArgumentException: No refinement candidate satisfies the accepted quality anchor; retain earlier native-accepted mapping\n\tat com.xilinx.rapidwright.edif.partition.HardwareMappingRefiner.refine(HardwareMappingRefiner.java:1112)\n\tat com.xilinx.rapidwright.edif.partition.Partitioner.run(Partitioner.java:878)\n\tat com.xilinx.rapidwright.edif.partition.Partitioner.main(Partitioner.java:72)"
+      },
+      {
+        "iteration": 2,
+        "status": "REJECTED",
+        "error": "Command failed (1); C:\\Users\\Wrelks\\Desktop\\upgrade_partitioner_handle_large_designs\\work\\reporting_validation_20261020\\native_k4_complete\\candidate_02\\partition.log\n    + FM                                      = 0.0061904 s\n       + Initialize Data for Unc. FM          = 3.63e-05 s\n       + Collect Border Nodes                 = 2.79e-05 s\n       + Find Moves                           = 0.0058279 s\n       + Rebalance                            = 0.0001502 s\n       + Rollback to Best Solution            = 9.71e-05 s\n    + Rebalance                               = 2.87e-05 s\n + Postprocessing                             = 4.4e-06 s\n \nPARTITIONER DEBUG: rapidwright mem usg after partitioner run -> used=11 MB total=256 MB free=244 MB\n         Run Partitioner:     0.405s\nException in thread \"main\" java.lang.IllegalArgumentException: No refinement candidate satisfies the accepted quality anchor; retain earlier native-accepted mapping\n\tat com.xilinx.rapidwright.edif.partition.HardwareMappingRefiner.refine(HardwareMappingRefiner.java:1112)\n\tat com.xilinx.rapidwright.edif.partition.Partitioner.run(Partitioner.java:878)\n\tat com.xilinx.rapidwright.edif.partition.Partitioner.main(Partitioner.java:72)"
+      }
+    ]
+  },
+  "historical_j4_reports": {
+    "cases": 16,
+    "fresh_vivado_runs": 0,
+    "scope": "HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE",
+    "receipt_sha256": "42b42f9864e42e752cf4a93b363e5b00f219cf9dde24db25645ff695abf5fb16",
+    "archive_manifest_sha256": "40ffd8a22d69fa28949a0d357445182572a3e83053112de606eaac7af8941c21",
+    "ownership_comparisons": 59952616,
+    "ownership_mismatches": 0
+  },
+  "presentation": {
+    "font": "Titillium Web Regular",
+    "font_sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+    "license": "SIL Open Font License 1.1; bundled notice",
+    "palette": [
+      "#F26522",
+      "#C4470C",
+      "#000000"
+    ],
+    "png_pixel_colors_verified": true,
+    "pdf_pages_rendered_and_inspected": 24,
+    "html_browser_visual_preview": "NOT_VERIFIED: no available CUA browser; automatic approval review blocked headless preview with blocked by policy and no further reason",
+    "builtin_saved_tex_compilation": "PASS",
+    "pdf_builder": "doc/partition/build_report.py"
+  },
+  "source_sha256": {
+    "scripts/partition/partitioner.py": "879f5e8cc8cdeb873dcd04fe1e3f3fcb45729b12eb2a6c14ac58a54ba55521cb",
+    "scripts/partition/reporting.py": "5a2ee9fe31ad20bcc58e82d8aff0f18a05d4282f05be3b5b79831bd51514da28",
+    "scripts/partition/toolchain.py": "62045c5f6c0d0b0f1d648a5624df5746ef8e4b8cbecbe5dd7ecccfec09e5de24",
+    "doc/partition/VALIDATION_REPORT.tex": "1f84ecbce584871b3b47ee4fda99b2b70055595e1fdcd28199ed86ec8c5f904d",
+    "doc/partition/build_report.py": "8e9d7607a8d8f9fd7f7e64873404beb19f230159266e49c2f6360983e8af0e22",
+    "doc/partition/build_report_figures.py": "e7864738c37c78288240a1a56c8c735b35d9177cc6da328a29706a38bc3ce73b"
+  },
+  "pdf_sha256": "99a4dbf96ce7348bda477e7bca67e1625fdadb53736a0635b63c2fa270aa9700"
+}

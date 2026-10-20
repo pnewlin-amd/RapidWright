@@ -1,9 +1,14 @@
 # Hardware-aware FPGA partition mapping
 
-The partitioner reads an original post-synthesis netlist and a system topology,
-then writes an FPGA assignment and reports. It uses **Mt-KaHyPar v1.6.2 only**
-for initial partitioning, followed by topology, register-free path and sampled
-source-timing analysis, refinement and native Vivado resource validation.
+Give the partitioner a post-synthesis netlist and a description of the FPGA
+system. It assigns the design's logic to the selected FPGAs and writes
+`mapping.txt`, together with reports explaining that assignment.
+
+The tool tries to keep communication low and avoid signals passing through
+several FPGAs without being captured by a register. It considers the system's
+links and available source timing information. It uses **Mt-KaHyPar v1.6.2
+only** to find starting assignments, improves them with local moves, and asks
+Vivado to check each FPGA's original-source LUT usage before accepting a result.
 
 A normal run needs a netlist and topology. The topology must identify its
 actual FPGA parts, directly or through a companion file; otherwise supply
@@ -14,15 +19,23 @@ The output is a mapping. The tool does not wrap or regroup a netlist, insert
 transport, replicate logic, retime registers, place or route the partitions.
 It does not infer an achieved DUT frequency or promise a global optimum.
 
+In these documents, **native LUT validation** means asking Vivado to report
+the original checkpoint's cells assigned to each FPGA. **Source timing** means
+static timing analysis of that original checkpoint, before adding any
+prototyping transport. These are useful checks, with a different scope from
+implementing the finished multi-FPGA system.
+
 - [Build and requirements](#build-and-requirements)
 - [Quick start](#quick-start)
 - [Topology and target devices](#topology-and-target-devices)
 - [Quality controls](#quality-controls)
+- [What the numbers mean](#what-the-numbers-mean)
 - [All high-level options](#all-high-level-options)
 - [Outputs and acceptance](#outputs-and-acceptance)
 - [Path, timing and resource model](#path-timing-and-resource-model)
 - [Tests and troubleshooting](#tests-and-troubleshooting)
-- [Validation report](VALIDATION_REPORT.tex) (standalone LaTeX source)
+- [Validation report PDF](VALIDATION_REPORT.pdf) and [LaTeX source](VALIDATION_REPORT.tex)
+- [J4 example mappings and HTML reports](examples/j4/README.md)
 - [Research and engineering rationale](RESEARCH.md)
 
 ## Build and requirements
@@ -62,13 +75,27 @@ To create the runtime ZIP from source, run `./gradlew partitionerDistZip`
 `build/distributions/rapidwright-partitioner-extreme-overhaul.zip`; source DCPs,
 large benchmark results, Vivado and Mt-KaHyPar are excluded.
 
-The Python helpers use the standard library, including Tcl/Tk; no additional
-pip package is required for the frontend.
+The core Python helpers use the standard library, including Tcl/Tk. Figure
+generation also needs the report's pinned plotting dependencies; install them
+before running a design job so the required PNGs and HTML can be produced.
+
+From the source checkout or extracted runtime directory, use the same Python
+interpreter that will run the partitioner:
+
+```powershell
+python -m pip install -r scripts/partition/requirements.txt
+```
+
+On Linux, use `python3` if that is the launcher's interpreter. The file pins
+Matplotlib 3.10.8 and Pillow 12.0.0; these releases support Python 3.11 and
+have Windows and Linux wheels. Install before a long partition job; accepting
+a mapping requires its reports to be generated too.
 
 | Requirement | Use |
 |---|---|
 | Python 3.11 or newer | Frontend and export/report helpers; `hashlib.file_digest` is required. |
 | Python Tcl/Tk (`tkinter`) | Tcl-list decoding for source timing and independent endpoint audits. A display is not needed. |
+| Pinned report dependencies | Matplotlib and Pillow from `scripts/partition/requirements.txt` generate the required PNG and HTML reports without a display. |
 | Java 17 or newer | Run the runtime bundle; use a JDK for a source build. Java 21 was used for the recorded large-design experiments. |
 | Vivado 2025.1 | Original DCP/EDIF preparation, source STA sampling and authoritative original-source subset utilization. The shipped part catalog and primitive defaults are from 2025.1. |
 | Mt-KaHyPar **1.6.2** | Initial multi-FPGA partitioning. Other versions are rejected. A one-FPGA assignment does not invoke it. |
@@ -154,7 +181,8 @@ timing sample.
 Use a new or empty output directory. The accepted assignment is
 **`<output>/mapping.txt`**. Without `--output`, a timestamped directory is
 created under `partition_results/` in the current working directory. Inspect
-`<output>/STATUS.json` and the selected reports after completion.
+**`<output>/report.html`** after completion for the readable summary and plots.
+`<output>/STATUS.json` contains the machine-readable acceptance result.
 
 ### Input netlists
 
@@ -259,11 +287,37 @@ bandwidth, directional capacity, TDM schedules, physical pins or link delay.
 
 ## Quality controls
 
-Defaults aim for a useful first run: balanced effort, three feedback
-iterations, three starting seeds, three cleanup passes, four backend threads, compact
-mapping, sampled source timing when available, and topology-aware path ranking.
-More effort or finer hierarchy does not guarantee better results; preserve
-alternatives and compare their reports.
+The normal command already uses topology, snake-path checks and available
+source timing. You do not need separate switches to turn on those checks.
+The default tries three feedback iterations, with three starting assignments
+per iteration and three cleanup passes per phase, using four backend threads.
+The name `--quality balanced` describes the amount of search effort; it does
+not demand nearly equal LUT counts on all FPGAs.
+
+For four FPGAs and three iterations, a typical command is:
+
+```powershell
+.\partitioner.cmd --input 'C:\designs\synth.dcp' --system-topology 'C:\systems\machine.json' --target-part VP1902 --fpga-count 4 --iterations 3 --output 'C:\results\four_fpgas'
+```
+
+Omit `--target-part` when the topology or its companion already declares the
+actual parts. Omit `--fpga-count` to use all FPGAs in the topology.
+
+### Can a longer run find a better partition?
+
+Yes: more iterations give the tool more opportunities to find a useful
+assignment and to improve its LUT estimates using Vivado's measurements.
+They are a search budget, not a promise that every iteration improves every
+number. The tool keeps the best accepted candidate under the priority below;
+the final mapping can come from an earlier iteration.
+Multi-FPGA runs use the full requested iteration budget by default, so a
+candidate with no repeated crossings still has opportunities to reduce cuts.
+Add `--early-stop` to permit an earlier finish after finding a complete,
+cap-valid candidate inside the search balance range with no modeled repeated
+FPGA/link crossing and no pass-through combinational logic. That optional
+stopping rule does not establish the lowest possible I/O-cut count.
+A one-FPGA run always makes one direct assignment; extra iterations cannot
+change which FPGA owns its logic.
 
 | Preset | Feedback iterations | Starting seeds per iteration | Cleanup passes |
 |---|---:|---:|---:|
@@ -271,19 +325,70 @@ alternatives and compare their reports.
 | `--quality balanced` (default) | 3 | 3 | 3 |
 | `--quality thorough` | 5 | 7 | 6 |
 
-`--iterations`, `--starts` and `--refine-passes` override individual values.
-Zero cleanup passes skips cleanup moves. Greedy and bounded paired-exchange
-phases each use that pass bound. Native feedback calibrates estimates; those
-estimates never replace native capacity checks.
+These options change different parts of that budget:
+
+- `--iterations N`: repeat the search with feedback from native Vivado LUT
+  measurements. Each round can update the area estimates used for the next.
+- `--starts N`: try this many backend seeds in each iteration. These are
+  alternative starting assignments, not extra serial cleanup passes.
+- `--refine-passes N`: bound the local cleanup work on an assignment. Both the
+  single-move phase and the paired-exchange phase use this bound. Zero skips
+  those cleanup moves.
+
+More starts and passes generally cost more time; native checks and graph
+construction also contribute, so doubling iterations need not double runtime.
+Native feedback improves estimates; final acceptance still requires Vivado's
+measured subset LUT counts.
+
+There is measured evidence that this extra search can help. In the recorded
+three-FPGA mesh comparison, a later candidate reduced the optimization's data
+transfers from 6,988 to 6,452, the repeated-crossing endpoint score from 66 to
+32, and pass-through logic from 813 to 720 primitives. Its worst register-free
+path still crossed two boundaries. Other runs show tradeoffs or no improvement;
+the [validation report](VALIDATION_REPORT.tex) includes those cases and the
+source identities. This is an example of a better result found during a run,
+not a guarantee about a particular iteration setting.
+
+For a local cleanup example, NVDLA on four FPGAs improved its worst
+register-free path from three FPGA crossings to two. Its repeated-crossing
+endpoint score fell from 1,001 to 733 and pass-through logic fell from 266 to
+230 primitives, for 17 more optimization transfers (0.21%). This is a measured
+tradeoff, not an achieved-clock claim. The two-FPGA NVDLA case also shows why
+the separate measures matter: its endpoint score improved while pass-through
+logic increased substantially. Read the numbers together rather than treating
+one smaller score as proof that every aspect improved.
 
 ### Balance, cuts and snake paths
 
-`--balance 0.20` is a **soft preference**. `--search-balance` is the separate
-solver/refiner envelope, default `max(0.30, --balance)` and never below the
-preferred target. For equal devices, imbalance is `max(L)/mean(L)-1`. For
-heterogeneous devices, selection uses `max(L/C)/mean(L/C)-1`, with physical
-device capacity C. A lower engineering cap does not change physical device
-size. Raw subset imbalance is also reported.
+Keeping every FPGA below its hard resource limit matters more than making
+their bars equal. A 30% imbalance, or a larger difference, is acceptable if it
+buys a better partition and every FPGA stays within its hard cap. A very small
+imbalance is not a quality goal on its own. The default hard LUT ceiling remains **75% of each actual
+target part's LUT capacity**, even if you allow much greater imbalance.
+
+The balance controls are deliberately separate:
+
+- `--balance 0.20` is a preferred 20% imbalance, not a hard native LUT limit.
+- `--search-balance` lets you impose a tighter search range when you want one.
+  The automatic range permits any distribution of estimated area; the actual
+  Vivado LUT caps decide whether it fits. For equal devices this range is
+  `number of FPGAs - 1` (for example, 3.0 for four FPGAs). If you supply a
+  tighter range, then at equal path quality a candidate inside it is preferred
+  to one outside it. Inside the range, fewer transfers and lower topology cost
+  come before finer balance.
+- `--logical-balance` is a separate hard guard on raw logical LUT counts used
+  during search. Its automatic value, `max(0.5, number of FPGAs - 1)`, avoids
+  forcing equal LUT counts. Supply a smaller value only if you want this
+  extra restriction. Raw LUTs and Vivado's packed LUT usage are different counts.
+- `--max-luts`, `--fpga-lut-caps` and the part's 75% utilization ceiling are
+  hard acceptance limits. Search effort and balance settings cannot waive them.
+
+For equal parts, imbalance means **how far the most loaded FPGA is above the
+mean**, divided by the mean. Counts of 1 million and 3 million LUTs have a
+mean of 2 million and a 50% imbalance. This is separate from utilization: both
+can still fit comfortably on VP1902s. For different part sizes, selection
+compares each FPGA's fraction of its physical capacity, rather than demanding
+equal raw LUT counts. The reports also show the raw count imbalance.
 
 The default **10% cut/topology growth allowance** is an engineering tradeoff,
 not a universal research constant. For example, `--cut-growth 0.15` allows
@@ -293,64 +398,75 @@ receive another allowance. The optimizer counts internal data-net distinct
 FPGA destinations and weighted topology distance. Clock/reset-only sinks and
 top I/O are outside that optimization counter; complete cut reports are broader.
 
-Without an explicit transport-delay model, default ranked selection considers:
+Without an explicit transport-delay model, the normal selection order is:
 
-1. Complete modeled path analysis.
-2. Worst minimum-link-hop lower bound H, then worst logical register-free
-   FPGA crossings C.
-3. Sampled source timing cost, endpoint excess E, then transit primitives V.
-4. Native search-envelope limitation tier, structural transfers T, weighted
-   topology cost, then fine balance.
+1. Prefer a candidate with complete analysis of the modeled paths.
+2. Reduce the worst number of hardware links needed along a register-free
+   path, then the worst number of logical FPGA boundary crossings.
+3. Reduce the sampled source timing penalty, then the repeated-crossing
+   endpoint score, then the number of pass-through combinational primitives.
+4. Prefer the native balance search range, then fewer data transfers, lower
+   topology cost and, finally, finer balance.
 
-Hard capacities, fixed assignments, useful occupancy, logical resource/scalar
-limits and original growth budgets remain independent gates. Within an
-envelope, equal path quality therefore favors cuts before small balance gains.
-`--quality-guard ranked` permits a lower-priority regression when a
-higher-priority measure improves. `componentwise` preserves each reference
-path/timing measure separately. Relay bound R is reported but has no
-optimization/nonregression promise.
+This order gives severe snake paths a high priority. `--cut-growth` still bounds
+how many extra transfers and how much extra topology cost cleanup can spend.
+Hard capacities, fixed assignments, useful logic on every FPGA, logical
+resource limits and the original growth budgets remain mandatory checks.
+`--quality-guard ranked` permits a lower-priority measure to worsen when a
+higher-priority one improves. For example, fewer repeated crossings at
+endpoints can be accepted even if more combinational primitives become
+pass-through logic. Use `--quality-guard componentwise` if every reference
+path and timing measure must stay as good or improve; this can reject useful
+tradeoffs. The reported relay estimate is diagnostic rather than an extra
+optimization guarantee.
 
-`--snake-weight` changes the witness penalty (default 8), not the priority or
-hard budgets. Increasing it does not promise that every snake metric falls.
-`--leaf-luts auto` chooses a hierarchy frontier. Smaller limits allow finer
-moves but enlarge the graph and can fragment natural groups; larger limits
-preserve modules but may prevent useful splits. Both affect packing and cuts.
+`--snake-weight` changes the penalty used to guide cleanup (default 8).
+Increasing it makes the local search focus harder on its sampled bad paths;
+it does not change the selection order or hard budgets, and does not promise
+that every snake-path measure falls. `--leaf-luts auto` chooses which groups
+of logic move together. Smaller limits allow finer moves but make the graph
+larger and can break up natural modules. Larger limits preserve bigger groups
+but can prevent useful splits.
 
 ```powershell
 # More effort and a larger explicit cut-growth tradeoff:
 .\partitioner.cmd --input 'C:\designs\synth.dcp' --system-topology 'C:\systems\machine.json' --target-part VP1902 --quality thorough --cut-growth .15 --output 'C:\results\thorough'
+# Optional: narrow the normally capacity-driven search to a 70% imbalance range:
+.\partitioner.cmd --input 'C:\designs\synth.dcp' --system-topology 'C:\systems\machine.json' --target-part VP1902 --fpga-count 4 --iterations 12 --balance .70 --search-balance .70 --logical-balance .70 --output 'C:\results\wide_balance'
 # A stricter search envelope, retaining the independent physical cap:
 .\partitioner.cmd --input 'C:\designs\synth.dcp' --system-topology 'C:\systems\machine.json' --target-part VP1902 --balance .10 --search-balance .20 --output 'C:\results\tighter_balance'
 ```
 
-The frontend retains a native-validated incumbent as a same-run anchor and
-reevaluates it under current graph, timing, topology and capacity identities.
-A new seed does not redefine its cut budget or quality promises. An explicit
-anchor-quality rejection consumes an attempt and can continue with the
-incumbent/feedback. Runtime errors stop retries. The anchor file alone is not
-proof of native acceptance.
+The frontend retains the best native-validated assignment found in the same
+run. Later candidates are checked against it with the same source, topology,
+timing and capacity settings. A new seed does not reset the cut budget and
+allow another 10% growth at every stage. A quality rejection uses up an
+attempt; the run can continue from its retained assignment. Runtime errors
+stop the run rather than being treated as ordinary unsuccessful searches.
 
 ### Source timing
 
-`--timing auto` attempts up to **1,000 constrained source setup paths**. Native
-slack, requirement and primitive owners guide hyperedge weights and refinement.
-If unavailable, auto can use structural guidance and records the fallback.
-`--timing required` rejects unavailable timing; `off` provides a structural
-comparison. `--timing-weight` defaults to 8. Existing TSVs must bind to the exact
-source EDIF/DCP.
+`--timing auto` asks Vivado for up to **1,000 constrained setup paths** from the
+original checkpoint. It uses their slack, requirements and assigned logic to
+guide the initial partitioning and cleanup. If that timing is unavailable,
+the tool can continue with connection-based path checks and records the reason.
+Use `--timing required` to fail instead of accepting that fallback, or `off`
+to compare a run without source timing guidance. `--timing-weight` defaults
+to 8. A reused timing TSV must identify the exact source EDIF/DCP.
 
 ```powershell
 .\partitioner.cmd --input 'C:\designs\synth.dcp' --system-topology 'C:\systems\machine.json' --target-part VP1902 --timing required --timing-max-paths 2000 --output 'C:\results\source_timing'
 ```
 
-A fully scored sample does not establish design-wide constraint coverage;
-unconstrained domains can be absent. Zero timing cost does not mean zero
-physical delay. New constraints require a new source lineage, timing export
-and actual mapping validation, not relabeling old reports.
+A sample can miss paths or clock domains, especially if they are unconstrained.
+A zero timing penalty therefore does not mean zero physical delay or a proven
+DUT clock. If the constraints change, export timing and validate the mapping
+again against that changed source; do not reuse an old timing claim.
 
 No link delay is invented. `--extra-delay-ns D` models additional delay per
 **logical FPGA crossing** on sampled paths. In that mode, better modeled worst
-sampled slack and lower timing cost precede H/C and structural tie breakers,
+sampled slack and lower timing cost come before worst link hops, FPGA
+crossings and the other structural comparisons,
 within the same hard caps and growth gates. This is a user estimate, not
 measured platform latency, full timing-graph propagation, post-partition STA
 or achieved DUT frequency. Sampled guidance does not reproduce TritonPart's
@@ -383,9 +499,13 @@ six logical resource dimensions:
 These counts are separate from packed CLB area and transport overhead. Unknown
 macro resources prevent certification of explicit hard capacities.
 `--logical-balance` separately constrains raw LUTs. Its automatic default is
-0.5 for equal/absent native caps and `max(0.5,k-1)` for uneven caps, avoiding an
-implicit uniform raw-LUT ceiling on capacity-proportional splits. Explicit
-values, including zero, are retained. `--weight-model` accepts primitive-type
+`max(0.5,k-1)` for every system, where `k` is the number of selected FPGAs.
+This avoids an extra equality constraint; native hard caps and useful logic
+on every selected FPGA remain mandatory. The automatic estimated-area search
+range is `max(preferred balance, sum(device LUT capacities) / smallest device
+LUT capacity - 1)`. It becomes `k-1` for equal devices unless the preferred
+balance is even larger. Explicit balance settings, including zero where
+allowed, are retained. `--weight-model` accepts primitive-type
 integer estimates with header `REF_NAME<TAB>integer_weight`, optionally preceded
 by `#input_sha256=...`. Estimates do not certify packed area.
 
@@ -419,31 +539,32 @@ These are frontend flags; Java's underscore flags are not interchangeable.
 | `--output DIR` | New/empty output; default `partition_results/<input-stem>_<UTC timestamp>`. |
 | `--quality fast\|balanced\|thorough` | Effort presets above; default balanced. |
 | `--partition-preset default\|deterministic` | Mt-KaHyPar preset; default preserves multithreaded behavior. Deterministic rejects mapping constraints. |
-| `--iterations N` | Feedback iterations; positive. |
-| `--starts N` | Starting seeds per iteration; positive. |
-| `--refine-passes N` | Bound each cleanup phase; nonnegative. |
+| `--iterations N` | Search rounds with Vivado LUT feedback; positive; full budget by default for multi-FPGA runs. |
+| `--early-stop` | Opt into stopping when repeated modeled crossings and pass-through logic disappear; cuts could still improve. |
+| `--starts N` | Alternative starting assignments per round; positive. |
+| `--refine-passes N` | Maximum passes in each local cleanup phase; zero disables those moves. |
 | `--capture-cohorts off\|auto` | Experimental fanin cleanup; default off. |
-| `--balance E` | Preferred native utilization imbalance; default 0.20. |
-| `--search-balance E` | Envelope; default `max(0.30,balance)`, at least balance. |
-| `--cut-growth E` | Transfer/topology growth; default 0.10, original references. |
-| `--snake-weight W` | Structural witness weight; default 8. |
+| `--balance FRACTION` | Preferred imbalance in Vivado LUT utilization; default 0.20. |
+| `--search-balance FRACTION` | Optional tighter estimated-area imbalance range; automatic default is capacity-driven, as defined above. |
+| `--cut-growth FRACTION` | Extra transfer/topology cost allowed to improve paths; default 0.10 against the original references. |
+| `--snake-weight WEIGHT` | Local bad-path penalty; default 8. |
 | `--quality-guard ranked\|componentwise` | Tradeoff policy; default ranked. |
 | `--timing auto\|required\|off` | Source STA availability policy; default auto. |
 | `--timing-paths FILE` | Existing exact-source-bound timing TSV. |
 | `--timing-max-paths N` | Maximum source paths, 1–100,000; default 1,000. |
-| `--timing-weight W` | Sampled timing contribution; default 8. |
-| `--extra-delay-ns D` | Explicit delay per logical crossing; no default delay. |
+| `--timing-weight WEIGHT` | Importance of sampled source timing in local guidance; default 8. |
+| `--extra-delay-ns DELAY` | User-estimated delay per logical FPGA crossing; no default delay. |
 | `--max-luts N` | Hard native CLB LUT cap on every selected FPGA. |
 | `--fpga-lut-caps FILE` | JSON hard caps covering every selected label. |
 | `--target-part PART` | Actual uniform target device, e.g. VP1902 or VU19P. |
 | `--fpga-parts FILE` | SHA-bound assignment; otherwise `<topology>.targets.json`. |
 | `--part-catalog FILE` | Relocate approved catalog and `.identity.json` sidecar. |
-| `--lut-utilization F` | Hard device fraction; default 0.75, valid `(0,0.75]`. |
+| `--lut-utilization FRACTION` | Hard device fraction; default 0.75, valid `(0,0.75]`. |
 | `--source-checkpoint FILE` | Reused pair's DCP; requires native inventory. |
 | `--native-primitives FILE` | Reused inventory; requires source checkpoint. |
 | `--part PART` | EDIF source import part; distinct from target part. |
 | `--leaf-luts auto\|N` | Logical-LUT coarsening threshold; default auto. |
-| `--logical-balance E` | Separate raw-LUT ceiling; automatic policy above. |
+| `--logical-balance FRACTION` | Separate hard raw-LUT imbalance guard; automatic policy above. |
 | `--mapping-constraints FILE` | Longest-prefix fixed hierarchy rules. |
 | `--logical-resource-capacities FILE` | Six-dimensional logical ceilings. |
 | `--weight-model FILE` | Initial primitive-type integer estimate. |
@@ -465,7 +586,89 @@ Low-level Java development still uses
 preparation, feedback, part-aware caps, source timing and final acceptance;
 the Java solver alone does not perform that complete workflow.
 
+## What the numbers mean
+
+An **I/O cut** here is a logical signal connection that crosses between FPGA
+owners. It represents communication the later prototyping flow must carry.
+It is a useful measure of pin-multiplexing demand, but it is **not a measured
+physical pin count or multiplexing ratio**. Those depend on the transport,
+clock/reset handling, encoding, scheduling and actual link resources added
+later. A bus contributes separate signal bits when those bits are separate
+nets in the synthesized netlist.
+
+The output contains several counts because they answer different questions:
+
+| Name | Plain-English meaning |
+|---|---|
+| Vivado LUT total | Vivado's **CLB LUT Used** for the original-source logic assigned to an FPGA. Use this to check the hard LUT cap. |
+| LUT utilization | That FPGA's Vivado LUT total divided by the actual target part's LUT capacity. The default maximum is 75%. |
+| Deviation from mean | `(FPGA total - mean total) / mean total × 100%`. Negative means below the mean; positive means above it. If every total is zero, deviation is shown as zero. |
+| Unique crossing nets | Number of distinct canonical nets that connect different FPGA owners, counted once per net. Hierarchical aliases of the same net do not create extra nets. |
+| Directed signal transfers | One canonical net for each source-to-destination FPGA pair. A signal sent from FPGA_A to both FPGA_B and FPGA_C is **two transfers**, although it is only **one crossing net**. |
+| Per-FPGA I/O cuts | Unique outgoing data/functional-control nets plus unique incoming nets on that FPGA. An outgoing net is counted once even if several FPGAs consume it. This is logical boundary signal demand; clock-only and reset-only traffic is reported separately. |
+| Per-FPGA pair pressure | Incoming plus outgoing source-to-destination transfers touching that FPGA. This counts a multicast once for each receiving FPGA, so it can be higher than unique boundary signal demand. |
+| Optimization transfers | The internal data-net counter used during search. It excludes clock/reset-only sinks and top-level I/O; it can differ from the complete final cut report. |
+| Cut hyperedge | A solver net whose logic groups occupy more than one FPGA. This ignores direction. One hyperedge can represent several signal destinations. |
+| Hyperedge partition pairs | The undirected FPGA pairs touched by each solver hyperedge. A hyperedge touching A, B and C contributes A–B, A–C and B–C. `io_cuts.txt` reports this different graph measure. |
+| Worst register-free FPGA crossings | The largest number of FPGA owner changes on a modeled path before capture by a register or another modeled sequential endpoint. A→B→C without capture has two crossings. |
+| Worst register-free hardware-link hops | For each such path, add the fewest topology links needed for each owner change, then take the worst path. This detects a costly crossing between distant FPGAs even when it counts as only one logical owner change. |
+| Repeated-crossing endpoint score | For every capture or terminal endpoint, find its worst register-free crossing count, subtract one (minimum zero), then add those values. This measures how widely repeated crossings affect endpoints; it does not count all possible paths. Lower is better. |
+| Pass-through combinational primitives | Number of combinational primitives in an FPGA that can be reached from a foreign FPGA and can reach another foreign FPGA without a register inside that FPGA. A→B→C is included; return to A is not required. This counts logic primitives, not paths. |
+| Sampled source timing penalty | A ranking score based on the exported source timing paths and their FPGA crossings. Lower is better; it is not the achieved partitioned-system clock period. |
+| Weighted topology cost | Communication cost using the supplied link weights and topology. It is a preference for cheaper communication, not measured bandwidth or delay. |
+
+For example, one data bit driven on FPGA_A and consumed on FPGA_B and FPGA_C
+has one crossing net and two directed transfers. The unique boundary signal
+counts shown in the I/O bars are **1, 1 and 1**: A sends one unique net, and
+B and C each receive it. The corresponding pair-pressure counts are **2, 1
+and 1**, because A communicates with two destination FPGAs. The solver's
+directionless three-way hyperedge can instead contribute three partition pairs.
+These numbers are compatible; they count different things. The final reports
+show both boundary signal demand and source-to-destination communication.
+
+Older machine reports retain short names such as `max_minimum_link_hops`,
+`endpoint_excess` and `transit_primitives` for compatibility. The user-facing
+descriptions above give their meaning. A report of complete path analysis
+means all paths in the modeled graph were covered; it does not prove every
+path is electrically sensitizable or that later transport meets timing.
+
 ## Outputs and acceptance
+
+### Start with the HTML report
+
+Every completed frontend partition produces **`report.html`** alongside its
+accepted `mapping.txt`. Open it in a browser; no report server is needed.
+The page uses a restrained black-and-white document style and explains the
+accepted partition, resource headroom, I/O demand, communication, path quality,
+timing guidance and validation status. The plots use the requested orange and
+black palette. Keep the whole output directory together so its linked images
+and detailed files remain available.
+
+The PNGs use only light orange `#F26522`, dark orange `#C4470C` and black
+`#000000` as their drawing colors. Their bundled font is **Titillium Web
+Regular**, an open-licensed approximation of the requested Klavika style.
+It needs no local font installation. The font file and its SIL Open Font
+License are included under `scripts/partition/assets/fonts/`; commercial
+Klavika files are not redistributed. The HTML text itself remains black and
+white, with the colored PNGs embedded as figures.
+
+Three PNGs describe the **selected final mapping**, which can come from an
+earlier iteration rather than the last attempt:
+
+| Figure | What it shows |
+|---|---|
+| `lut_balance.png` | Two bar charts: Vivado LUT total per FPGA with a mean line, then each FPGA's percentage deviation from that mean. The HTML also shows the actual part capacity and hard cap. |
+| `io_cut_balance.png` | Two bar charts: unique incoming plus outgoing data/functional-control boundary nets per FPGA with a mean line, then percentage deviation from that mean. Multicast transmit nets count once per source FPGA. Clock-only and reset-only counts appear separately in the HTML. |
+| `fpga_connectivity.png` | Directed communication between FPGA pairs, showing how many data/functional-control signal transfers each source sends to each destination. This shows logical communication; it does not claim to be a routed transport schedule. |
+
+The HTML distinguishes unique boundary signals from multicast pair pressure
+and explains the cut definitions. If a run tried multiple iterations, its
+history identifies the selected candidate and shows how the reported quality
+changed. Unsuccessful proposals are not presented as accepted improvements.
+`report_data.json` retains the plotted values and descriptions;
+`report_manifest.json` records the source artifacts and report identities.
+The plots summarize measured source-subset and logical-net evidence. They do
+not replace the underlying native capacity or mapping-contract checks.
 
 ### Required mapping contract
 
@@ -558,6 +761,9 @@ behavior. Those downstream checks remain necessary in the consuming flow.
 | Artifact | Meaning |
 |---|---|
 | `mapping.txt`, `source_mapping.txt` | Accepted mapping and native-validated snapshot. |
+| `report.html` | Readable summary of the selected mapping, its three plots, iteration history and validation limits. |
+| `lut_balance.png`, `io_cut_balance.png`, `fpga_connectivity.png` | Selected mapping's LUT distribution, I/O distribution and directed communication. |
+| `report_data.json`, `report_manifest.json` | Figure values and source/report identities. |
 | `cells.txt` | One unique populated logical destination per line, consistent with the accepted mapping. |
 | `mapping_contract.json` | Source-bound contract validation, coverage and artifact identities. |
 | `mapping_records.tsv` | Ordered records with their actual nearest mapped ancestors. |
@@ -569,12 +775,12 @@ behavior. Those downstream checks remain necessary in the consuming flow.
 | `lut_report.txt`, `vivado_resources.tsv` | Original-source subset Vivado CLB LUT Used. |
 | `logical_lut_report.txt`, `logical_resources.tsv` | Logical resources, separate from packed area. |
 | `primitive_counts.tsv` | Logical boundary primitive histogram. |
-| `fpga_io_cuts.txt`, `fpga_net_crossings.tsv` | Canonical directed destinations/crossings, including top I/O. |
+| `fpga_io_cuts.txt`, `fpga_net_crossings.tsv` | Unique crossing nets and directed source-to-destination signal transfers, including top-level I/O. |
 | `fpga_control_categories.tsv` | Clock/reset-only/data-or-functional-control classification. |
-| `io_cuts.txt` | Undirected hyperedge partition pairs, a different metric. |
-| `hardware_quality.txt` | Initial/repaired/final structural and sampled timing quality. |
-| `native_candidates.tsv` | Starting seeds' audited quality. |
-| `worst_combinational_path.tsv` | Witness attaining C; may not attain H on sparse systems. |
+| `io_cuts.txt` | Directionless solver hyperedge partition pairs; not physical I/O pins. |
+| `hardware_quality.txt` | Before/after path crossings, repeated-crossing endpoint score, pass-through logic and sampled timing penalty. |
+| `native_candidates.tsv` | Measured path/cut quality of the backend starting assignments. |
+| `worst_combinational_path.tsv` | An actual modeled path attaining the worst logical FPGA-crossing count. A different path may have the worst hardware-link-hop count. |
 | `endpoint_kind_diagnostic.tsv` | Modeled capture/terminal types and coverage. |
 | `run_provenance.json`, `source_pair_provenance.json` | Source/assignment/configuration/export identities. |
 | `candidate_NN/` | Solver frontier/assignments, native validation and detailed reports. |
@@ -674,27 +880,33 @@ census and a mapping-bound crossing-incidence query have different scopes;
 retain the actual proof's scope. Independent parity is PENDING/NOT RUN until
 its own receipts pass.
 
-A canonical crossing net can have several distinct directed net-to-FPGA
-destinations. Clock, reset-only and data/functional-control categories partition
-those destinations. These differ from structural T, undirected pairs and
-physical package pins.
+A crossing net can have several source-to-destination FPGA transfers. The
+clock-only, reset-only and data/functional-control categories divide those
+transfers without overlap. These final counts have broader coverage than the
+search's optimization-transfer counter. They also differ from directionless
+solver pairs and physical package pins; use the definitions above when
+comparing reports.
 
 ## Path, timing and resource model
 
-The graph follows primitive connectivity. A crossing into a modeled sequential
-capture is counted; its output begins a fresh path. Dynamic programming covers
-all modeled acyclic paths without enumerating every path. Transit V intersects
-foreign-ingress/foreign-egress reachability inside a partition, detecting
-A-to-B-to-C even without reentering A. Cycles and blocked descendants are
-reported; incomplete analysis cannot invent capture barriers or certify a DAG.
+The path graph follows connections between actual primitives. A path ends
+when it reaches a modeled sequential capture; that capture's output starts a
+new path. Crossing the boundary into the capture still counts. The analysis
+checks all modeled acyclic paths without having to list every possible path.
+Pass-through logic is identified by tracing both incoming and outgoing foreign
+communication inside an FPGA; A→B→C is caught even if the signal never returns
+to A. Combinational cycles and the logic they block are reported explicitly.
+An incomplete graph is not treated as a successful complete path check.
 
-For physical adjacency, h(A,B) is the fewest links between owners. H is the
-maximum path sum of h across owner changes; C counts logical owner changes.
-R independently sums `max(0,h-1)`. An end-to-end crossing on a four-device
-chain has C=1, H=3, R=2; a directly connected topology has H=C and R=0.
-Weighted costs are not rounded into hops. H/R are lower bounds, not actual
-routes, congestion, cycles or nanoseconds. Their maxima can come from different
-paths; the exported worst witness attains C.
+Logical boundaries and hardware links answer different questions. Suppose a
+four-device chain connects A–B–C–D and a modeled connection goes directly
+from logic owned by A to logic owned by D. That is **one logical FPGA boundary
+crossing**, but it needs **at least three hardware links** and two intermediate
+relay traversals. A directly connected system needs one link for that crossing.
+The analyzer adds these minimum link counts along each register-free path.
+It does not choose a real transport route or predict congestion, cycles or
+nanoseconds. The worst logical-crossing path and the worst link-hop path can
+be different; the exported path file shows the former.
 
 Current scope is `functional_synchronous_controls_v2_UNISIM_2025_1`.
 Functional synchronous controls can capture, including FDRE reset, FDSE set
@@ -760,6 +972,26 @@ evidence and may skip when absent; a skip is not new native validation.
 The [validation report](VALIDATION_REPORT.tex) records experiment scope,
 metrics and limits. LSUT designs/output directories are not dependencies of
 the standalone tool.
+
+The [J4 review examples](examples/j4/README.md) contain all sixteen qualified
+mapping files and their HTML/PNG reports in compact, version-controlled folders.
+Their resource/cut measurements are historical results preserved by exact
+ownership equivalence; their README explains the large proof files needed for
+an independent re-audit.
+
+To rebuild the version-controlled [PDF](VALIDATION_REPORT.pdf), first install
+the pinned Python dependencies above and a full LaTeX distribution containing
+`pdflatex` and the report's packages, including `fancyvrb`. From the checkout:
+
+```powershell
+python doc/partition/build_report.py
+# If pdflatex is not on PATH:
+python doc/partition/build_report.py --pdflatex 'C:\tools\texlive\bin\windows\pdflatex.exe'
+```
+
+The script regenerates the paper's source-bound figure, runs LaTeX twice, and
+copies only a successfully completed PDF to `doc/partition/VALIDATION_REPORT.pdf`.
+It does not install a compiler or download missing LaTeX packages automatically.
 
 | Symptom | Action |
 |---|---|

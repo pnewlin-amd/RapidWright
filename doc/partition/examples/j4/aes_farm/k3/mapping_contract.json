@@ -1,0 +1,27 @@
+{
+  "record_count": 13754,
+  "descendants_before_ancestors": true,
+  "residual_root_explicit": true,
+  "cells_agreement": true,
+  "local_constant_leaf_count": 262,
+  "downstream_regroup_verified": false,
+  "source_paths_exact": true,
+  "nearest_ancestor_redundancy_absent": true,
+  "functional_leaf_count": 517282,
+  "empty_hierarchy_count": 0,
+  "schema_version": 1,
+  "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+  "records_manifest_sha256": "94e5de4c27dc07d4279de49e1f6a468170bdce327feade7f5f8201388b4fc88d",
+  "functional_leaves_by_destination": {
+    "FPGA_C": 111472,
+    "FPGA_B": 173605,
+    "FPGA_A": 232205
+  },
+  "mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+  "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+  "ownership_manifest_sha256": "f1a5e475fe221f9c7fc9dd81c4a30731cf4cab08a3ba4da3c46d07be2949691c",
+  "input_sha256": "7fc2948596c3830462964176aa70a8cc2c794cb0c77c0b7a3d30adb6924a8d78",
+  "frontier_ownership_compared": true,
+  "root_instance": "aes_farm_top",
+  "status": "PASS"
+}

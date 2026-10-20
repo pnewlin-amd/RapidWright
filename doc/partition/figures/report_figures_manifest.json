@@ -1,0 +1,104 @@
+{
+  "scope": "Presentation of existing versioned evidence only; no new measurements.",
+  "source_evidence_sha256": "a54b1c9b6317f93387947a4cd5cc775c6689cc2c07b189989976b89ec317334f",
+  "generator_sha256": "e7864738c37c78288240a1a56c8c735b35d9177cc6da328a29706a38bc3ce73b",
+  "font_path": "scripts/partition/assets/fonts/TitilliumWeb-Regular.ttf",
+  "font_sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+  "png_palette": [
+    "#F26522",
+    "#C4470C",
+    "#000000"
+  ],
+  "report_renderer_helper_sha256": "5a2ee9fe31ad20bcc58e82d8aff0f18a05d4282f05be3b5b79831bd51514da28",
+  "output": "opentitan_iteration_progress.png",
+  "output_sha256": "c4f7e1f577c615e495af68fbdb95464dba86d73f234e0b097447f28fdc7f7ef2",
+  "profile": "main_auto1044_cut10",
+  "attempt_count": 12,
+  "accepted_candidate_attempts": [
+    1,
+    6
+  ],
+  "rejected_attempts": [
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "selected_attempt": 6,
+  "plotted_retained_measurements": {
+    "worst_uncaptured_crossings": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "extra_crossings_at_endpoints": [
+      23786,
+      23786,
+      23786,
+      23786,
+      23786,
+      41688,
+      41688,
+      41688,
+      41688,
+      41688,
+      41688,
+      41688
+    ],
+    "combinational_transit_cells": [
+      6842,
+      6842,
+      6842,
+      6842,
+      6842,
+      5469,
+      5469,
+      5469,
+      5469,
+      5469,
+      5469,
+      5469
+    ],
+    "optimization_transfers": [
+      3481,
+      3481,
+      3481,
+      3481,
+      3481,
+      3476,
+      3476,
+      3476,
+      3476,
+      3476,
+      3476,
+      3476
+    ]
+  },
+  "selected_opentitan_four_fpga_examples": {
+    "source_path": "doc/partition/examples/j4/opentitan_earl_grey/k4/report_data.json",
+    "source_sha256": "63cdbd17481023b280e5de62b491e34fb0aba55af016ecbc426570484037394a",
+    "mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+    "measurement_status": "HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE",
+    "scope": "Historical Native/source-model measurements preserved by exact ownership equivalence; no new Native measurement.",
+    "outputs_sha256": {
+      "opentitan_four_fpga_lut_balance.png": "ac165d979f70b3d5b4c6b2c3b37dd14d03bd7632da7a2660df88df9f2f380db9",
+      "opentitan_four_fpga_io_cut_balance.png": "4b4002b956454c68108aeaf40dfcf8c9e98bf49388a721cdfe4c6dcd3b11ebb8",
+      "opentitan_four_fpga_connectivity.png": "a9f57a6b2ed5ded17df90b0587c05b5b6a3dc3d4c090ffa54890e3089974e25f"
+    }
+  }
+}

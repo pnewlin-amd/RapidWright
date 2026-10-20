@@ -1,0 +1,467 @@
+{
+  "schema_version": 1,
+  "status": "BYTE_IDENTICAL_REVIEW_COPIES",
+  "created_utc": "2026-10-20T15:05:30.697939+00:00",
+  "scope": "Compact copies of historical qualified mappings, exact-ownership successor proofs and their readable reports; not an independent re-audit bundle or fresh native measurement.",
+  "source_directory_relative_to_workspace": "RESULTS FOR J4/CONTRACT_COMPLIANT_20261020",
+  "source_backfill_receipt": {
+    "path_relative_to_workspace": "work/reporting_visual_qa/historical_backfill_receipt_20261020.json",
+    "sha256": "42b42f9864e42e752cf4a93b363e5b00f219cf9dde24db25645ff695abf5fb16",
+    "fresh_vivado_runs": 0,
+    "status": "PASS",
+    "included": false
+  },
+  "copied_files_per_case": [
+    "mapping.txt",
+    "cells.txt",
+    "lut_balance.png",
+    "io_cut_balance.png",
+    "fpga_connectivity.png",
+    "report.html",
+    "report_data.json",
+    "report_manifest.json",
+    "mapping_contract.json",
+    "reencoding_equivalence.json",
+    "prior_native_evidence.json"
+  ],
+  "cases": [
+    {
+      "source_case": "AES_FARM\\1 FPGA",
+      "archive_directory": "aes_farm/k1",
+      "fpga_count": 1,
+      "source_mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+      "files_sha256": {
+        "mapping.txt": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "lut_balance.png": "3f19c61f0edbffe3be442271642f100176e6664b588d8459c877d9a44e034c92",
+        "io_cut_balance.png": "36e67d0d434b6378a7394aea508c3dcda3ea7aaeb031758c07419c3017a50285",
+        "fpga_connectivity.png": "ccc9887853c86901907de3323c9d997480599d21c100a96bce5248c5e2f98549",
+        "report.html": "e866760ccd5cd801a8267171159a396286b8d8b644a85edeabb25702939499c5",
+        "report_data.json": "cbe28c701234eaec13ffa1ead1c60002f980f7189ccf666b71fb5e1e432f0333",
+        "report_manifest.json": "5d04d5d1c813f726a17c671f1a96c0de233f27d9b4c7fc8099b0d7a13238dc9f",
+        "mapping_contract.json": "97ffe8e30e6a5eeeb11d62506b249385fd2ed1c9ae65ce7c419040bb3ffc1149",
+        "reencoding_equivalence.json": "3ebaba4917654f6d25d78079cf1bf0e4eecc19319c6efbc1375793d176ecc9db",
+        "prior_native_evidence.json": "cf90f0eb13a20813df707fdd697d7d33769c058e12c0cc90c6f5aa645598668d"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "AES_FARM\\2 FPGAS",
+      "archive_directory": "aes_farm/k2",
+      "fpga_count": 2,
+      "source_mapping_sha256": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+      "files_sha256": {
+        "mapping.txt": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "lut_balance.png": "ee93d62f4564d78844435754eefde73a17d87dac6c12b84633c0c5be5bf581db",
+        "io_cut_balance.png": "23112da35b0a879514a1e2b14ba678b9da146b1a637ab19e50a4dd15e5f76bee",
+        "fpga_connectivity.png": "7fca83b9ddb05dc4f918f6ae7e66d7616b9a66305bcc4574260f6ef9fd963291",
+        "report.html": "1c7dc76b4693b957a48256649ed7dfe2e4b71a4d48c51f8186c3beb8af094bf3",
+        "report_data.json": "d15e021f9bef450aa63e1175fd452c7a4aa4627abc6cef7f91a588dab1abead2",
+        "report_manifest.json": "1de727033942d99db7b4da32b45fa913a95e724d47a4910b8756c29f87a712b4",
+        "mapping_contract.json": "38306a13b737c1768bb072930b93e2d01a8e06f4f32c1a0ee488004551d300d4",
+        "reencoding_equivalence.json": "396a4832dc5ea4bf28ee514ae5976fa12bdad00bd29ec3648cdff67e02fc94d7",
+        "prior_native_evidence.json": "04146ea81be082a6dbd40bf98c58434edd2747fc45ea525801f86a6b81c8d89b"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "AES_FARM\\3 FPGAS",
+      "archive_directory": "aes_farm/k3",
+      "fpga_count": 3,
+      "source_mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+      "files_sha256": {
+        "mapping.txt": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "lut_balance.png": "2bb252f2a2db73d5b7b848129710598e9c8a57d80692936021836193cdbd152c",
+        "io_cut_balance.png": "f02c908db4943d2833db5a7a403e1c25c7cb0ec68cce161f47a2e3c992c595f4",
+        "fpga_connectivity.png": "dcecb26844735679586281debe36263e4a64d07416f9529bbd291992837f6ee8",
+        "report.html": "69ec80afd6e563580b9f6ca3e4d0f19ecf3ca069d60e559cca5d36ecd2888dc7",
+        "report_data.json": "c75b5be7d098a09ff31a11352ee1adb0541fab949c2990cb8f4a097ebc566645",
+        "report_manifest.json": "4f146d0dca5cae2605f7737efb779c1193231ac6c4bffac5d3661690343cb4c6",
+        "mapping_contract.json": "bc2233d953c0a98aafefae613baa9a701b9654740e66da9ee3dc773dd87ef27b",
+        "reencoding_equivalence.json": "e759862033184df9374c640293d0ffb88cef6cdf28937da81b27677511a3b8b4",
+        "prior_native_evidence.json": "5fa9f67a1b462cb647315462f88d268503872b4fd96ef8b0c4953def91d154cf"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "AES_FARM\\4 FPGAS",
+      "archive_directory": "aes_farm/k4",
+      "fpga_count": 4,
+      "source_mapping_sha256": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+      "files_sha256": {
+        "mapping.txt": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "lut_balance.png": "06893f2b7ee949455cb616af158f5d89874adb36d162513235b0c0f9bb39f351",
+        "io_cut_balance.png": "b2607d2093cc0802036d73744774f0745d99ffb7325de824bf7a30c3d885b69b",
+        "fpga_connectivity.png": "cafa12d58e59e7fb32aa538e4ff2625e78085bd1bd8052931ac58910f346b105",
+        "report.html": "2ac527fb46d4e15b7fc968251d61e8d9afa386f73240a07e7929ba3110db86eb",
+        "report_data.json": "8fbd26181643552f6bed6cc849d899cb4c1f307db73e951e07bcee78a29e1167",
+        "report_manifest.json": "22ada1d7561ac1e1972b8b8247afedaccb184f69f9fb069f3a7a28016fa79660",
+        "mapping_contract.json": "dde47451dbbeb52a5b66945bf6e78ae2b52eaacdea4cee5584986402c0be1ed2",
+        "reencoding_equivalence.json": "eeea3759e7f55a18427babe69a0a5682f9d98aac7803d1aca8e17e04c99a29ae",
+        "prior_native_evidence.json": "037a57495b97446312cec01d1c2bb51548756c793a24670b388db78e6c9966e5"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "NVDLA\\1 FPGA",
+      "archive_directory": "nvdla/k1",
+      "fpga_count": 1,
+      "source_mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+      "files_sha256": {
+        "mapping.txt": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "lut_balance.png": "259291b804c2a6806932e3b0dcdee9a339c8532d0640be6e3f0e8ec7e2f5b935",
+        "io_cut_balance.png": "36e67d0d434b6378a7394aea508c3dcda3ea7aaeb031758c07419c3017a50285",
+        "fpga_connectivity.png": "ccc9887853c86901907de3323c9d997480599d21c100a96bce5248c5e2f98549",
+        "report.html": "97b05adacf04cf7a5d4a28b9d41b087b2ad377a95bb9708efa568eea05fd1da8",
+        "report_data.json": "8192a3f714985b7b8208f7fd4cde794748ddd5f02b06bd51488cd873e5d04b62",
+        "report_manifest.json": "5f5ad4a557f9771d5794c57a9fe07b3f5f4d29feb47d09fec81ad00795613d39",
+        "mapping_contract.json": "42e5fc3749e6716a0f0d29eff2057543ba8f4519fc74ecc0c967fa2239371efa",
+        "reencoding_equivalence.json": "ec4d047a4333428584983495ddd4a620f6486fa34931363cb8bcb4f0146a6f1d",
+        "prior_native_evidence.json": "cd0ce2a352d3b03cd7d50a49c912cf7970749292a5680436a90e887bae136916"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "NVDLA\\2 FPGAS",
+      "archive_directory": "nvdla/k2",
+      "fpga_count": 2,
+      "source_mapping_sha256": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+      "files_sha256": {
+        "mapping.txt": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "lut_balance.png": "3ceac0f4cf8679864dcbe23a5a9f8a67e30e6708d19efa917b2b58c31a28f432",
+        "io_cut_balance.png": "942c2d5e492e467c241a5ca8d92d937ae71d74b3171b7cf1208d937cc832c028",
+        "fpga_connectivity.png": "1dd46d7e3a0c8dff5c9d96d07a8c74a8f3b2bdd318a86cdced1a3ba12a7501e5",
+        "report.html": "83985b3006e73e7dc0c63f4ca28f0abbe60b423c89c870dfe1eb95fee4cb9776",
+        "report_data.json": "d0f3db71a9f52f0e6f8c69233bd04c186910ec895009a6731aa27c6e282debbd",
+        "report_manifest.json": "ba21042ddd04d565e72cbaec6f9cc9cd4184cb11adf77c10aa1bff30e274143e",
+        "mapping_contract.json": "a0e9d2873bdb7dfefe3cde9da7a7308a0534cbb53f87eb1dc476b692207b41b5",
+        "reencoding_equivalence.json": "5a5149b53912381f01ae776ab345eb282d913d4080fbe0ea905564a55fd29d51",
+        "prior_native_evidence.json": "a2ef8a19d5d0dee01170e6055db469d0537fe3997ace498d5d4afaca63859dfc"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "NVDLA\\3 FPGAS",
+      "archive_directory": "nvdla/k3",
+      "fpga_count": 3,
+      "source_mapping_sha256": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+      "files_sha256": {
+        "mapping.txt": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "lut_balance.png": "a399390f2e35d21c1a76117c0c3253741efa0955cf9c5888df8fa9c400b65359",
+        "io_cut_balance.png": "f04109f061f0ba7f0ce2b6c2064f853ac5a49f7395e1861dc20493f5cac2f513",
+        "fpga_connectivity.png": "7ef3d242ef4e6cbb86666d072ff3e54da87185c584e9ade854b0b464ff58580e",
+        "report.html": "398100f6f06c9a1423e869c67e856aec31cb53c0c97d7af649dd70d46bb08a5d",
+        "report_data.json": "d307d88c19fe7fdf9dc6c9343023a2993ac96583bcb35fa51fdbeea674d0483e",
+        "report_manifest.json": "30e56ba2d338ffdcf1fca1123060f148887a83e8c444450ceb42c96546058559",
+        "mapping_contract.json": "8d5e14a0df09936326eebd373cad670eb70a00a1e3183560b39618d522c6bc6e",
+        "reencoding_equivalence.json": "b04765afde0de895a5e45c68bca4fac247ee9222bad2c03905622926a9cdafc1",
+        "prior_native_evidence.json": "668290b269af1a5d34722c84ab41fc5a13ab794af63809d6bee5fddb214a433c"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "NVDLA\\4 FPGAS",
+      "archive_directory": "nvdla/k4",
+      "fpga_count": 4,
+      "source_mapping_sha256": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+      "files_sha256": {
+        "mapping.txt": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "lut_balance.png": "03bd50ebb88f3b0459f0b2e069fd9671fc1e6179457035b4e6daa58d7ec86965",
+        "io_cut_balance.png": "e19b31306e1688cd6a09f4b825284e4d68f8c29222c659761c77b1a1e0e46978",
+        "fpga_connectivity.png": "6d981563407f714bd323aa87921740eb5aad2fd5b34bd6925dc8e719432d4477",
+        "report.html": "49f1799c5e5bc532408273335c650017bd9ead7ce7375a7d94b52bc126a3de38",
+        "report_data.json": "ad8eb35176a4c194855f524a68800d910962e545b3dbce4a736bd41da9f9460c",
+        "report_manifest.json": "41dbb504940dae95d49867220652551d535cb738614e88abb1f8f39206b4edb9",
+        "mapping_contract.json": "aa402b103ea5d03bfe0773ce162d5ecad5d3be86609d510a64b59dcfb7f47c9c",
+        "reencoding_equivalence.json": "790ec0b0b71b2ccc02688926822b86ac53a0351d917f5bce14d04ffd88dd10e7",
+        "prior_native_evidence.json": "25a122d6bc0bbb8f8f72e16dbc6ac3983c7d8cbdc5cdedc322ae902cec457c58"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "OPENTITAN_EARL_GREY\\1 FPGA",
+      "archive_directory": "opentitan_earl_grey/k1",
+      "fpga_count": 1,
+      "source_mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+      "files_sha256": {
+        "mapping.txt": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "lut_balance.png": "6bad26a8f68947e0ae95569489c26c830bb98e1363dd890d09fdb8d958cb7260",
+        "io_cut_balance.png": "36e67d0d434b6378a7394aea508c3dcda3ea7aaeb031758c07419c3017a50285",
+        "fpga_connectivity.png": "ccc9887853c86901907de3323c9d997480599d21c100a96bce5248c5e2f98549",
+        "report.html": "c60dd909faf34a2496633424fd39b52227c56a2810406d013bfa1df14c82cd6b",
+        "report_data.json": "15c7b4ee4d1a8d497da01a308f5127bf7d1e2b75b9f96a3adaa52f80357a82a9",
+        "report_manifest.json": "3a2fb1a9eeba77f76458efc99cef55441aa697f1171ff96585f777f4eb895c73",
+        "mapping_contract.json": "79d4b1a55c887e8439e73c48b9d8e7ebecfa19b312394c2ed786084c1ac2e54a",
+        "reencoding_equivalence.json": "298c0c252cc1d75749f5bc62f18e9ea857cb0b977aa538a2e99ffa19b33069f5",
+        "prior_native_evidence.json": "bd21da4f5f315b694ecd37b5a8cd17efa9be52f2d99b87f12cc4beb01e9b118e"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "OPENTITAN_EARL_GREY\\2 FPGAS",
+      "archive_directory": "opentitan_earl_grey/k2",
+      "fpga_count": 2,
+      "source_mapping_sha256": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+      "files_sha256": {
+        "mapping.txt": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "lut_balance.png": "a0ec6f5ead480577d2433ef824814c79f93e53c60d3bbedef3f847d37431572f",
+        "io_cut_balance.png": "5622ae78122ca470a79099bc535267db988d507769dbebb6af70ebf8383d00e2",
+        "fpga_connectivity.png": "f109727c207daa8ee5f61966371a50bbd9f5af23fa5af5e3edb3a60743ecd051",
+        "report.html": "c7de6087ae49a1d4953d07e95840023114f514face59772eacaad9bee9423cac",
+        "report_data.json": "b4a8509aaf5ac6d55691bcd448f74ce0232c2a56319bfd8a6cd370a1097a3cfb",
+        "report_manifest.json": "1fb583a2e73b66edc0b15d7913d3ec19de300693b5604cd756b2fc174c6d4c33",
+        "mapping_contract.json": "5c8013bd109274d810547ffa60d10155792190f05ab0d04a054c1957f0d9212b",
+        "reencoding_equivalence.json": "68eb0526a74b971e2b0b30a212052e197d638e1ab226fbf42197c51bbeae4973",
+        "prior_native_evidence.json": "887c9f17c3ef58fd30c29e15b7832d3b8210fbf7749e77330f0f47e562c7e1e8"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "OPENTITAN_EARL_GREY\\3 FPGAS",
+      "archive_directory": "opentitan_earl_grey/k3",
+      "fpga_count": 3,
+      "source_mapping_sha256": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+      "files_sha256": {
+        "mapping.txt": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "lut_balance.png": "fe6ad4e4834f496e01709b1a1d9d53575de3264dcd10f7926c324bb884529beb",
+        "io_cut_balance.png": "4138b1193bc6dff4de3446c8606c7e316d9f174960b66357d9d6881d550237a3",
+        "fpga_connectivity.png": "6e0172bc1641cfe0c03b44bf71d9d41ed6d56aed0029acf125283ded34a4d62a",
+        "report.html": "e08cd9e765021128d8c5ee0183dc5244e806e5d4487ea8f577c23a59b7b4f10f",
+        "report_data.json": "a84bc05f99885d97658d121c0e6eeb47b0195c6db276a62a85003741569a1aef",
+        "report_manifest.json": "8b1df369f6b95e6cd736960784e633a96a7acffe1aa4480f8e6fd04dc3f3baf3",
+        "mapping_contract.json": "2377890f5b5783af7cd25f2bbbf2059e87351d17f6dc584d2c1a6849f7a99330",
+        "reencoding_equivalence.json": "8346b4ec2195f38c89b2ac4edb61e6772c33372dd21f5ff126bd0222a3d42d8f",
+        "prior_native_evidence.json": "14e8d623c711b0b51d505848d7ffab578110c45d20076e3be0ed40fbcf93d43c"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "OPENTITAN_EARL_GREY\\4 FPGAS",
+      "archive_directory": "opentitan_earl_grey/k4",
+      "fpga_count": 4,
+      "source_mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+      "files_sha256": {
+        "mapping.txt": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "lut_balance.png": "ac165d979f70b3d5b4c6b2c3b37dd14d03bd7632da7a2660df88df9f2f380db9",
+        "io_cut_balance.png": "4b4002b956454c68108aeaf40dfcf8c9e98bf49388a721cdfe4c6dcd3b11ebb8",
+        "fpga_connectivity.png": "a9f57a6b2ed5ded17df90b0587c05b5b6a3dc3d4c090ffa54890e3089974e25f",
+        "report.html": "fedf3813e1942a95e396aff7e4f933bcc4f3c13367da39bc0d0eeaae95335e4a",
+        "report_data.json": "63cdbd17481023b280e5de62b491e34fb0aba55af016ecbc426570484037394a",
+        "report_manifest.json": "a44d77c5e14c18901277139ec15183477b392472612a86153005f7330c0641c8",
+        "mapping_contract.json": "e835f6c66bccc1c1f02d8510c427fb9486d1750f475e5cfecfb339e160b6c2c0",
+        "reencoding_equivalence.json": "1496286e9d5ed7e029dfa64e71ee6b8c5b19c038e4441c5f5200331025bc29e2",
+        "prior_native_evidence.json": "5ad570f58856ab57b26ad72158c02bbad937928164c63db761098f3b0747f678"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "RISCV_MESH_3072\\1 FPGA",
+      "archive_directory": "riscv_mesh_3072/k1",
+      "fpga_count": 1,
+      "source_mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+      "files_sha256": {
+        "mapping.txt": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+        "cells.txt": "7c9b611a5a0d1378faaac2a43e8adf9cc5e3ffdf11c6c88f456bca0e70514d79",
+        "lut_balance.png": "e4fd89d1d3dd0bcbe86399e582185ea479a38b96aa368b237b3c3aa15e6b1ef0",
+        "io_cut_balance.png": "36e67d0d434b6378a7394aea508c3dcda3ea7aaeb031758c07419c3017a50285",
+        "fpga_connectivity.png": "ccc9887853c86901907de3323c9d997480599d21c100a96bce5248c5e2f98549",
+        "report.html": "980b28fccc0e97bfd82d763b0c6369dff90db2237c2cb0e94f351f1f78d39caf",
+        "report_data.json": "f3919e0f8106078e0e18d0f5acbfecb8110cadb0ec5c339f53881f0145458d79",
+        "report_manifest.json": "f6529a5c2fd89aa78c1955e3ad5beb6cc441114f8a287ad15703dd82dd2f5caf",
+        "mapping_contract.json": "e48c1507b2f4126403e2e97f335049899134061fc4d5bebd68cf0a8a867d14c9",
+        "reencoding_equivalence.json": "9aba0fdfb9e35967eee8f65514f24ace3a26bdcf27ebb2be43af1ad65132821e",
+        "prior_native_evidence.json": "895610a94571f2603b981580538d492633e8fe39b9b5f14405535087b565fca4"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "RISCV_MESH_3072\\2 FPGAS",
+      "archive_directory": "riscv_mesh_3072/k2",
+      "fpga_count": 2,
+      "source_mapping_sha256": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+      "files_sha256": {
+        "mapping.txt": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+        "cells.txt": "25a7153b86363a6777cede4250d914699aea93e7e805c94e0244078de84eeb64",
+        "lut_balance.png": "acc700fb494173a9283a2e82c8010039ce160d77207b812375e37fb510a2a427",
+        "io_cut_balance.png": "fe939602b62e7231c2348906bb6cf9760a043c4f2174673ccc179641ada2f8e7",
+        "fpga_connectivity.png": "628a7413440db5393f71ff6d4435502e8997e35d738401bf017956842a2f55c1",
+        "report.html": "a7043acf1b9743e89a6727dbffe6eb7045c173aa9fab3092d41adbdd5739ed12",
+        "report_data.json": "4d92ca4923ad8d7e6822b288e456009a6a7a44dc2313b126b3515c84b0c57e14",
+        "report_manifest.json": "4cdc832cfec01690f82483923df20d52e8b9e8cb041428b29252519278d8d692",
+        "mapping_contract.json": "43b63c0b008faa7ecc721dbddaa28fda0941dd6ec42bad1adda45346cb3f66b0",
+        "reencoding_equivalence.json": "8ff591a6da8e6fd14b9730d99f66f83ffe512bfa96540102b7457a552d1f1262",
+        "prior_native_evidence.json": "5a7140b59100e725d22b47d00d99cd187c9c03d5a13a83265165a1e645428569"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "RISCV_MESH_3072\\3 FPGAS",
+      "archive_directory": "riscv_mesh_3072/k3",
+      "fpga_count": 3,
+      "source_mapping_sha256": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+      "files_sha256": {
+        "mapping.txt": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+        "cells.txt": "b45d40d83704df40f5d0b049d2899366f1f68aabcc828c40317fb1b891027e81",
+        "lut_balance.png": "e080972102288331922526339439a76c042f18be1d56be6679af263f3a7ef58d",
+        "io_cut_balance.png": "bcc5dceb4378feb3dca139dd891bdd4e75372aeee9bbc16f1e2c998a295a61da",
+        "fpga_connectivity.png": "472b81d6458dc69262a51fffec37dc63f780eb5c8586f8b2f2fb00a09879f8bc",
+        "report.html": "e9ac551576fcc233feeca7023a92e8fe199acb3a095367afa91d455395be3157",
+        "report_data.json": "7e9eda67a12225201561e55ef93e6d640f3e285d748d6ed81f282ec5eedbe188",
+        "report_manifest.json": "eee8b0e26fe9fc34af6b14cac388813fb78b3ef25615f54782a1deeedbca16cd",
+        "mapping_contract.json": "6a56f8adbadc657c6519f6628648b31d1ec801f1426b7cd8bff69a1793af1f16",
+        "reencoding_equivalence.json": "5bfb3b5dd42efcf571e5144cdce4e40cd1059b2bde65779f2e3af099dd72931b",
+        "prior_native_evidence.json": "b1c09c96efa5093a2da67cf038742c22c065f7e0d1c10390859a7301ce4d3a4a"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    },
+    {
+      "source_case": "RISCV_MESH_3072\\4 FPGAS",
+      "archive_directory": "riscv_mesh_3072/k4",
+      "fpga_count": 4,
+      "source_mapping_sha256": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+      "files_sha256": {
+        "mapping.txt": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+        "cells.txt": "676474704c6f282c22b34f680db34f4e0cfc0e8f9d39b4c7bf0a8d1d1e9fd6bd",
+        "lut_balance.png": "912a7ec9eaff1ffa347b079926b6f48fc2dcd1a50944d83f21568c1ba793e1eb",
+        "io_cut_balance.png": "960fa9ad8821e9e9a31d590f9d775baee46f7a87fcd71314d10f5dabb53009df",
+        "fpga_connectivity.png": "3d77b709b6da67bf6fe740299df0be6d2462cac7bc187b1166ac5a6097149129",
+        "report.html": "582072cfbfee2a783478f9f883777cee153e492934ddd01f066f3538cba3fe5f",
+        "report_data.json": "6986fcdabff1ed7c5d15d9698da46b65b15e31045a13ea278d09de1c9f4720da",
+        "report_manifest.json": "545329434d903fa259462ae6587a654998ac16d076782003564cad26b9143df9",
+        "mapping_contract.json": "c1f5bf13c516b359dc4d8d3ed3601f931887692a093c139ed3d352568e2235a8",
+        "reencoding_equivalence.json": "84f2ba27d5358971a8b57163165e0b2b5f2e5f7d9ecd2ef7183469cb9b6f5bcf",
+        "prior_native_evidence.json": "c26bbaa7c36ca83d28e186ee54860cb0e0fdda37d95880af03e8ea7cbcddbabe"
+      },
+      "local_html_links_verified": [
+        "fpga_connectivity.png",
+        "io_cut_balance.png",
+        "lut_balance.png",
+        "mapping.txt",
+        "report_data.json",
+        "report_manifest.json"
+      ]
+    }
+  ],
+  "copied_file_count": 176,
+  "copied_bytes": 7326972,
+  "archive_authored_files_sha256": {
+    "README.md": "dae6fa47c462fde5cd8b14d1da1a4bb21325713300c3b0da02b831174b2aed7a",
+    ".gitattributes": "0897938c3d76a1d0c881080c6501ce9d4358ecd19707160e426c9b464f42199a"
+  }
+}

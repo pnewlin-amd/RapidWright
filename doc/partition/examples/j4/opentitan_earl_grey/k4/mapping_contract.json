@@ -1,0 +1,28 @@
+{
+  "record_count": 2941,
+  "descendants_before_ancestors": true,
+  "residual_root_explicit": true,
+  "cells_agreement": true,
+  "local_constant_leaf_count": 7495,
+  "downstream_regroup_verified": false,
+  "source_paths_exact": true,
+  "nearest_ancestor_redundancy_absent": true,
+  "functional_leaf_count": 427171,
+  "empty_hierarchy_count": 0,
+  "schema_version": 1,
+  "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+  "records_manifest_sha256": "cb8cdc0875624c66fba60bcd8b092e06f785e5936946b529b0086c4ebf8c78bd",
+  "functional_leaves_by_destination": {
+    "FPGA_D": 92109,
+    "FPGA_C": 113212,
+    "FPGA_B": 127695,
+    "FPGA_A": 94155
+  },
+  "mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+  "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+  "ownership_manifest_sha256": "d144739870d0311784a2025f20b94eac4ebeaa5ca6ad3a4627ce599d2aedb368",
+  "input_sha256": "d11771253feb2a657e761f18ee2442fc8680b8dd8e2a6dfaffaa63cfbbb9904b",
+  "frontier_ownership_compared": true,
+  "root_instance": "opentitan_proto",
+  "status": "PASS"
+}

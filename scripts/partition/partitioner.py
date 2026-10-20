@@ -221,6 +221,48 @@ def mapping_contract_module():
     return module
 
 
+def prepare_reporting(output):
+    """Load the portable renderer and fail before starting expensive tools."""
+    source = Path(__file__).with_name("reporting.py")
+    font = source.parent / "assets/fonts/TitilliumWeb-Regular.ttf"
+    # Matplotlib may create a font cache on import; keep it in this run.
+    os.environ["MPLCONFIGDIR"] = str(Path(output) / ".report_cache")
+    specification = importlib.util.spec_from_file_location("partition_reporting", source)
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    pins = {path: sha256(path) for path in (source, font,
+            source.parent / "assets/fonts/TitilliumWeb-OFL.txt")}
+    proof = module.preflight(font)
+    verify_snapshots(pins)
+    return module, font, proof, pins
+
+
+def publish_partition_reports(output, state, staged_mapping, renderer, font):
+    """Stage and verify every presentation artifact before mapping publication."""
+    stage = Path(output) / "report.pending"
+    manifest = renderer.generate_report(stage, state, mapping_path=staged_mapping,
+                                        font_path=font, metrics_directory=output)
+    if manifest["mapping_sha256"] != state["accepted_mapping_sha256"]:
+        raise ValueError("Presentation report describes a different accepted mapping")
+    expected_names = set(renderer.REPORT_FILES) - {"report_manifest.json"}
+    if set(manifest["files_sha256"]) != expected_names:
+        raise ValueError("Presentation report is missing required artifacts")
+    for name, expected in manifest["files_sha256"].items():
+        if sha256(stage / name) != expected:
+            raise ValueError("Staged presentation report changed: " + name)
+    pins = {}
+    for name in renderer.REPORT_FILES:
+        destination = Path(output) / name
+        if destination.exists():
+            raise ValueError("Refusing to overwrite presentation report: " + name)
+        expected = sha256(stage / name)
+        os.replace(stage / name, destination)
+        pins[destination] = expected
+    stage.rmdir()
+    verify_snapshots(pins)
+    return pins
+
+
 def freeze_selected_reports(selected):
     """Bind every published selected report, including optional-file absence."""
     hashes = {}
@@ -636,12 +678,21 @@ def resolve_logical_balance(requested, k, caps):
         if not math.isfinite(requested) or requested < 0:
             raise ValueError("logical_balance must be finite and nonnegative")
         return requested, "explicit_user"
-    if caps and len(set(caps.values())) > 1:
-        # k*ceil(total/k) >= total: this default raw ceiling cannot obstruct
-        # heterogeneous native/scalar targets. Explicit resource files remain
-        # independent and unchanged; native caps are still checked exactly.
-        return max(0.5, float(k - 1)), "automatic_heterogeneous_native_caps"
-    return 0.5, "automatic_uniform_or_unspecified_native_caps"
+    # k*ceil(total/k) >= total: automatic raw ceilings do not force area
+    # equality. Useful logic on every selected FPGA and native hard caps
+    # remain mandatory. Explicit resource-capacity files are unchanged.
+    return max(0.5, float(k - 1)), "automatic_capacity_first"
+
+
+def resolve_search_balance(preferred, requested, capacities):
+    if requested is not None:
+        if requested < preferred:
+            raise ValueError("Search balance must be at least the preferred soft balance target")
+        return requested
+    # The solver uses capacity-proportional scalar targets. This upper bound
+    # permits the whole scalar load on even the smallest target; actual native
+    # capacity and nonempty useful-logic checks still decide acceptance.
+    return max(preferred, sum(capacities.values()) / min(capacities.values()) - 1)
 
 
 def capture_cohort_configuration(requested, k, passes, engine):
@@ -666,13 +717,14 @@ def parser():
     result.add_argument("--quality", choices=("fast", "balanced", "thorough"), default="balanced")
     result.add_argument("--partition-preset", choices=("default", "deterministic"), default="default",
                         help="Mt-KaHyPar 1.6.2 preset; deterministic opts in and requires no mapping constraints")
-    result.add_argument("--iterations", type=int, help="Native feedback iterations (quality default: 1/3/5)")
+    result.add_argument("--iterations", type=int, help="Native feedback iterations (quality default: 1/3/5); multi-FPGA runs use the full budget unless --early-stop")
+    result.add_argument("--early-stop", action="store_true", help="Allow stopping once repeated modeled crossings and pass-through logic disappear; remaining cuts may still improve")
     result.add_argument("--starts", type=int, help="Independent native seeds (quality default: 1/3/7)")
     result.add_argument("--refine-passes", type=int, help="Directed snake cleanup passes (default: 1/3/6)")
     result.add_argument("--capture-cohorts", choices=("auto", "off"), default="off",
                         help="Bounded whole-frontier capture cleanup; off (default) disables, explicit auto opts in; pass0 audits do not move cohorts")
     result.add_argument("--balance", type=float, default=0.20, help="Preferred soft native utilization imbalance (default 20%%); cuts/path quality can justify larger imbalance")
-    result.add_argument("--search-balance", type=float, help="Estimated solver/refiner search envelope; default max(30%%, --balance); native balance is reported separately")
+    result.add_argument("--search-balance", type=float, help="Optional tighter estimated solver/refiner imbalance envelope; default allows any capacity-feasible area distribution")
     result.add_argument("--cut-growth", type=float, default=0.10, help="Allowed transfer/topology growth for snake cleanup (default 10%%; user tradeoff)")
     result.add_argument("--snake-weight", type=float, default=8)
     result.add_argument("--timing", choices=("auto", "required", "off"), default="auto",
@@ -691,7 +743,7 @@ def parser():
     result.add_argument("--native-primitives", type=Path, help="Native primitive inventory from that DCP")
     result.add_argument("--part", help="FPGA part for importing EDIF if no embedded part property")
     result.add_argument("--leaf-luts", default="auto")
-    result.add_argument("--logical-balance", type=float, help="Explicit raw LUT imbalance guard; automatic default: 0.5 for equal/no native caps, max(0.5,k-1) for uneven caps")
+    result.add_argument("--logical-balance", type=float, help="Optional tighter raw LUT imbalance guard; default max(0.5,k-1), leaving the native LUT caps in control")
     result.add_argument("--quality-guard", choices=("ranked", "componentwise"), default="ranked",
                         help="Ranked follows the objective priority; componentwise preserves each reference path metric")
     result.add_argument("--mapping-constraints", type=Path)
@@ -730,6 +782,7 @@ def execute(args):
     status.write_text(json.dumps(state, indent=2))
     native_session = None
     published_mapping_hash = None
+    presentation_names = ()
     source_pair_snapshots = {}
     source_pair_association = None
 
@@ -760,6 +813,7 @@ def execute(args):
             raise ValueError("Timing paths/transport delay require enabled timing guidance")
         quality = ("fast", "balanced", "thorough").index(args.quality)
         iterations = args.iterations if args.iterations is not None else (1, 3, 5)[quality]
+        requested_iterations = iterations
         starts = args.starts if args.starts is not None else (1, 3, 7)[quality]
         passes = args.refine_passes if args.refine_passes is not None else (1, 3, 6)[quality]
         if min(iterations, starts, args.threads) < 1 or passes < 0:
@@ -796,13 +850,16 @@ def execute(args):
         capacity_spec = importlib.util.spec_from_file_location("rw_selected_target_capacity", capacity_source)
         capacity = importlib.util.module_from_spec(capacity_spec); sys.modules[capacity_spec.name] = capacity
         capacity_spec.loader.exec_module(capacity)
-        search_balance = capacity.search_balance(args.balance, args.search_balance)
         caps, balance_capacities, target_capacity, target_snapshots = capacity.prepare(
             topology_source, out, [fpga_label(i) for i in range(k)], caps, args.target_part, args.fpga_parts,
             args.part_catalog, args.lut_utilization)
+        search_balance = resolve_search_balance(args.balance, args.search_balance, balance_capacities)
         if sha256(capacity_source) != capacity_source_sha or target_capacity["original_inputs_sha256"][str(topology_source)] != topology_source_hash:
             raise ValueError("Target helper or original topology changed during target preparation")
         state.update(target_capacity=target_capacity, preferred_native_balance=args.balance,
+                     balance_policy="capacity_first" if args.search_balance is None else "explicit_search_envelope",
+                     iterations_requested=requested_iterations, iterations_effective=iterations, starts_per_iteration=starts,
+                     refine_passes=passes, early_stop_requested=args.early_stop,
                      selection_policy_version=3, native_balance_absolute_tolerance=SOFT_NATIVE_BALANCE_ABSOLUTE_TOLERANCE,
                      effective_solver_epsilon=search_balance, effective_refiner_scalar_balance=search_balance,
                      native_balance_search_envelope=search_balance)
@@ -820,6 +877,9 @@ def execute(args):
         state.update(effective_logical_balance=logical_balance, logical_balance_policy=logical_balance_policy,
                      logical_balance_requested=args.logical_balance,
                      logical_resource_capacities_explicit=bool(args.logical_resource_capacities))
+        renderer, report_font, report_runtime, report_tool_pins = prepare_reporting(out)
+        presentation_names = renderer.REPORT_FILES
+        state["report_runtime"] = report_runtime
         status.write_text(json.dumps(state, indent=2))
         cap_file = out / "native_lut_caps.tsv"
         if caps:
@@ -980,6 +1040,7 @@ def execute(args):
         use_session = (args.native_session == "auto" and iterations > 1
                        and all(path.is_file() for path in session_files))
         tool_snapshots = {path: sha256(path) for path in session_files} if use_session else {}
+        tool_snapshots.update(report_tool_pins)
         tool_snapshots[capacity_source] = capacity_source_sha
         contract_source = Path(__file__).with_name("mapping_contract.py")
         tool_snapshots[contract_source] = sha256(contract_source)
@@ -1215,11 +1276,14 @@ def execute(args):
                 accepted.append(row)
             status.write_text(json.dumps(state, indent=2))
             print(f"Candidate {iteration}: native LUT imbalance {imbalance:.2%}; cap violations {len(violations)}", flush=True)
-            if (not violations and within_guard(row, accepted[0], args.cut_growth, args.quality_guard)
+            if (args.early_stop and not violations and within_guard(row, accepted[0], args.cut_growth, args.quality_guard)
                     and soft_native_balance_met(target_imbalance, search_balance) and row["path_analysis_complete"]
                     and row["max_crossings"] <= 1 and row["transit_primitives"] == 0
                     and (not hop_available or row["max_minimum_link_hops"] <= 1)):
+                state["early_stop_reason"] = "No repeated modeled boundary crossings or pass-through logic; I/O cuts may still be improvable"
                 break
+            if iteration + 1 == iterations:
+                continue
             if sum(values.values()) == 0:
                 # FF/DSP-only designs still benefit from new path-aware seeds,
                 # but zero CLB area cannot calibrate a physical LUT proxy.
@@ -1309,6 +1373,11 @@ def execute(args):
         state["accepted_mapping_sha256"] = selected_mapping_hash
         state["selected_report_sha256"] = selected_report_hashes
         state["mapping_contract"] = contract_audit
+        state["iterations_attempted"] = len(state["candidates"])
+        report_pins = publish_partition_reports(out, state, staged_mapping, renderer, report_font)
+        state["presentation_report_sha256"] = {path.name: digest for path, digest in report_pins.items()}
+        report_manifest = json.loads((out / "report_manifest.json").read_text(encoding="utf-8"))
+        report_source_pins = {out / name: digest for name, digest in report_manifest["source_files_sha256"].items()}
         # Recheck after report/staged-mapping copies, immediately before publication.
         verify_snapshots(source_pair_snapshots)
         verify_selected_reports(selected, out, selected_report_hashes)
@@ -1317,6 +1386,14 @@ def execute(args):
         if sha256(staged_mapping) != selected_mapping_hash:
             raise ValueError("Staged mapping changed before publication")
         verify_snapshots(tool_snapshots)
+        verify_snapshots(report_pins)
+        verify_snapshots(report_source_pins)
+        verify_snapshots(snapshots)
+        capacity.verify_originals(target_capacity)
+        if sha256(topology_source) != topology_source_hash:
+            raise ValueError("Original topology changed during report generation")
+        if (sha256(source), sha256(netlist), sha256(checkpoint), sha256(inventory)) != (source_hash, netlist_hash, checkpoint_hash, inventory_hash):
+            raise ValueError("Source or native reference changed during report generation")
         os.replace(staged_mapping, out / "mapping.txt")
         published_mapping_hash = selected_mapping_hash
         status.write_text(json.dumps(state, indent=2))
@@ -1327,6 +1404,10 @@ def execute(args):
     except Exception as error:
         if published_mapping_hash and (out / "mapping.txt").is_file() and sha256(out / "mapping.txt") == published_mapping_hash:
             (out / "mapping.txt").unlink()
+        # A failed run must not retain a PASS-looking report whose accepted
+        # mapping was withheld. Only these newly generated artifacts are ours.
+        for name in presentation_names:
+            (out / name).unlink(missing_ok=True)
         state.update(status="FAIL", error=str(error))
         status.write_text(json.dumps(state, indent=2))
         raise

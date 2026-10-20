@@ -1,0 +1,23 @@
+{
+  "record_count": 1,
+  "descendants_before_ancestors": true,
+  "residual_root_explicit": true,
+  "cells_agreement": true,
+  "local_constant_leaf_count": 5867,
+  "downstream_regroup_verified": false,
+  "source_paths_exact": true,
+  "nearest_ancestor_redundancy_absent": true,
+  "functional_leaf_count": 2864063,
+  "empty_hierarchy_count": 0,
+  "schema_version": 1,
+  "root_convention": "Synthesized top-cell name used for the DUT instance by the consumer; not RapidWright's synthetic top instance name",
+  "records_manifest_sha256": "136c81a61fc1c6a53a5065915bb7a0e2ca53044634bf95c589f65de32cc806e5",
+  "functional_leaves_by_destination": {"FPGA_A": 2864063},
+  "mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+  "scope": "pre_regroup_source_hierarchy_and_ordered_ownership",
+  "ownership_manifest_sha256": "10e317b36c758230e25009600aa0d97f4c916a7f3510fb5018b87356f94d4713",
+  "input_sha256": "cc2a209e3f7f2235e9aa88b31fae398bbd614fa88f258b8731ed23ca6d533c8a",
+  "frontier_ownership_compared": true,
+  "root_instance": "nvdla_proto",
+  "status": "PASS"
+}

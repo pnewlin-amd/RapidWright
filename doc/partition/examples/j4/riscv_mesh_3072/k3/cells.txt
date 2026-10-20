@@ -1,0 +1,3 @@
+FPGA_A
+FPGA_B
+FPGA_C

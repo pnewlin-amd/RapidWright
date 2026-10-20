@@ -9,6 +9,7 @@ import csv
 import gzip
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -52,6 +53,19 @@ class TimingAvailabilityAcceptance(unittest.TestCase):
         self.export_result = "unavailable"
         self.explicit = None
         self.mutate_at_acceptance = None
+        self.real_reporting = False
+        self.report_action = None
+
+    def report_boundary(self, output, state, staged_mapping, renderer, font):
+        """These timing tests replace rendering; separate tests render real PNGs."""
+        self.assertFalse((output / "mapping.txt").exists())
+        if self.report_action:
+            result = self.report_action(output, state, staged_mapping, renderer, font)
+            if result is not None:
+                return result
+        manifest = output / "report_manifest.json"
+        manifest.write_text(json.dumps({"source_files_sha256": {}}))
+        return {manifest: FRONTEND.sha256(manifest)}
 
     def timing_reference(self, output, available, bad_hash=False):
         output.mkdir(parents=True, exist_ok=True)
@@ -211,10 +225,18 @@ class TimingAvailabilityAcceptance(unittest.TestCase):
             self.explicit_file = self.root / "explicit_paths.tsv"
             arguments += ["--timing-paths", str(self.explicit_file)]
         args = FRONTEND.parser().parse_args(arguments)
-        with patch.object(FRONTEND, "REPO", self.repo), patch.object(FRONTEND, "find_java", return_value="java"), \
-                patch.object(FRONTEND, "find_vivado", return_value="vivado", create=True), \
-                patch.object(FRONTEND, "resolve_backend", return_value=("mtkahypar", None), create=True), \
-                patch.object(FRONTEND, "run", self.run_boundary):
+        from contextlib import ExitStack
+        with ExitStack() as stack:
+            if not self.real_reporting:
+                stack.enter_context(patch.object(FRONTEND, "prepare_reporting", return_value=(
+                    SimpleNamespace(REPORT_FILES=("lut_balance.png", "io_cut_balance.png", "fpga_connectivity.png",
+                                                   "report.html", "report_data.json", "report_manifest.json")), None, {}, {})))
+                stack.enter_context(patch.object(FRONTEND, "publish_partition_reports", self.report_boundary))
+            stack.enter_context(patch.object(FRONTEND, "REPO", self.repo))
+            stack.enter_context(patch.object(FRONTEND, "find_java", return_value="java"))
+            stack.enter_context(patch.object(FRONTEND, "find_vivado", return_value="vivado", create=True))
+            stack.enter_context(patch.object(FRONTEND, "resolve_backend", return_value=("mtkahypar", None), create=True))
+            stack.enter_context(patch.object(FRONTEND, "run", self.run_boundary))
             FRONTEND.execute(args)
         return json.loads((self.output / "STATUS.json").read_text())
 

@@ -208,7 +208,7 @@ class AutomaticQualityFeedbackAcceptance(unittest.TestCase):
                          (self.fixture.output / "candidate_00/vivado_reference/source_mapping.txt").read_bytes())
 
     def test_zero_area_sparse_relay_paths_consume_budget_without_invalid_feedback(self):
-        for hops, expected_attempts in ((2, 3), (1, 1)):
+        for hops, expected_attempts in ((2, 3), (1, 3)):
             with self.subTest(minimum_link_hops=hops):
                 self.make_fixture()
                 self.zero_area_hops = hops

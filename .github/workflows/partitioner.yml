@@ -23,6 +23,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y tk
       - name: Verify headless Tcl parser
         run: python -c "import tkinter; print(tkinter.Tcl().call('info', 'patchlevel'))"
+      - name: Install pinned figure dependencies
+        run: python -m pip install -r scripts/partition/requirements.txt
       - name: Frontend, topology, capacity and tool discovery tests
         run: python -m unittest discover -s scripts/partition -p 'test_*.py'
       - name: Independent native-reference helper tests
@@ -44,7 +46,9 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: rapidwright-partitioner-extreme-overhaul
-          path: build/distributions/rapidwright-partitioner-extreme-overhaul.zip
+          path: |
+            build/distributions/rapidwright-partitioner-extreme-overhaul.zip
+            build/distributions/rapidwright-partitioner-extreme-overhaul.zip.sha256
           if-no-files-found: error
   validation-report:
     runs-on: ubuntu-latest
