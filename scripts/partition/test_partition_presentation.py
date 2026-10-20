@@ -62,6 +62,33 @@ class RequiredPresentation(unittest.TestCase):
         self.assertEqual(self.fixture.partition_commands, [])
         self.assertFalse((self.fixture.output / "mapping.txt").exists())
 
+    def test_missing_runtime_dependency_fails_before_native_export(self):
+        with patch.object(FRONTEND, "start_runtime_monitor", side_effect=RuntimeError("Runtime statistics need psutil")):
+            with self.assertRaisesRegex(RuntimeError, "psutil"):
+                self.fixture.execute()
+        self.assertEqual(self.fixture.export_commands, [])
+        self.assertEqual(self.fixture.partition_commands, [])
+        self.assertFalse((self.fixture.output / "mapping.txt").exists())
+
+    def test_final_runtime_refresh_failure_cannot_publish_a_pass(self):
+        self.fixture.real_reporting = True
+        def completed_reports(output, *unused):
+            # Supply a completed presentation boundary; the independent real
+            # renderer test below checks real PNGs and measured source tables.
+            for name in REPORT_NAMES:
+                (output / name).write_text(json.dumps({"source_files_sha256": {}})
+                                           if name == "report_manifest.json" else "published report fixture")
+            return {output / name: FRONTEND.sha256(output / name) for name in REPORT_NAMES}
+        with patch.object(FRONTEND, "publish_partition_reports", completed_reports), \
+             patch.object(FRONTEND, "finalize_runtime_report", side_effect=OSError("Final runtime refresh failed")):
+            with self.assertRaisesRegex(OSError, "runtime refresh"):
+                self.fixture.execute()
+        self.assertEqual(self.fixture.final_gate_calls, 1)
+        for name in ("mapping.txt", *REPORT_NAMES):
+            self.assertFalse((self.fixture.output / name).exists(), name)
+        status = json.loads((self.fixture.output / "STATUS.json").read_text())
+        self.assertEqual(status["status"], "FAIL")
+
     def test_late_report_mapping_mutation_is_rejected(self):
         def corrupt(output, state, mapping, renderer, font):
             (output / "report.html").write_text("PASS-looking report must be removed")
@@ -122,6 +149,10 @@ class RequiredPresentation(unittest.TestCase):
         data = json.loads((output / "report_data.json").read_text(encoding="utf-8"))
         self.assertEqual(data["mapping_sha256"], FRONTEND.sha256(output / "mapping.txt"))
         self.assertEqual(data["selected_iteration"], state["selected_iteration"])
+        self.assertEqual(data["runtime_statistics"], state["runtime_statistics"])
+        self.assertEqual(data["runtime_statistics"]["measured_through"], "before_mapping_publication")
+        self.assertGreater(data["runtime_statistics"]["wall_clock_seconds"], 0)
+        self.assertGreater(data["runtime_statistics"]["peak_sampled_process_tree_rss_bytes"], 0)
         self.assertEqual(data["resources"]["FPGA_A"]["clb_luts"], 4)
         self.assertEqual(data["io_cuts"]["directed_matrices"]["data_or_functional_sync_control"]["FPGA_A"]["FPGA_B"], 1)
         self.assertEqual(len(list(output.glob("*.png"))), 3)

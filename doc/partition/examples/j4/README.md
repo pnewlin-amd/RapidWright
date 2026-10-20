@@ -12,12 +12,14 @@ report. Open a report below, or download the folder and open `report.html`.
 | PicoRV32 mesh, 3,072 cores | [Report](riscv_mesh_3072/k1/report.html) / [mapping](riscv_mesh_3072/k1/mapping.txt) | [Report](riscv_mesh_3072/k2/report.html) / [mapping](riscv_mesh_3072/k2/mapping.txt) | [Report](riscv_mesh_3072/k3/report.html) / [mapping](riscv_mesh_3072/k3/mapping.txt) | [Report](riscv_mesh_3072/k4/report.html) / [mapping](riscv_mesh_3072/k4/mapping.txt) |
 | AES farm | [Report](aes_farm/k1/report.html) / [mapping](aes_farm/k1/mapping.txt) | [Report](aes_farm/k2/report.html) / [mapping](aes_farm/k2/mapping.txt) | [Report](aes_farm/k3/report.html) / [mapping](aes_farm/k3/mapping.txt) | [Report](aes_farm/k4/report.html) / [mapping](aes_farm/k4/mapping.txt) |
 
-These files preserve the bytes of the preferred outputs from
+The mappings, source proofs and three PNGs preserve the preferred outputs from
 `RESULTS FOR J4/CONTRACT_COMPLIANT_20261020` in the original workspace. The
-[archive manifest](archive_manifest.json) records every copied file's SHA-256
-and the source backfill receipt, whose SHA-256 is
-`42b42f9864e42e752cf4a93b363e5b00f219cf9dde24db25645ff695abf5fb16`.
-All relative links inside each HTML report point to files in that same folder.
+[archive manifest](archive_manifest.json) records the current hashes and the
+concise-report refresh receipt. It also retains the original backfill receipt
+as an earlier snapshot: that receipt describes the reports before their HTML,
+report JSON and report hash manifests were refreshed. Historical runtime, CPU
+and memory measurements remain unavailable. All relative links inside each
+HTML report point to files in that same folder.
 
 ## What the evidence means
 

@@ -20,8 +20,9 @@ On Linux use `./partitioner` in place of `partitioner.cmd`. Omit
 the topology, a matching `.targets.json` companion, or `--target-part`.
 The accepted output is `mapping.txt` in the printed result directory. Open
 `report.html` beside it for the resource, I/O and connectivity figures and
-the selected partition's quality summary. Matplotlib/Pillow versions are
-pinned by the requirements file; the open-licensed plot font is bundled and
+the selected partition's quality summary, elapsed time, observed CPU use and
+peak sampled host-process memory. Windows monitoring excludes the WSL guest.
+Matplotlib, Pillow and psutil are pinned by the requirements file; the open-licensed plot font is bundled and
 needs no system installation.
 
 See [VALIDATION_REPORT.pdf](doc/partition/VALIDATION_REPORT.pdf), with its

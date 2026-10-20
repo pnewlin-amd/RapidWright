@@ -2,6 +2,7 @@
 import csv
 import gzip
 import importlib.util
+import itertools
 import json
 from pathlib import Path
 import tempfile
@@ -306,6 +307,56 @@ class SourceBoundContractBundle(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "destination differs"):
             self.validate_bundle()
 
+    def test_resealed_ownership_cannot_swap_leaf_owners_while_preserving_every_count(self):
+        # Equal aggregate populations do not prove per-instance ownership.
+        # Both forged governing records are real ancestors with matching labels,
+        # but they skip the nearer exception/cluster that actually owns the leaf.
+        report = self.bundle()
+        path = self.root / "mapping_ownership.tsv.gz"
+        with gzip.open(path, "rt", encoding="utf-8") as stream:
+            text = stream.read()
+        text = text.replace("top/cluster/helper\tFDRE\tFUNCTIONAL\tFPGA_1\ttop/cluster/helper\tFPGA_1",
+                            "top/cluster/helper\tFDRE\tFUNCTIONAL\tFPGA_2\ttop/cluster\tFPGA_2")
+        text = text.replace("top/cluster/local\tFDRE\tFUNCTIONAL\tFPGA_2\ttop/cluster\tFPGA_2",
+                            "top/cluster/local\tFDRE\tFUNCTIONAL\tFPGA_1\ttop\tFPGA_1")
+        with gzip.open(path, "wt", encoding="utf-8") as stream:
+            stream.write(text)
+        report["ownership_manifest_sha256"] = CONTRACT.sha256(path)
+        (self.root / "mapping_contract.json").write_text(json.dumps(report))
+        with self.assertRaises(ValueError):
+            self.validate_bundle()
+
+    def test_every_golden_record_permutation_obeys_actual_ancestor_dependencies(self):
+        self.bundle()
+        labels = {"FPGA_1", "FPGA_2", "FPGA_3"}
+        rules = (("top/cluster/helper", "FPGA_1"), ("top/cluster/compute", "FPGA_3"),
+                 ("top/cluster", "FPGA_2"), ("top", "FPGA_1"))
+        # These are the source-tree relationships in the photographed example,
+        # not parents inferred by splitting an emitted string.
+        parent = {"top/cluster/helper": "top/cluster", "top/cluster/compute": "top/cluster",
+                  "top/cluster": "top", "top": ""}
+        valid = invalid = 0
+        for order in itertools.permutations(rules):
+            with self.subTest(order=order):
+                self.mapping.write_text("".join(path + " " + label + "\n" for path, label in order))
+                positions = {path: index for index, (path, _) in enumerate(order)}
+                legal = all(not ancestor or positions[path] < positions[ancestor] for path, ancestor in parent.items())
+                manifest = self.root / "mapping_records.tsv"
+                with manifest.open("w", newline="", encoding="utf-8") as stream:
+                    writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
+                    writer.writerow(CONTRACT.RECORD_HEADER)
+                    writer.writerows((path, label, parent[path]) for path, label in order)
+                if legal:
+                    CONTRACT.validate_mapping(self.mapping, self.cells, self.inventory,
+                                              expected_destinations=labels, record_manifest=manifest)
+                    valid += 1
+                else:
+                    with self.assertRaises(ValueError):
+                        CONTRACT.validate_mapping(self.mapping, self.cells, self.inventory,
+                                                  expected_destinations=labels, record_manifest=manifest)
+                    invalid += 1
+        self.assertEqual((valid, invalid), (2, 22))
+
     def test_empty_hierarchy_is_separate_and_cannot_populate_a_partition(self):
         report = self.bundle()
         path = self.root / "mapping_ownership.tsv.gz"
@@ -340,6 +391,33 @@ class SourceBoundContractBundle(unittest.TestCase):
         self.validate(record_manifest=manifest)
         with self.assertRaisesRegex(ValueError, "redundant"):
             self.validate()
+
+    def test_complete_bundle_preserves_literal_slash_sibling_ancestry(self):
+        # The actual source has a root child literally named 'cluster/helper',
+        # alongside a separate 'cluster' module. Both may legally target FPGA_2:
+        # the nearest actual mapped ancestor of that literal sibling is root.
+        report = self.bundle()
+        self.mapping.write_text(self.mapping.read_text().replace("top/cluster/helper FPGA_1", "top/cluster/helper FPGA_2"))
+        manifest = self.root / "mapping_records.tsv"
+        manifest.write_text("\t".join(CONTRACT.RECORD_HEADER) + "\n"
+                            "top/cluster/helper\tFPGA_2\ttop\n"
+                            "top/cluster/compute\tFPGA_3\ttop/cluster\n"
+                            "top/cluster\tFPGA_2\ttop\n"
+                            "top\tFPGA_1\t\n")
+        ownership = self.root / "mapping_ownership.tsv.gz"
+        with gzip.open(ownership, "rt", encoding="utf-8") as stream:
+            text = stream.read()
+        text = text.replace("top/cluster/helper\tFDRE\tFUNCTIONAL\tFPGA_1\ttop/cluster/helper\tFPGA_1",
+                            "top/cluster/helper\tFDRE\tFUNCTIONAL\tFPGA_2\ttop/cluster/helper\tFPGA_2")
+        with gzip.open(ownership, "wt", encoding="utf-8") as stream:
+            stream.write(text)
+        report.update(mapping_sha256=CONTRACT.sha256(self.mapping),
+                      records_manifest_sha256=CONTRACT.sha256(manifest),
+                      ownership_manifest_sha256=CONTRACT.sha256(ownership),
+                      functional_leaves_by_destination={"FPGA_1": 1, "FPGA_2": 2, "FPGA_3": 1})
+        (self.root / "mapping_contract.json").write_text(json.dumps(report))
+        audit = self.validate_bundle()
+        self.assertEqual(audit["functional_leaf_populations"], {"FPGA_1": 1, "FPGA_2": 2, "FPGA_3": 1})
 
 
 class CompleteConnectionStream(unittest.TestCase):

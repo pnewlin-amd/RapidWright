@@ -11,6 +11,8 @@
 /scripts/partition/assets/fonts/** -text
 /doc/partition/evidence/presentation_evidence.json -text
 /doc/partition/evidence/presentation_validation.json -text
+/doc/partition/evidence/mapping_contract_test_coverage.json -text
+/doc/partition/evidence/ci_runtime_validation.json -text
 /doc/partition/figures/** -text
 /doc/partition/VALIDATION_REPORT.pdf binary
 /scripts/partition/assets/fonts/*.ttf binary

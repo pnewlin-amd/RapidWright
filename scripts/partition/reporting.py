@@ -9,8 +9,10 @@ import hashlib
 import html
 import json
 import math
+import os
 from pathlib import Path
 import re
+import tempfile
 
 
 PALETTE = ("#F26522", "#C4470C", "#000000")
@@ -49,6 +51,33 @@ def deviations(values):
     """Signed deviation from the arithmetic mean; an all-zero design is 0%."""
     mean = sum(values) / len(values) if values else 0.0
     return mean, [100 * (value / mean - 1) if mean else 0.0 for value in values]
+
+
+def _runtime_statistics(statistics):
+    """Preserve unknown runtime values as unavailable, rejecting fake numbers."""
+    if statistics is None:
+        return {}
+    if not isinstance(statistics, dict):
+        raise ValueError("Runtime statistics must be an object")
+    result = dict(statistics)
+    integer_fields = ("peak_sampled_process_tree_rss_bytes", "frontend_peak_rss_bytes", "child_processes_observed")
+    number_fields = ("wall_clock_seconds", "cpu_time_seconds", "average_cpu_cores",
+                     "average_cpu_percent_one_core", "sample_interval_seconds")
+    for key in integer_fields:
+        value = result.get(key)
+        if value is not None and (type(value) is not int or value < 0):
+            raise ValueError("Runtime statistic must be a nonnegative integer: " + key)
+    for key in number_fields:
+        if result.get(key) is not None:
+            result[key] = _number(result[key], key)
+            if result[key] < 0 or key == "sample_interval_seconds" and result[key] == 0:
+                raise ValueError("Invalid runtime statistic: " + key)
+    for key in ("scope", "measured_through"):
+        if result.get(key) is not None and not isinstance(result[key], str):
+            raise ValueError("Runtime scope fields must be text: " + key)
+    # Also reject nonfinite values in optional metadata.
+    json.dumps(result, allow_nan=False)
+    return result
 
 
 def _tsv(path, required):
@@ -481,85 +510,105 @@ def _connectivity_chart(path, labels, matrix, font_path):
 
 def _html(data):
     escape = lambda value: html.escape(str(value), quote=True)
-    fmt = lambda value: "Unavailable" if value is None else format(value, ",") if isinstance(value, int) else escape(value)
+    fmt = lambda value: "Unavailable" if value is None else format(value, ",") if isinstance(value, int) else str(value)
     def table(headers, rows):
         return "<div class=table-scroll><table><thead><tr>" + "".join("<th>" + escape(h) + "</th>" for h in headers) + "</tr></thead><tbody>" + "".join("<tr>" + "".join("<td>" + escape(c) + "</td>" for c in row) + "</tr>" for row in rows) + "</tbody></table></div>"
+    def decimal(value, unit=""):
+        return "Unavailable" if value is None else format(value, ",.2f") + unit
+    def memory(value):
+        if value is None:
+            return "Unavailable"
+        return decimal(value / (1024 ** 3), " GiB") if value >= 1024 ** 3 else decimal(value / (1024 ** 2), " MiB")
+    def figure(name, alt, caption):
+        return "<figure><a href='" + name + "'><img src='" + name + "' alt='" + escape(alt) + "'></a><figcaption>" + escape(caption) + "</figcaption></figure>"
     resources, cuts, quality = data["resources"], data["io_cuts"], data["quality"]
     labels, selected = data["fpga_labels"], data["selected_iteration"]
+    settings, topology = data["run_settings"], data.get("topology", {})
     cells = cuts["by_category"]["data_or_functional_sync_control"]
-    resource_rows = []
-    other_resource_rows = []
+    requested = settings.get("iterations_requested")
+    attempted = settings.get("iterations_attempted", len(data["candidates"]) if data["candidates"] else None)
+    status_label = "Historical measurements preserved by exact ownership equivalence" if data.get("historical_evidence") else data["status"]
+    overview = (("FPGAs", len(labels), "Iterations requested", fmt(requested)),
+                ("Native Vivado CLB LUTs", fmt(sum(row["clb_luts"] for row in resources.values())), "Iterations attempted", fmt(attempted)),
+                ("Unique data/control cut net bits", fmt(cuts["unique_crossing_nets"][_CATEGORIES[0]]), "Selected iteration (zero-based)", fmt(selected)),
+                ("Directed data/control net-bit pairs", fmt(cuts["directed_net_destinations"][_CATEGORIES[0]]), "Target board", topology.get("board", "Unavailable")))
+    resource_rows, other_resource_rows = [], []
     for label in labels:
-        r, cap, c = resources[label], data["capacities"][label], cells[label]
-        utilization = "Unavailable" if not cap["physical_lut_capacity"] else format(100 * r["clb_luts"] / cap["physical_lut_capacity"], ".3f") + "%"
-        resource_rows.append((label, fmt(r["clb_luts"]), utilization, fmt(cap["hard_lut_cap"]),
-                              fmt(c["outgoing"]), fmt(c["incoming"]), fmt(c["total"])))
-        other_resource_rows.append((label, cap.get("device") or "Unavailable", fmt(r.get("registers")),
-                                    fmt(r.get("block_ram_tiles")), fmt(r.get("dsps")), fmt(r.get("uram"))))
-    metric_names = (("after_max_minimum_link_hops", "Worst minimum physical link hops without a register", "Lower bound from the declared topology; not a routed transport path."),
-                    ("after_max_register_free_crossings", "Worst FPGA boundary crossings without a register", "Largest number of ownership changes on a modeled combinational path."),
-                    ("after_endpoint_excess_crossings", "Extra crossings summed over modeled endpoints", "For each endpoint, add crossings beyond the first; this counts path severity, not distinct nets."),
-                    ("after_transit_primitives", "Combinational primitives on transit paths", "Logic that receives a remote signal and can forward it to another FPGA without a register capture."),
-                    ("after_transfers", "Directed hypergraph transfers", "Sum of destination partitions beyond the first over modeled hyperedges; not the full net-bit I/O census."),
-                    ("timing_paths_scored", "Sampled source timing paths scored", "Sampled Vivado paths only; this is not all-path timing closure."),
-                    ("timing_cost_after", "Weighted cost on sampled source timing paths", "A relative ranking cost; not measured FPGA-to-FPGA delay or achieved DUT frequency."))
-    metric_rows = [(name, fmt(quality.get(key.replace("after_", "before_", 1) if key.startswith("after_") else
-                                          "timing_cost_before" if key == "timing_cost_after" else "__unavailable__")),
-                   fmt(quality.get(key)), explanation) for key, name, explanation in metric_names]
-    topology = data.get("topology", {})
-    topology_summary = "Unavailable; the selected topology manifest was not supplied."
-    topology_details = ""
-    if topology:
-        topology_summary = "Board: " + escape(topology.get("board", "Unnamed")) + "; selected FPGA count: " + fmt(topology.get("fpga_count")) + "; direct connected pairs: " + fmt(topology.get("connected_pairs")) + "."
-        topology_rows = [(entry.get("partition", "Unavailable"), entry.get("path", "Unavailable"),
-                          fmt(entry.get("selected_degree"))) for entry in topology.get("fpgas", [])]
-        edge_rows = [(entry.get("partition_a", "Unavailable"), entry.get("partition_b", "Unavailable"),
-                     fmt(entry.get("lanes")), fmt(entry.get("wires_at_min_compression"))) for entry in topology.get("edges", [])]
-        topology_details = "<details><summary>Selected devices and declared direct links</summary>" + table(("Logical FPGA", "Physical topology location", "Direct selected neighbors"), topology_rows) + table(("FPGA", "Neighbor", "Declared lanes", "Wires at topology minimum compression"), edge_rows) + "</details>"
-    historical_notice = ""
-    if data.get("historical_evidence"):
-        historical_notice = "<p class=notice><strong>Historical measurements preserved by exact ownership equivalence.</strong> This mapping is a contract-compliant re-encoding of an earlier assignment. Its leaf owners and top-port owner are unchanged. The resource, cut, path and iteration measurements below come from that historical run; they are <strong>not a fresh Vivado measurement or a new frontend acceptance run</strong>. Both mapping hashes and the checked equivalence proof are retained in report_data.json. Downstream regroup and hardware remain unverified.</p>"
+        resource, cap, cut = resources[label], data["capacities"][label], cells[label]
+        utilization = "Unavailable" if not cap["physical_lut_capacity"] else format(100 * resource["clb_luts"] / cap["physical_lut_capacity"], ".3f") + "%"
+        resource_rows.append((label, fmt(resource["clb_luts"]), utilization, fmt(cap["hard_lut_cap"]),
+                              fmt(cut["outgoing"]), fmt(cut["incoming"]), fmt(cut["total"])))
+        other_resource_rows.append((label, cap.get("device") or "Unavailable", fmt(resource.get("registers")),
+                                    fmt(resource.get("block_ram_tiles")), fmt(resource.get("dsps")), fmt(resource.get("uram"))))
+    metric_names = (("after_max_minimum_link_hops", "Worst minimum physical link hops without a register", "Lower bound from the declared topology, not a routed transport path."),
+                    ("after_max_register_free_crossings", "Worst FPGA boundary crossings without a register", "Largest ownership-change count on a modeled combinational path."),
+                    ("after_endpoint_excess_crossings", "Extra crossings summed over modeled endpoints", "Crossings beyond the first, summed over endpoints; not a distinct-net count."),
+                    ("after_transit_primitives", "Combinational primitives on transit paths", "Logic that receives and forwards a remote signal without register capture."),
+                    ("after_transfers", "Directed hypergraph transfers", "Destination partitions beyond the first, summed over modeled hyperedges."),
+                    ("timing_paths_scored", "Sampled source timing paths scored", "Exported Vivado timing samples, not all-path timing closure."),
+                    ("timing_cost_after", "Weighted cost on sampled source timing paths", "Relative ranking cost, not measured transport delay or DUT frequency."))
+    metric_rows, definition_rows = [], []
+    for key, name, meaning in metric_names:
+        before_key = key.replace("after_", "before_", 1) if key.startswith("after_") else "timing_cost_before" if key == "timing_cost_after" else "__unavailable__"
+        metric_rows.append((name, fmt(quality.get(before_key)), fmt(quality.get(key))))
+        definition_rows.append((name, meaning))
     progress = []
     for row in data["candidates"]:
         iteration = row.get("iteration")
         reason = "Selected best accepted mapping" if iteration == selected else "Not selected"
-        if row.get("cap_violations"):
+        if str(row.get("status", "")).upper() == "REJECTED":
+            error = " ".join(str(row.get("error") or "No reason supplied").split())
+            reason = "Rejected: " + (error[:400] + "…" if len(error) > 400 else error)
+        elif row.get("cap_violations"):
             reason = "Rejected: hard LUT cap exceeded"
         elif row.get("within_native_search_envelope") is False:
-            reason += "; outside the requested soft balance search envelope"
+            reason += "; outside soft balance envelope"
         elif row.get("path_analysis_complete") is False:
             reason += "; incomplete path model"
         progress.append((fmt(iteration), reason, fmt(row.get("max_crossings")), fmt(row.get("endpoint_excess")),
                          fmt(row.get("transit_primitives")), fmt(row.get("transfers")),
                          "Unavailable" if row.get("target_imbalance") is None else format(100 * _number(row["target_imbalance"], "candidate imbalance"), ".2f") + "%"))
-    title = "FPGA partition report"
+    runtime = _runtime_statistics(data.get("runtime_statistics"))
+    runtime_rows = (("Wall time", decimal(runtime.get("wall_clock_seconds"), " s"), "Observed CPU time", decimal(runtime.get("cpu_time_seconds"), " s")),
+                    ("Average CPU cores", decimal(runtime.get("average_cpu_cores")), "Average CPU use (one core = 100%)", decimal(runtime.get("average_cpu_percent_one_core"), "%")),
+                    ("Peak sampled process-tree memory", memory(runtime.get("peak_sampled_process_tree_rss_bytes")), "Frontend peak memory", memory(runtime.get("frontend_peak_rss_bytes"))),
+                    ("Child processes observed", fmt(runtime.get("child_processes_observed")), "Sampling interval", decimal(runtime.get("sample_interval_seconds"), " s")))
+    measurement = runtime.get("measured_through")
+    measurement_label = {"before_report_generation": "Before report generation", "finalized_run": "Finalized run",
+                         "before_mapping_publication": "Partitioning, reporting and final source checks; before mapping publication",
+                         "partitioning_and_initial_report_generation": "Partitioning and initial report generation"}.get(measurement, measurement or "Unavailable")
+    runtime_scope = runtime.get("scope") or "No runtime measurement supplied."
     category_rows = [("Data and functional synchronous control", fmt(cuts["unique_crossing_nets"][_CATEGORIES[0]]), fmt(cuts["directed_net_destinations"][_CATEGORIES[0]])),
                      ("Clock only", fmt(cuts["unique_crossing_nets"]["clock"]), fmt(cuts["directed_net_destinations"]["clock"])),
                      ("Reset only", fmt(cuts["unique_crossing_nets"]["reset_only"]), fmt(cuts["directed_net_destinations"]["reset_only"]))]
+    topology_rows = [(entry.get("partition", "Unavailable"), entry.get("path", "Unavailable"), fmt(entry.get("selected_degree"))) for entry in topology.get("fpgas", [])]
+    edge_rows = [(entry.get("partition_a", "Unavailable"), entry.get("partition_b", "Unavailable"), fmt(entry.get("lanes")), fmt(entry.get("wires_at_min_compression"))) for entry in topology.get("edges", [])]
+    historical_notice = "<p class=notice>Historical metrics preserved by exact ownership equivalence; <strong>not a fresh Vivado measurement</strong>.</p>" if data.get("historical_evidence") else ""
+    title = "FPGA partition report"
     body = ["<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>",
-            "<title>" + title + "</title><style>html{color:#111;background:white;font:17px/1.6 Georgia,'Times New Roman',serif}body{max-width:1180px;margin:3rem auto;padding:0 1.5rem}h1,h2,h3{font-weight:normal;line-height:1.2}h1,h2{border-bottom:1px solid #999;padding-bottom:.3em}h1{font-size:2.4rem}h2{margin-top:2.5rem}a{color:#111}p,li{max-width:95ch}.lede{font-size:1.15rem}.notice{border:1px solid #888;padding:1rem;background:#fafafa;overflow-wrap:anywhere}.meta{font:13px/1.5 monospace;overflow-wrap:anywhere}pre.meta{white-space:pre-wrap;overflow-wrap:anywhere}figure{margin:2rem 0}img{max-width:100%;height:auto;display:block}figcaption{margin:.5rem 0;color:#222;font-size:.92rem}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid #bbb;vertical-align:top}th{background:#eee;border-top:1px solid #555}.table-scroll{overflow-x:auto}code{font-size:.9em;overflow-wrap:anywhere}summary{cursor:pointer}footer{border-top:1px solid #999;margin-top:3rem;padding-top:1rem;font-size:.85rem}@media print{body{margin:0;font-size:11pt}h2,figure,table{break-inside:avoid}a{text-decoration:none}}</style>",
-            "<h1>" + title + "</h1><p class=lede>Selected mapping for <strong>" + str(len(labels)) + " FPGAs</strong>. The plots and resource counts describe the selected best accepted mapping, even when the final search attempt was worse.</p>",
-            "<p class=notice><strong>Status:</strong> " + escape(data["status"]) + ". <strong>Selected iteration:</strong> " + fmt(selected) + " (search indices start at zero). <strong>Mapping:</strong> <a href='mapping.txt'>mapping.txt</a>. Hard capacity checks and mapping contract checks remain acceptance gates; these plots do not replace them.</p>",
+            "<title>" + title + "</title><style>html{color:#111;background:white;font:16px/1.5 Georgia,'Times New Roman',serif}body{max-width:1180px;margin:2.5rem auto;padding:0 1.5rem}h1,h2{font-weight:normal;line-height:1.2;border-bottom:1px solid #999;padding-bottom:.25em}h1{font-size:2.3rem}h2{margin-top:2rem}a{color:#111}.notice{border-left:3px solid #555;padding:.5rem .9rem;overflow-wrap:anywhere}.meta{font:12px/1.5 monospace;overflow-wrap:anywhere}pre.meta{white-space:pre-wrap;overflow-wrap:anywhere}figure{margin:1.5rem 0}img{max-width:100%;height:auto;display:block}figcaption{margin:.4rem 0;font-size:.9rem}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid #bbb;vertical-align:top}th{background:#eee;border-top:1px solid #555}.table-scroll{overflow-x:auto}details{margin:.9rem 0}summary{cursor:pointer;font-weight:bold}footer{border-top:1px solid #999;margin-top:2rem;padding-top:.8rem;font-size:.85rem}.footnote{font-size:.86rem;color:#333}@media print{body{margin:0;font-size:10pt}h2,figure,table{break-inside:avoid}a{text-decoration:none}}</style>",
+            "<h1>" + title + "</h1><p><strong>" + escape(status_label) + "</strong> · <a href='mapping.txt'>mapping.txt</a></p>",
             historical_notice,
-            "<h2>Resources and I/O on each FPGA</h2>",
+            table(("Selected partition", "Result", "Search", "Result"), overview),
+            "<h2>Runtime, CPU and memory</h2>", table(("Measurement", "Result", "Measurement", "Result"), runtime_rows),
+            "<p class=footnote>Measured through: " + escape(measurement_label) + ". CPU covers the frontend and observed descendants; sampling can miss short-lived work. Process-tree memory sums may count shared pages more than once.</p>",
+            "<details><summary>Runtime measurement scope</summary><p>" + escape(runtime_scope) + "</p><p>Observed CPU time is a lower bound when short-lived processes escape sampling. Windows-host sampling excludes work inside WSL. Process-tree memory sums may count shared pages more than once.</p></details>",
+            "<h2>Resources and I/O per FPGA</h2>",
             table(("Logical FPGA", "Native Vivado CLB LUTs", "Device LUT utilization", "Hard LUT cap", "Outgoing net bits", "Incoming net bits", "Total I/O net bits"), resource_rows),
-            "<details><summary>Registers, memories, arithmetic blocks and target devices</summary>" + table(("Logical FPGA", "Target device", "Registers", "Block RAM tiles", "DSP blocks", "UltraRAM blocks"), other_resource_rows) + "</details>",
-            "<figure><a href='lut_balance.png'><img src='lut_balance.png' alt='Native Vivado LUT count and signed percentage deviation from the mean for every selected FPGA'></a><figcaption>Native Vivado CLB LUT count. The dashed horizontal line is the arithmetic mean. The lower chart is 100 × (FPGA count / mean − 1). All-zero designs have 0% deviation. Deviation from the mean is different from device utilization.</figcaption></figure>",
-            "<figure><a href='io_cut_balance.png'><img src='io_cut_balance.png' alt='Unique incoming plus outgoing data/control net bits and signed percentage deviation from the mean'></a><figcaption>Per-FPGA I/O cut load: unique outgoing plus unique incoming canonical data/control net bits. A multicast A→B,C counts once at A and once at each receiver. Clock-only and reset-only nets are listed separately below.</figcaption></figure>",
-            "<h2>What an I/O cut means</h2><p>A cut is a signal bit that crosses an FPGA ownership boundary. These counts describe the logical payload that a later prototyping transport or pinmux flow must carry. They are <strong>not physical package pin counts</strong>, bus counts, transport routing, a pinmux compression ratio, or a DUT clock prediction. A bus contributes one canonical net per connected bit. These charts count FPGA-to-FPGA connections; top-level external ports have no invented FPGA home. A cut hypergraph edge is an optimization-model connection; hypergraph transfers can differ from the complete net-bit census.</p>",
-            table(("Signal category", "Unique net bits crossing any boundary", "Directed source/destination net-bit pairs"), category_rows),
-            "<h2>Target system topology</h2><p>" + topology_summary + " Logical FPGA labels in mapping.txt are separate from physical board locations. The declared link counts guide placement and relative communication cost; these reports do not route transport or certify physical link capacity.</p>" + topology_details,
-            "<h2>Communication between FPGAs</h2><figure><a href='fpga_connectivity.png'><img src='fpga_connectivity.png' alt='Directed FPGA communication matrix with exact data/control net-bit counts'></a><figcaption>Rows transmit; columns receive. Each cell counts one canonical data/control net bit for that source/destination pair. The matrix reports logical communication, not physical topology link bandwidth. Larger systems use the matrix alone so every FPGA remains readable.</figcaption></figure>",
-            "<h2>Snake paths and timing</h2><p>A snake path crosses between FPGAs and passes through combinational logic before a register captures it. Repeated crossings on the same register-free path can reduce the usable DUT clock. The partitioner compares several complementary measurements rather than equating a lower total cut count with a faster design.</p>",
-            table(("Measurement", "Before local cleanup", "Selected result", "Meaning and limit"), metric_rows),
-            "<p>Before local cleanup refers to the selected candidate before its local refinement passes. It is not necessarily the first iteration or a separate baseline partitioner. The search-history table below compares complete iterations.</p>",
-            "<p><strong>Timing sample coverage:</strong> " + escape(quality.get("timing_sample_coverage", "Unavailable")) + ". <strong>Path model:</strong> " + escape(quality.get("path_model", "Unavailable")) + ". Timing and topology values are model guidance, not post-regroup timing closure.</p>",
-            "<h2>Search progress</h2><p>More iterations give the solver additional opportunities; improvement is not guaranteed. The accepted best candidate is retained. A later row can be worse or rejected. The table distinguishes hard cap failures and reported model/search limitations; a nonselected row is not automatically invalid.</p>",
-            table(("Iteration", "Disposition", "Worst register-free crossings", "Extra endpoint crossings", "Transit primitives", "Hypergraph transfers", "Utilization imbalance"), progress) if progress else "<p>Per-iteration history was not supplied for this report.</p>",
-            "<h2>Reproducibility and scope</h2><p>Every figure describes the exact mapping identified below. Native resources count the original synthesized design assigned to each FPGA; future wrapper, transport, clocking and debug resources are outside this count. The 75% LUT policy, when selected, is an engineering capacity bound rather than a guarantee of routing or timing closure. Mapping ordering, exact paths, residual ownership and nearest-ancestor redundancy rules are checked separately before publication.</p>",
-            "<p class=meta>Mapping SHA256: " + escape(data["mapping_sha256"]) + "</p>",
-            "<details><summary>Run settings and source identities</summary><pre class=meta>" + escape(json.dumps(data["run_settings"], indent=2, ensure_ascii=False)) + "</pre><pre class=meta>" + escape(json.dumps(data["source_files_sha256"], indent=2)) + "</pre></details>",
-            "<p><a href='report_data.json'>Machine-readable report data</a> · <a href='report_manifest.json'>Report file hashes</a></p><footer>Figures use the bundled font and only light orange #F26522, dark orange #C4470C, and black #000000. This page uses a separate black-and-white document style. No external scripts, fonts, or network resources are required to read it.</footer></html>"]
+            "<details><summary>Registers, memories and target devices</summary>" + table(("Logical FPGA", "Target device", "Registers", "Block RAM tiles", "DSP blocks", "UltraRAM blocks"), other_resource_rows) + "</details>",
+            figure("lut_balance.png", "LUT totals and signed deviation from the mean for every FPGA", "LUT totals and signed deviation from their mean. Dashed line: mean."),
+            figure("io_cut_balance.png", "Incoming plus outgoing data/control net bits and signed deviation from the mean", "I/O cut load: unique incoming plus outgoing data/control net bits. Dashed line: mean."),
+            "<h2>FPGA communication</h2>",
+            figure("fpga_connectivity.png", "Directed FPGA data/control communication matrix", "Rows transmit; columns receive. Each cell counts data/control net bits for that FPGA pair."),
+            "<h2>Snake paths, cuts and timing</h2>",
+            table(("Measurement", "Before local cleanup", "Selected result"), metric_rows),
+            table(("Signal category", "Unique crossing net bits", "Directed net-bit pairs"), category_rows),
+            "<h2>Search history</h2>",
+            table(("Iteration", "Result", "Worst register-free crossings", "Extra endpoint crossings", "Transit primitives", "Hypergraph transfers", "Utilization imbalance"), progress) if progress else "<p>Iteration history unavailable.</p>",
+            "<details><summary>Metric definitions and counting rules</summary>" + table(("Measurement", "Meaning"), definition_rows) + "<p>I/O cut load counts one outgoing multicast net once at its source and once at each receiving FPGA. Clock-only and reset-only nets are separate. Counts describe logical payload, not physical package pins or a pinmux ratio. External top-level ports have no invented FPGA home. Hypergraph transfers differ from the full net-bit census.</p><p>Deviation is 100 × (FPGA count / mean − 1); all-zero designs have 0% deviation. Device utilization and hard LUT caps are separate. Before local cleanup means this selected candidate before refinement, not necessarily the first iteration. More iterations can improve a result; the best accepted candidate is retained.</p><p>Timing sample coverage: " + escape(quality.get("timing_sample_coverage", "Unavailable")) + ". Path model: " + escape(quality.get("path_model", "Unavailable")) + ". These are source-model measurements, not achieved hardware timing.</p></details>",
+            "<details><summary>Target topology and declared links</summary>" + table(("Logical FPGA", "Physical location", "Selected direct neighbors"), topology_rows) + table(("FPGA", "Neighbor", "Declared lanes", "Wires at topology minimum compression"), edge_rows) + "<p>The communication matrix shows signal demand. Declared links guide optimization; transport routing and physical bandwidth allocation happen later.</p></details>",
+            "<details><summary>Source identities, settings and validation scope</summary><p>Resources describe original synthesized logic; future wrapper and transport resources are excluded. Mapping format, ownership and hard capacity checks are acceptance gates. Downstream regroup and hardware validation are separate.</p><p class=meta>Mapping SHA256: " + escape(data["mapping_sha256"]) + "</p><pre class=meta>" + escape(json.dumps(settings, indent=2, ensure_ascii=False)) + "</pre><pre class=meta>" + escape(json.dumps(data["source_files_sha256"], indent=2)) + "</pre>" + ("<pre class=meta>" + escape(json.dumps(data["historical_evidence"], indent=2)) + "</pre>" if data.get("historical_evidence") else "") + "</details>",
+            "<footer><a href='report_data.json'>Report data</a> · <a href='report_manifest.json'>File hashes</a> · Selected best mapping shown in all three figures.</footer></html>"]
     return "\n".join(body)
 
 
@@ -618,7 +667,8 @@ def generate_report(directory, state, mapping_path=None, font_path=None, metrics
     if topology.get("fpgas") and {entry.get("partition") for entry in topology["fpgas"]} != labels_set:
         raise ValueError("Selected topology manifest FPGA labels differ from the mapping")
     settings = {key: value for key, value in state.items() if key not in
-                ("candidates", "input_snapshot_sha256", "selected_report_sha256", "target_capacity", "mapping_contract")}
+                ("candidates", "input_snapshot_sha256", "selected_report_sha256", "target_capacity", "mapping_contract",
+                 "runtime_statistics")}
     data = {"schema_version": 1, "status": state.get("status", "UNSPECIFIED"), "fpga_labels": labels,
             "mapping_file": "mapping.txt", "mapping_sha256": digest, "source_files_sha256": sources,
             "selected_iteration": state.get("selected_iteration"), "resources": resources, "capacities": capacities,
@@ -626,6 +676,7 @@ def generate_report(directory, state, mapping_path=None, font_path=None, metrics
             "lut_deviation_percent": dict(zip(labels, deviations([resources[label]["clb_luts"] for label in labels])[1])),
             "io_cuts": cuts, "quality": quality, "topology": topology, "candidates": state.get("candidates", []),
             "historical_evidence": historical,
+            "runtime_statistics": _runtime_statistics(state.get("runtime_statistics")),
             "run_settings": settings, "run_provenance": provenance,
             "font": {"filename": font_path.name, "sha256": renderer["font_sha256"], "family": renderer["font_family"]},
             "renderer": renderer, "png_palette": list(PALETTE),
@@ -668,6 +719,59 @@ def generate_report(directory, state, mapping_path=None, font_path=None, metrics
         for name in REPORT_FILES:
             (directory / name).unlink(missing_ok=True)
         raise
+
+
+def refresh_runtime(directory, statistics):
+    """Update runtime metadata in an unpublished report stage.
+
+    PNGs, mappings and source measurements are immutable. Each metadata file
+    replacement is atomic; the manifest is the last commit marker. A failed
+    replacement restores files already changed before returning the failure.
+    """
+    directory = Path(directory)
+    statistics = _runtime_statistics(statistics)
+    manifest_path = directory / "report_manifest.json"
+    manifest_bytes = manifest_path.read_bytes()
+    manifest = json.loads(manifest_bytes.decode("utf-8"))
+    expected_files = set(REPORT_FILES) - {"report_manifest.json"}
+    if set(manifest.get("files_sha256", {})) != expected_files:
+        raise ValueError("Cannot refresh an incomplete report manifest")
+    pinned = {**manifest["files_sha256"], "report_manifest.json": hashlib.sha256(manifest_bytes).hexdigest()}
+    for name, expected in pinned.items():
+        if not (directory / name).is_file() or _sha(directory / name) != expected:
+            raise ValueError("Report changed before runtime refresh: " + name)
+    data = json.loads((directory / "report_data.json").read_text(encoding="utf-8"))
+    if data.get("mapping_sha256") != manifest.get("mapping_sha256"):
+        raise ValueError("Report data and manifest identify different mappings")
+    mapping = directory / "mapping.txt"
+    if mapping.is_file() and _sha(mapping) != data["mapping_sha256"]:
+        raise ValueError("Published mapping differs from runtime report")
+    data["runtime_statistics"] = statistics
+    payloads = {"report_data.json": (json.dumps(data, indent=2, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8"),
+                "report.html": _html(data).encode("utf-8")}
+    for name, payload in payloads.items():
+        manifest["files_sha256"][name] = hashlib.sha256(payload).hexdigest()
+    payloads["report_manifest.json"] = (json.dumps(manifest, indent=2, allow_nan=False) + "\n").encode("utf-8")
+    originals = {name: (directory / name).read_bytes() for name in payloads}
+    with tempfile.TemporaryDirectory(prefix=".runtime-report-", dir=directory) as temporary:
+        stage = Path(temporary)
+        for name, payload in payloads.items():
+            (stage / name).write_bytes(payload)
+        for name, expected in pinned.items():
+            if _sha(directory / name) != expected:
+                raise ValueError("Report changed during runtime refresh: " + name)
+        replaced = []
+        try:
+            for name in payloads:
+                os.replace(stage / name, directory / name)
+                replaced.append(name)
+        except Exception:
+            for name in reversed(replaced):
+                rollback = stage / (name + ".rollback")
+                rollback.write_bytes(originals[name])
+                os.replace(rollback, directory / name)
+            raise
+    return manifest
 
 
 def generate_historical_report(directory, historical_metrics_directory, font_path, output_directory=None):

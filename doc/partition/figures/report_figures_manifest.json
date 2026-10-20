@@ -9,7 +9,7 @@
     "#C4470C",
     "#000000"
   ],
-  "report_renderer_helper_sha256": "5a2ee9fe31ad20bcc58e82d8aff0f18a05d4282f05be3b5b79831bd51514da28",
+  "report_renderer_helper_sha256": "c9b4c6da028f73427f76a69dddab81effadb08ebcf37cd4280518ebb159ef1a1",
   "output": "opentitan_iteration_progress.png",
   "output_sha256": "c4f7e1f577c615e495af68fbdb95464dba86d73f234e0b097447f28fdc7f7ef2",
   "profile": "main_auto1044_cut10",
@@ -91,7 +91,7 @@
   },
   "selected_opentitan_four_fpga_examples": {
     "source_path": "doc/partition/examples/j4/opentitan_earl_grey/k4/report_data.json",
-    "source_sha256": "63cdbd17481023b280e5de62b491e34fb0aba55af016ecbc426570484037394a",
+    "source_sha256": "9e7e9336bd038dd079e12e12d3adeaf9f3808d505de347433360adc910b97074",
     "mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
     "measurement_status": "HISTORICAL_METRICS_PRESERVED_BY_EXACT_OWNERSHIP_EQUIVALENCE",
     "scope": "Historical Native/source-model measurements preserved by exact ownership equivalence; no new Native measurement.",

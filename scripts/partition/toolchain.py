@@ -143,9 +143,14 @@ def check_reporting(repo, cache_directory=None):
     previous = os.environ.get("MPLCONFIGDIR")
     os.environ["MPLCONFIGDIR"] = str(cache)
     try:
+        try:
+            import psutil
+        except ImportError as error:
+            raise RuntimeError("Runtime statistics need psutil; install scripts/partition/requirements.txt") from error
         font = repo / "scripts/partition/assets/fonts/TitilliumWeb-Regular.ttf"
         return {**_reporting_module().preflight(font), "cache_directory": str(cache),
-                "scope": "Bundled open font and local PNG renderer; no design or partition generated"}
+                "psutil_version": psutil.__version__,
+                "scope": "Bundled font, PNG renderer and process monitoring; no design or partition generated"}
     finally:
         if previous is None:
             os.environ.pop("MPLCONFIGDIR", None)

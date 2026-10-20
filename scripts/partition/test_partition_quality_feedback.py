@@ -307,6 +307,8 @@ class AutomaticQualityFeedbackAcceptance(unittest.TestCase):
                     "iteration": 0, "stage": "after_java", "available_bytes": available, "decision": "use_batch"}])
                 expected_scripts = {str(self.fixture.repo / "tools" / name) for name in
                                     ("native_resource_session.py", "resource_session.tcl", "report_partition_resources.tcl")}
+                expected_scripts.update(str(Path(FRONTEND.__file__).with_name(name))
+                                        for name in ("runtime_metrics.py", "requirements.txt"))
                 self.assertEqual(set(status["native_oracle_scripts_sha256"]), expected_scripts)
                 self.assertEqual(len(self.native_commands), 2)
                 self.assertFalse((self.fixture.output / "native_session").exists())

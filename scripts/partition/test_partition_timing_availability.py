@@ -56,7 +56,7 @@ class TimingAvailabilityAcceptance(unittest.TestCase):
         self.real_reporting = False
         self.report_action = None
 
-    def report_boundary(self, output, state, staged_mapping, renderer, font):
+    def report_boundary(self, output, state, staged_mapping, renderer, font, runtime_monitor=None):
         """These timing tests replace rendering; separate tests render real PNGs."""
         self.assertFalse((output / "mapping.txt").exists())
         if self.report_action:
@@ -232,6 +232,8 @@ class TimingAvailabilityAcceptance(unittest.TestCase):
                     SimpleNamespace(REPORT_FILES=("lut_balance.png", "io_cut_balance.png", "fpga_connectivity.png",
                                                    "report.html", "report_data.json", "report_manifest.json")), None, {}, {})))
                 stack.enter_context(patch.object(FRONTEND, "publish_partition_reports", self.report_boundary))
+                stack.enter_context(patch.object(FRONTEND, "finalize_runtime_report",
+                                                side_effect=lambda output, state, renderer, monitor, pins: pins))
             stack.enter_context(patch.object(FRONTEND, "REPO", self.repo))
             stack.enter_context(patch.object(FRONTEND, "find_java", return_value="java"))
             stack.enter_context(patch.object(FRONTEND, "find_vivado", return_value="vivado", create=True))

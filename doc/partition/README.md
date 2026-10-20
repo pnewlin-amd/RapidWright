@@ -75,9 +75,9 @@ To create the runtime ZIP from source, run `./gradlew partitionerDistZip`
 `build/distributions/rapidwright-partitioner-extreme-overhaul.zip`; source DCPs,
 large benchmark results, Vivado and Mt-KaHyPar are excluded.
 
-The core Python helpers use the standard library, including Tcl/Tk. Figure
-generation also needs the report's pinned plotting dependencies; install them
-before running a design job so the required PNGs and HTML can be produced.
+Install the shared Python requirements before running a design job. They
+provide the required figures and process resource measurements; Tcl/Tk is
+also needed for the source-netlist helpers.
 
 From the source checkout or extracted runtime directory, use the same Python
 interpreter that will run the partitioner:
@@ -87,15 +87,15 @@ python -m pip install -r scripts/partition/requirements.txt
 ```
 
 On Linux, use `python3` if that is the launcher's interpreter. The file pins
-Matplotlib 3.10.8 and Pillow 12.0.0; these releases support Python 3.11 and
-have Windows and Linux wheels. Install before a long partition job; accepting
+Matplotlib 3.10.8, Pillow 12.0.0 and psutil 7.2.0, with Windows and Linux
+wheels for the supported Python versions. Install before a long partition job; accepting
 a mapping requires its reports to be generated too.
 
 | Requirement | Use |
 |---|---|
 | Python 3.11 or newer | Frontend and export/report helpers; `hashlib.file_digest` is required. |
 | Python Tcl/Tk (`tkinter`) | Tcl-list decoding for source timing and independent endpoint audits. A display is not needed. |
-| Pinned report dependencies | Matplotlib and Pillow from `scripts/partition/requirements.txt` generate the required PNG and HTML reports without a display. |
+| Pinned report dependencies | Matplotlib/Pillow generate the PNGs without a display; psutil measures the run's host processes. Install `scripts/partition/requirements.txt`. |
 | Java 17 or newer | Run the runtime bundle; use a JDK for a source build. Java 21 was used for the recorded large-design experiments. |
 | Vivado 2025.1 | Original DCP/EDIF preparation, source STA sampling and authoritative original-source subset utilization. The shipped part catalog and primitive defaults are from 2025.1. |
 | Mt-KaHyPar **1.6.2** | Initial multi-FPGA partitioning. Other versions are rejected. A one-FPGA assignment does not invoke it. |
@@ -670,6 +670,17 @@ changed. Unsuccessful proposals are not presented as accepted improvements.
 The plots summarize measured source-subset and logical-net evidence. They do
 not replace the underlying native capacity or mapping-contract checks.
 
+The runtime table reports elapsed wall time, observed CPU time, average CPU
+cores used, and peak sampled memory for the partitioner and its visible child
+processes, including Java and Vivado. It samples every 0.2 seconds and measures
+through report generation and final source checks, just before publishing the
+mapping. CPU time is a lower bound because very short-lived or inaccessible
+processes can be missed. Memory is the largest observed sum of simultaneous
+resident sets; shared pages can be counted more than once. Windows measurements
+exclude CPU and memory inside a WSL guest. Older examples without measurements
+say **unavailable**. Raw values and their measurement scope are retained in
+`report_data.json` and `STATUS.json`.
+
 ### Required mapping contract
 
 `mapping.txt` is an **ordered move plan for the exact synthesized hierarchy**.
@@ -969,6 +980,14 @@ python -m unittest discover -s tools -p 'test_*.py'
 Use `./gradlew` on POSIX. These test code/bounded fixtures, not large-design
 synthesis. Some integrations require explicitly supplied recorded-native
 evidence and may skip when absent; a skip is not new native validation.
+The [mapping test coverage record](evidence/mapping_contract_test_coverage.json)
+ties the tests to the five supplied contract photos. It includes exhaustive
+small assignments, independent ordered-move checks, literal hierarchy names,
+constants, nested exceptions and a replay of all sixteen delivered J4 maps.
+The validator also rejects a resealed ownership manifest whose wrong owners
+preserve every FPGA's total but contradict the most-specific mapping record.
+The [CI and runtime validation record](evidence/ci_runtime_validation.json)
+records Windows/Linux test results and a fresh four-FPGA Vivado smoke run.
 The [validation report](VALIDATION_REPORT.tex) records experiment scope,
 metrics and limits. LSUT designs/output directories are not dependencies of
 the standalone tool.

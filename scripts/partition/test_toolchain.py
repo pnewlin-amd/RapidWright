@@ -117,6 +117,19 @@ class ToolchainContract(unittest.TestCase):
                 TOOLS.check_reporting(self.root, self.root / "explicit-output-cache")
             self.assertNotIn("MPLCONFIGDIR", os.environ)
 
+    def test_runtime_dependency_preflight_is_actionable_and_preserves_environment(self):
+        import builtins
+        original_import = builtins.__import__
+        def missing_psutil(name, *args, **kwargs):
+            if name == "psutil":
+                raise ImportError("Isolated missing runtime dependency")
+            return original_import(name, *args, **kwargs)
+        with patch.dict(os.environ, {"MPLCONFIGDIR": "existing-cache"}), \
+             patch("builtins.__import__", side_effect=missing_psutil):
+            with self.assertRaisesRegex(RuntimeError, "requirements.txt"):
+                TOOLS.check_reporting(self.root)
+            self.assertEqual(os.environ["MPLCONFIGDIR"], "existing-cache")
+
     def test_check_tools_contains_report_failure_without_running_a_design(self):
         for name in ("bin/com/xilinx/rapidwright/edif/partition/Partitioner.class",
                      "bin/com/xilinx/rapidwright/edif/partition/VivadoResourceOracle.class", "jars/runtime.jar"):

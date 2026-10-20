@@ -91,6 +91,29 @@ def _prefix_ancestors(records, root):
     return ancestors
 
 
+def _governing_record(path, records, parent_cache):
+    """The consumer's most-specific assignment, with bounded hierarchy caching.
+
+    The Java source proof separately rejects serialized names whose textual
+    ownership would differ from actual EDIF ownership. This check does not
+    infer source hierarchy; it replays the mapping's ownership rule.
+    """
+    if path in records:
+        return path
+    parent = path.rsplit("/", 1)[0]
+    if parent in parent_cache:
+        return parent_cache[parent]
+    ancestor = parent
+    while ancestor not in records and "/" in ancestor:
+        ancestor = ancestor.rsplit("/", 1)[0]
+    if ancestor not in records:
+        raise ValueError("Mapping contract: no governing assignment for ownership leaf")
+    if len(parent_cache) >= 65536:
+        parent_cache.clear()
+    parent_cache[parent] = ancestor
+    return ancestor
+
+
 def validate_mapping(mapping, cells, native_inventory=None, root=None,
                      expected_destinations=None, record_manifest=None):
     """Validate records, ordered moves and native name presence.
@@ -337,6 +360,7 @@ def validate_bundle(directory, native_inventory, input_sha256, expected_destinat
     records = _records(mapping)
     populations = {label: 0 for label in result["logical_fpgas"]}
     leaves = constants = empty_hierarchy = 0
+    governing_cache = {}
     with gzip.open(directory / "mapping_ownership.tsv.gz", "rt", encoding="utf-8", newline="") as stream:
         reader = csv.DictReader(stream, delimiter="\t")
         if tuple(reader.fieldnames or ()) != OWNERSHIP_HEADER:
@@ -359,6 +383,12 @@ def validate_bundle(directory, native_inventory, input_sha256, expected_destinat
                     raise ValueError("Mapping contract: constant primitive requires separate local classification")
                 constants += 1
             else:
+                # Exact EDIF ancestry is producer-verified. A local instance
+                # name containing '/' can make two different records spell
+                # textual prefixes without being real ancestors. Their owners
+                # must still agree with the consumer's most-specific rule.
+                if label != records[_governing_record(path, records, governing_cache)]:
+                    raise ValueError("Mapping contract: functional leaf owner differs from its most-specific mapped ancestor")
                 if (row["classification"] != "FUNCTIONAL" or label not in populations
                         or label != records[governing] or row["frontier_owner"] != label):
                     raise ValueError("Mapping contract: ownership manifest destination differs from governing record")

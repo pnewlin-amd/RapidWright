@@ -828,5 +828,6 @@
   "io_deviation_percent": {
     "FPGA_A": 0.0,
     "FPGA_B": 0.0
-  }
+  },
+  "runtime_statistics": {}
 }

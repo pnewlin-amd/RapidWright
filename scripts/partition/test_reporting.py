@@ -200,6 +200,81 @@ class ReportInputs(unittest.TestCase):
         self.assertIn("Combinational primitives on transit paths", rendered)
         self.assertNotIn("<th>H</th>", rendered)
 
+    def test_runtime_statistics_preserve_missing_values_and_reject_invalid_numbers(self):
+        self.assertEqual(REPORT._runtime_statistics(None), {})
+        self.assertEqual(REPORT._runtime_statistics({"frontend_peak_rss_bytes": None}), {"frontend_peak_rss_bytes": None})
+        for value in (float("nan"), float("inf"), -1, True):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                REPORT._runtime_statistics({"wall_clock_seconds": value})
+        for value in (-1, 1.5, True):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                REPORT._runtime_statistics({"peak_sampled_process_tree_rss_bytes": value})
+
+    @unittest.skipUnless(DEPENDENCIES, "Install the report rendering requirements")
+    def test_statistics_first_html_runtime_and_rejected_iteration_reason(self):
+        self.state.update(iterations_requested=3, iterations_attempted=3,
+                          runtime_statistics={"wall_clock_seconds": 120.5, "cpu_time_seconds": 360.25,
+                              "average_cpu_cores": 2.99, "average_cpu_percent_one_core": 299.0,
+                              "peak_sampled_process_tree_rss_bytes": 2 * 1024 ** 3,
+                              "frontend_peak_rss_bytes": None, "child_processes_observed": 7,
+                              "sample_interval_seconds": 0.25, "measured_through": "before_report_generation",
+                              "scope": "Observed frontend and child process samples"})
+        self.state["candidates"].append({"iteration": 2, "status": "REJECTED",
+                                         "error": "Native guard <script>alert(1)</script> " + "x" * 1000})
+        self.generate()
+        rendered = (self.output / "report.html").read_text(encoding="utf-8")
+        data = json.loads((self.output / "report_data.json").read_text(encoding="utf-8"))
+        self.assertEqual(data["runtime_statistics"]["child_processes_observed"], 7)
+        self.assertIsNone(data["runtime_statistics"]["frontend_peak_rss_bytes"])
+        self.assertIn("120.50 s", rendered)
+        self.assertIn("Observed CPU time", rendered)
+        self.assertIn("299.00%", rendered)
+        self.assertIn("2.00 GiB", rendered)
+        self.assertIn("Rejected: Native guard &lt;script&gt;", rendered)
+        self.assertNotIn("<script>", rendered)
+        self.assertNotIn("x" * 401, rendered)
+        self.assertLess(rendered.index("Iterations requested"), rendered.index("<h2>Runtime"))
+        self.assertIn("<details><summary>Metric definitions and counting rules", rendered)
+        self.assertIn("<details><summary>Source identities, settings and validation scope", rendered)
+
+    @unittest.skipUnless(DEPENDENCIES, "Install the report rendering requirements")
+    def test_runtime_refresh_updates_only_metadata_and_keeps_mapping_and_pngs(self):
+        self.generate()
+        png_hashes = {name: REPORT._sha(self.output / name) for name in REPORT.REPORT_FILES[:3]}
+        self.assertFalse((self.output / "mapping.txt").exists())
+        mapping_bytes = self.mapping.read_bytes()
+        manifest = REPORT.refresh_runtime(self.output, {"wall_clock_seconds": 12.5, "cpu_time_seconds": 23.0,
+            "average_cpu_cores": 1.84, "measured_through": "partitioning_and_initial_report_generation",
+            "scope": "Partitioning and initial report generation; final publication excluded"})
+        self.assertEqual(mapping_bytes, self.mapping.read_bytes())
+        self.assertEqual(png_hashes, {name: REPORT._sha(self.output / name) for name in png_hashes})
+        data = json.loads((self.output / "report_data.json").read_text(encoding="utf-8"))
+        self.assertEqual(data["runtime_statistics"]["wall_clock_seconds"], 12.5)
+        self.assertIn("12.50 s", (self.output / "report.html").read_text(encoding="utf-8"))
+        self.assertIn("Partitioning and initial report generation", (self.output / "report.html").read_text(encoding="utf-8"))
+        for name, digest in manifest["files_sha256"].items():
+            self.assertEqual(REPORT._sha(self.output / name), digest)
+        self.assertEqual(set(path.name for path in self.output.iterdir()), set(REPORT.REPORT_FILES))
+
+    @unittest.skipUnless(DEPENDENCIES, "Install the report rendering requirements")
+    def test_runtime_refresh_rejects_changed_reports_and_rolls_back_replace_failure(self):
+        self.generate()
+        original = {name: (self.output / name).read_bytes() for name in REPORT.REPORT_FILES}
+        actual_replace = REPORT.os.replace
+        calls = []
+        def fail_second(source, target):
+            calls.append(str(target))
+            if len(calls) == 2:
+                raise OSError("controlled metadata replacement failure")
+            return actual_replace(source, target)
+        with patch.object(REPORT.os, "replace", side_effect=fail_second):
+            with self.assertRaisesRegex(OSError, "controlled metadata"):
+                REPORT.refresh_runtime(self.output, {"wall_clock_seconds": 1.5})
+        self.assertEqual(original, {name: (self.output / name).read_bytes() for name in REPORT.REPORT_FILES})
+        (self.output / "report.html").write_text("changed")
+        with self.assertRaisesRegex(ValueError, "changed before runtime refresh"):
+            REPORT.refresh_runtime(self.output, {"wall_clock_seconds": 1.5})
+
     def test_identity_mismatch_and_native_snapshot_rejected(self):
         self.state["accepted_mapping_sha256"] = "a" * 64
         with self.assertRaisesRegex(ValueError, "accepted mapping"):

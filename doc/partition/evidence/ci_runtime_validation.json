@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "recorded_utc": "2026-10-20T16:29:33.583043+00:00",
+  "scope": "CI dependency repair, ordered source-ownership regression checks, concise reports and sampled runtime accounting. No downstream regroup or hardware validation.",
+  "reported_ci_failure": {
+    "run_id": 39447390905,
+    "cause": "Broader Build installed pytest and the Python wrapper but omitted the partitioner rendering requirements.",
+    "single_threaded_job": "Cancelled after the other matrix job failed; no independent assertion failure was reported.",
+    "changes": [
+      "Both Python workflows install the shared pinned requirements.",
+      "Partition Python checks run before long Java work in Build.",
+      "Matrix fail-fast is disabled so both outcomes remain visible.",
+      "Gradle resolves the Python JUnit path rather than passing a literal $buildDir."
+    ]
+  },
+  "windows": {
+    "python": "3.13.3",
+    "partition_tests_run": 251,
+    "partition_tests_passed": 249,
+    "partition_optional_recorded_native_skips": 2,
+    "helper_tests_passed": 17,
+    "failures": 0,
+    "partition_log_sha256": "5b3d19cb2f500835abd02226b4f537e90edd22ac24dff29026f8b94adca2a0d1",
+    "helper_log_sha256": "9ca545119de70c74465da463f1742ef9415478235097f4aa2530638cebe514d4"
+  },
+  "linux": {
+    "unittest_receipt": {
+      "workspace_path": "work/reporting_validation_20261020/linux_python_validation_receipt.json",
+      "sha256": "8b60c8df52ad067e3852d86fa579e75c90dec423dbfac7a4f225bc722024d16a"
+    },
+    "pytest_receipt": {
+      "workspace_path": "work/reporting_validation_20261020/linux_ci_bridge_receipt.json",
+      "sha256": "9c5c75b7daf3f22c2d263b807a8ad8c610d30ef5fe979f779ac359b17077e734"
+    },
+    "partition_tests_passed": 249,
+    "optional_recorded_native_skips": 2,
+    "helper_tests_passed": 17,
+    "pytest_items_passed": 266,
+    "pytest_subtests_passed": 184,
+    "failures": 0
+  },
+  "java_partition_tests": {
+    "tests": 152,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_files": 24,
+    "xml_sha256": {
+      "TEST-com.xilinx.rapidwright.edif.partition.TestAcceptedQualityAnchor.xml": "c472dbee16f7f98358495f58fc1a4bc09d017f22e592ec18d1b4cbc0bad226ba",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestBoundedBalancedSwaps.xml": "815d2afdb07c7a25d110b68288f204556bee364bfa87a10c1e923654ae70f6d6",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestCombinationalPathAnalyzer.xml": "2022761de655bd5cdfaedcf2ba32853d55e628477435cd2b4d179e5dcb34cb72",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestConstraintFrontier.xml": "5448953181c586be2f0157171509ff0f265fbc7c5669be2a1f57562f982eb957",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestFrontierWeightModel.xml": "f1caf88537cf0c5f5799a7cfd0b2c03f2dfb2985384b16be5ea839ba3b0dd604",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestGroupedFrontierSwaps.xml": "689ad50b1935c8342c4096467d5afbbf5b5b57144315a97343e3f5e5bb960fc2",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestHardwareMappingRefiner.xml": "4a2eda126e53b4df1863390813668da029b44e16e55ba23b1b1d1978b0a2c221",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestHardwarePartitionGraph.xml": "d9fbe03155118785557e1d0ffeda361187628c89e585dcc4eea5dcf33f13c581",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestMappingConnectionsManifest.xml": "3da335deaf3e37043c08a468b0307f268aa46932311da6fa7db70424c19631a2",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestMappingContract.xml": "e011f29dcf8440a8786c8e1e8681533584bcf8380e6c8d66cde43d91955c70db",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestMappingContractProperties.xml": "7b96e61130655fc57e1566df01be7656a8be34711321a6582b59ae836296fb0a",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestMappingReencoder.xml": "993adcfc340b16ea18f6a43e620d170096971e6ac77be42bd3a968af1227e633",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestMtKaHyParScalarCapacities.xml": "f9b109be91028f0719d25368135e6d2ff5b22c2f096119afcccb433f7752cb0c",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestPartitionMetrics.xml": "381ffc221cc52658761d6670ae78051f13f23d90b4d2d5cf9cecf277db1f35c3",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestPartitionTopology.xml": "0e523b8c0a6a857463299d5c9edb48f019dd6215461d54af7fcdb8d3eed58c51",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestPhysicalRouteHops.xml": "eab3d3e55116dec2f4d99a523b20b7075d0bb1b972475130661e2738c7359c0b",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestPrimitiveTimingPolicy.xml": "7afd85183ce13ea386bad4c458b95abbfb325bfb1311850432888249cc948bb2",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestRankedQualityGuard.xml": "8950fda4f0afddbc1870c59e0fdb76bd760f4290dd7e8c0b4fe98f3c696ed923",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestRetainedGreedySwapPhase.xml": "e986d732f9d21c255413fd1402ad34cef10e4e28e36be7cccd5bd271886849c2",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestRouteAwareBalancedSwaps.xml": "a9732c14ca29debd60e51ce07e68b5c034e1dcd8e4d312bae0b989357d7771cd",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestSingletonPartitioner.xml": "245d665c3c41d09149b200bc86a107de9753fcacefbaf8c1a454a71cdf4d5471",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestTimingHmetisWeights.xml": "0670cedf70ab961f62ddd77789ed23a687b442eaceecd1f0efe2366db7057b52",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestTimingPathModel.xml": "df2ef900c121b86b14b2f187cfe40e6517bd2d64232eba4149d056a2ec16de8f",
+      "TEST-com.xilinx.rapidwright.edif.partition.TestVertexWeightModel.xml": "2d6786b13ef21a6a57d432899f843beb4730a7e3efd249ba33d4c70febe54a7d"
+    }
+  },
+  "mapping_contract_coverage_sha256": "e7d1100b5e8e69a9d07a1df7128545595d42b04ec42cce98286aff41c9cd7bf9",
+  "qualified_large_mapping_replay": {
+    "workspace_path": "work/ci_runtime_20261020/qualified_mapping_replay_receipt.json",
+    "sha256": "d07c480cb66ad939ef3109af9a19169111aa51397418b92f46e14c5a7b59f093"
+  },
+  "html_refresh": {
+    "workspace_path": "work/ci_runtime_20261020/concise_refresh_receipt.json",
+    "sha256": "a8477bbb80ea7aada1a6dc4605b99756835ca15404dbd9822c2b554be5c21f47"
+  },
+  "fresh_native_smoke": {
+    "fixture": "test/resources/partition/smoke/registered_pipeline.v",
+    "input_checkpoint_sha256": "2a46fd8d86cd90d8c5a570948a3bd5cf58cca9b8947fce9375271201bfeb13b2",
+    "status": "PASS",
+    "timing": "off; this smoke validates publication/resources/runtime, not source timing quality",
+    "fpga_count": 4,
+    "iterations_requested": 3,
+    "iterations_attempted": 3,
+    "selected_iteration_zero_based": 0,
+    "later_attempts": "Both rejected by the quality anchor; no improvement is claimed.",
+    "native_clb_luts": {
+      "DESIGN": 304,
+      "FPGA_A": 166,
+      "FPGA_B": 1,
+      "FPGA_C": 1,
+      "FPGA_D": 136
+    },
+    "functional_leaf_count": 624,
+    "local_constant_leaf_count": 32,
+    "mapping_records": 11,
+    "mapping_sha256": "596abd5d639de6229663788216b03f7526947a0eb31126589989e904450eb9e7",
+    "status_sha256": "4db7918fe662007ba839d562a6f1c071e9b351042db6783895c01b3ee74a9940",
+    "report_manifest_sha256": "b704c44fe46aaf7dcca2345f3114fefc93fa0b28d48b4d1667067c220ed32a00",
+    "runtime_statistics": {
+      "schema_version": 1,
+      "started_utc": "2026-10-20T16:26:51.225560+00:00",
+      "measured_utc": "2026-10-20T16:29:00.897852+00:00",
+      "measured_through": "before_mapping_publication",
+      "wall_clock_seconds": 129.67227690000072,
+      "cpu_time_seconds": 132.25,
+      "frontend_cpu_time_seconds": 12.171875,
+      "observed_child_cpu_time_seconds": 120.078125,
+      "average_cpu_cores": 1.01987875251074,
+      "average_cpu_percent_one_core": 101.987875251074,
+      "peak_sampled_process_tree_rss_bytes": 1729966080,
+      "frontend_peak_rss_bytes": 102445056,
+      "child_processes_observed": 33,
+      "sample_count": 594,
+      "sample_interval_seconds": 0.2,
+      "process_read_errors": 0,
+      "cpu_measurement": "frontend process CPU plus sampled descendant CPU; lower bound",
+      "memory_measurement": "peak sampled sum of simultaneous resident sets; shared pages may be counted more than once",
+      "wsl_guest_processes_excluded": true,
+      "scope": "This run's visible host process tree, including Java and Vivado. Short-lived/inaccessible processes may be missed. WSL guest CPU and memory are excluded."
+    },
+    "exact_three_color_png_palette_verified": true
+  },
+  "extracted_runtime_preflight": {
+    "status": "PASS",
+    "receipt": {
+      "workspace_path": "work/ci_runtime_20261020/runtime_preflight.json",
+      "sha256": "2effffe960a321433fb3b5433e43d434bd0b6825ee576a22955e1c57ffb705ed"
+    },
+    "checks": {
+      "python": "PASS",
+      "tcl": "PASS",
+      "reporting": "PASS",
+      "java": "PASS",
+      "vivado": "PASS",
+      "mtkahypar": "PASS",
+      "build": "PASS"
+    },
+    "scope": "Preflight checks only; no design solve from the unpacked bundle."
+  },
+  "source_sha256": {
+    ".github/workflows/build.yml": "e2fd60b54014f6dcb012e24fe932dd52f6d730282bee52910ef32462511bd0fc",
+    ".github/workflows/partitioner.yml": "ad9ef371a25910a6badd0d34dd8091d005cea47a7a0425b7146cb908ebb62afd",
+    "build.gradle": "4e44918b227255afb1fb53d488f8a1e489967d144fa8618d91b47911bd46cf52",
+    "scripts/partition/generate_board_topology.py": "d52a35b393ec1be987b50588292a574db907bb8fc12aebdbd8685d96d04584af",
+    "scripts/partition/generate_topology.py": "72d61c3054fc82a183fdf6748fab3fb4e17610e9e1b7ecf41981c622e08b437a",
+    "scripts/partition/mapping_contract.py": "5a9744805c49f120974be7b12d8708398c74aa20a4a393d9e0a3b0b769dc4c47",
+    "scripts/partition/partitioner.py": "97ec2d23d127d668026ede48dbdc1c23ac6ffa49976c778c59d8667035f98737",
+    "scripts/partition/reporting.py": "c9b4c6da028f73427f76a69dddab81effadb08ebcf37cd4280518ebb159ef1a1",
+    "scripts/partition/requirements.txt": "18870b976d13f4942fa1cb89df1a5106dac9d02b57deb4c990feae011d732920",
+    "scripts/partition/runtime_metrics.py": "f8a542a8d35f6c6aad159b8c12848a188ff3c0aefba4709ffc23954ffa75b00e",
+    "scripts/partition/target_capacity.py": "652db231c4c19cfb2aa7bea140c1184d6f51162be857358b94152b3a2661f992",
+    "scripts/partition/test_ci_dependencies.py": "f45b87a7e2558a02ed886e49d6637aef02137142fce6f32761db0a066603a516",
+    "scripts/partition/test_generate_board_topology.py": "300513a67b1fe516b3d8cd6f348e64369c3798a0d78575d4d6134203e120014a",
+    "scripts/partition/test_mapping_contract.py": "1c7ae695c6fc0779815146d3e15372fafabb43680070a39aa01fcc30f35f1344",
+    "scripts/partition/test_partition_frontend.py": "8574aa0526f3d9627284a8d332fb87674d6d0a1ad5e52c7649c2fbf3b0001bc3",
+    "scripts/partition/test_partition_logical_balance.py": "84b9831c7417e3c257008d34699c34c85ccce120d206109a46cc6f174b4f0e64",
+    "scripts/partition/test_partition_native_residency.py": "8ce44379bb2b3a3fb3cbdfac76648030c3d7ed97a13ceae567875b7f5db45548",
+    "scripts/partition/test_partition_native_timeout.py": "8c102745a974cbb3d64c6ad2fbf623d982934c6f2f76abcf5bd82a0e0af73e1b",
+    "scripts/partition/test_partition_presentation.py": "012711cb70029f5b522c775a9f814c9fb5e55e6a7e3da8a83ba9b90684178b5e",
+    "scripts/partition/test_partition_quality_feedback.py": "67a7d99a32392e224b47bed89759a1ce6351847bd291ca4d85d55957aa3cc405",
+    "scripts/partition/test_partition_quality_guard.py": "45b82e665355773e1f5fa5b9987c281692d3738a7fa5ee14940f0867d77982f7",
+    "scripts/partition/test_partition_route_hops.py": "00714985f6b99d5315aff4eb3d8d12f89514ff8a4b30a1dd568723f36240fe2c",
+    "scripts/partition/test_partition_runtime_memory.py": "b1038ca95d6d3f6710434200c8f19364ccc93c762e564c1dbdbbe25c85e74359",
+    "scripts/partition/test_partition_source_receipt.py": "1dd7181350a81b5bb921a9d5f1ddb09e8b8a47c388025eede5a8bbde1dc4f9cd",
+    "scripts/partition/test_partition_timing_availability.py": "31f93efa3221f8e64ff8e671440dce5f901dec8f481c2a4da00087ceb5bcfb01",
+    "scripts/partition/test_reporting.py": "0dcf17750b7d96f33484cbd19194bf64ffecf5d57d32104a85773acb37aa68bf",
+    "scripts/partition/test_runtime_metrics.py": "c7fff68dc6b8859129e3bc1809969998f86c3dd40d75ef4561ac8395f327fb1e",
+    "scripts/partition/test_target_capacity.py": "0e4bb423210454f698d20641d05e4fb64a48031cf44a10d39aa598e39638c297",
+    "scripts/partition/test_toolchain.py": "da31fbccdaf8c46b9887954be52e5abf5db43d280dee6862bc7b027ad536b0fb",
+    "scripts/partition/test_topology_input.py": "98a75161cadee82b42cc7e2f107e88a7d41ac672c57900bc8be17fd884b34e63",
+    "scripts/partition/toolchain.py": "4c6ae4f789d215a7888cc893c50f509f7c31f7c19346dce89584e320061fa34b",
+    "scripts/partition/topology_input.py": "ed866bf057bbc03fc472b47702460cb4df3f382dc52abc66563feec76d17d136",
+    "test/src/com/xilinx/rapidwright/edif/partition/TestMappingContractProperties.java": "fc12e9e90de6cb129471f8fa4d56105f638b2f2e067d8de49d8e84d1da5d60ac"
+  },
+  "historical_evidence": "Earlier presentation validation receipts remain historical records. Their source/report hashes describe their original snapshot; this receipt describes the revised runtime and HTML."
+}

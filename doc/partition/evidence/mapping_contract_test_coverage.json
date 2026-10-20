@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "recorded_utc": "2026-10-20T16:14:34.681644+00:00",
+  "scope": "Pre-regroup mapping syntax, exact source hierarchy, ordered ownership, source manifests and useful nonconstant population; no unavailable downstream tool was called.",
+  "contract_sources": [
+    {
+      "filename": "PXL_20261020_123604200.jpg",
+      "sha256": "ef9801526dc4d250621231fe7fcd607749d2ec4daa84c0ad10bd5ae8c2d0547d"
+    },
+    {
+      "filename": "PXL_20261020_123642570.jpg",
+      "sha256": "3e9914d971f63f308309e74a525bcd58369ee62d517471bcd126f23b3c1c8ee2"
+    },
+    {
+      "filename": "PXL_20261020_123714602.jpg",
+      "sha256": "c8e5c1b0d8096306b63e5ee3ab7db9aafe369d493023c6e50c01bd04f4ba9bec"
+    },
+    {
+      "filename": "PXL_20261020_123738963.jpg",
+      "sha256": "96e32d8121a15bfe070140f6e7ba48cd5139db53d79587c5aa8795d8db851edc"
+    },
+    {
+      "filename": "PXL_20261020_123808534.jpg",
+      "sha256": "576eef306716615b52cfa279ecf51a725530f80dd9d0cf649588e9e5c44e70fb"
+    }
+  ],
+  "independent_oracle": {
+    "source_model": "A separate test tree built by traversing actual EDIF child instances; parent links are object identities and local names containing slashes remain one instance.",
+    "ownership_model": "Process emitted records in order, remove each selected subtree from the remaining source tree, and assign only still-present functional leaves. Earlier extracted children never move again.",
+    "cross_checks": [
+      "Every functional leaf owner equals the independently supplied input assignment",
+      "Every record names an actual source instance",
+      "No ancestor is extracted before a still-mapped descendant",
+      "Nearest actual mapped ancestor controls redundancy and the records manifest",
+      "Residual root is explicit and last",
+      "Constants are classified by primitive type; real FDRE/LUT instances named GND or VCC remain functional",
+      "Ownership manifest matches every functional leaf and FPGA population",
+      "Compact and verbose exports obey the same contract"
+    ],
+    "exhaustive_five_leaf_assignments": {
+      "fpga_counts": [
+        1,
+        2,
+        3
+      ],
+      "nonempty_assignments": 181,
+      "export_modes": [
+        "compact",
+        "verbose"
+      ],
+      "successful_exports": 362
+    },
+    "seeded_source_trees": {
+      "seed": "0x4d415050494e47",
+      "source_trees": 32,
+      "maximum_depth": 3,
+      "maximum_fpga_count": 4,
+      "frontiers": [
+        "per-leaf",
+        "uniform-subtree"
+      ],
+      "export_modes": [
+        "compact",
+        "verbose"
+      ],
+      "successful_exports": 128
+    },
+    "additional_successful_exports": {
+      "reused_module_definitions": 2,
+      "literal_slash_siblings_with_distinct_actual_parents": 2
+    },
+    "golden_nested_record_permutations": {
+      "permutations": 24,
+      "valid_sibling_orders": 2,
+      "rejected_ancestor_orders": 22
+    },
+    "total_successful_property_exports": 496,
+    "independent_extraction_oracle_exports": 494,
+    "rejected_ordering_exports": 22
+  },
+  "rules": [
+    {
+      "requirement": "Exact two-token grammar; no duplicate source assignments, wildcard, quote, escape or inline comment; logical FPGA names and unique matching cells.txt",
+      "tests": [
+        "TestMappingContract.identicalDuplicatesAndMalformedRecordsAreRejected",
+        "TestMappingContract.unicodeSpacesAndControlCharactersCannotBecomeInstanceTokens",
+        "TestMappingContract.cellsMustBeUniqueAndExactlyThePopulatedDestinations",
+        "OrderedMappingContract.test_forbidden_record_forms",
+        "OrderedMappingContract.test_cells_must_agree_uniquely_with_exact_selected_destination_set"
+      ]
+    },
+    {
+      "requirement": "Exact synthesized instance paths and generate branches; never manufacture slash-prefix modules",
+      "tests": [
+        "TestMappingContract.wrongGenerateBranchAndNoninstanceNamesAreRejected",
+        "TestMappingContract.literalSlashNamesNeverCreateManufacturedParents",
+        "TestMappingContractProperties.seededSourceTreesAndCoarseFrontiersPreserveOrderedOwnership",
+        "TestMappingContractProperties.literalSlashSiblingDoesNotBecomeItsTextualParentsChild",
+        "SourceBoundContractBundle.test_complete_bundle_preserves_literal_slash_sibling_ancestry"
+      ]
+    },
+    {
+      "requirement": "Child-before-every-ancestor order, explicit residual root, no redundant nearest-ancestor assignment, preserve nested return-to-root exceptions",
+      "tests": [
+        "TestMappingContractProperties.everySmallLeafAssignmentRoundTripsThroughCompactAndVerbose",
+        "TestMappingContractProperties.everyAncestorOrderingOfTheGoldenNestedExampleIsChecked",
+        "SourceBoundContractBundle.test_every_golden_record_permutation_obeys_actual_ancestor_dependencies",
+        "TestMappingContract.nestedReturnToRootUsesNearestMappedAncestor"
+      ]
+    },
+    {
+      "requirement": "Every functional leaf has its intended owner; equal cell counts do not substitute for per-instance agreement",
+      "tests": [
+        "TestMappingContractProperties.everySmallLeafAssignmentRoundTripsThroughCompactAndVerbose",
+        "TestMappingContractProperties.seededSourceTreesAndCoarseFrontiersPreserveOrderedOwnership",
+        "TestMappingContract.missingFunctionalFrontierAndChangedOwnershipAreRejected",
+        "SourceBoundContractBundle.test_resealed_ownership_cannot_swap_leaf_owners_while_preserving_every_count"
+      ]
+    },
+    {
+      "requirement": "Constant and empty hierarchy classification is separate; every requested FPGA contains functional source logic",
+      "tests": [
+        "TestMappingContract.constantOnlyDestinationsAndExplicitConstantsCannotPublish",
+        "TestMappingContract.emptyHierarchyCannotPopulateDestination",
+        "OrderedMappingContract.test_real_logic_named_like_constant_primitives_still_gets_an_owner",
+        "TestMappingContractProperties.seededSourceTreesAndCoarseFrontiersPreserveOrderedOwnership"
+      ]
+    },
+    {
+      "requirement": "Source/ordered ownership/connection manifests and accepted publication remain hash bound",
+      "tests": [
+        "TestMappingContract.ownershipGzipCountsHashesAndTypeClassificationAreBound",
+        "SourceBoundContractBundle.test_source_mapping_or_manifest_mutations_cannot_be_blessed",
+        "SourceBoundContractBundle.test_connection_artifacts_are_hash_bound_and_have_only_pre_regroup_scope",
+        "FrontendPublicationContract.test_native_validated_mapping_staged_mutation_is_rejected"
+      ]
+    }
+  ],
+  "execution": {
+    "windows_java_runtime": "Xilinx 2025.1 bundled Java 21.0.1_12",
+    "java_command": "gradlew.bat compileJava testJava --tests 'com.xilinx.rapidwright.edif.partition.*' -x initSubmodules --console=plain --no-daemon --max-workers=4",
+    "full_java_partition_suite": {
+      "tests": 152,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "new_java_property_suite": {
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "new_java_testcases": [
+      {
+        "name": "seededSourceTreesAndCoarseFrontiersPreserveOrderedOwnership(Path)",
+        "seconds": 2.806
+      },
+      {
+        "name": "everyAncestorOrderingOfTheGoldenNestedExampleIsChecked(Path)",
+        "seconds": 0.101
+      },
+      {
+        "name": "everySmallLeafAssignmentRoundTripsThroughCompactAndVerbose(Path)",
+        "seconds": 7.709
+      },
+      {
+        "name": "literalSlashSiblingDoesNotBecomeItsTextualParentsChild(Path)",
+        "seconds": 0.055
+      },
+      {
+        "name": "reusedModuleDefinitionsRetainDistinctSourceInstances(Path)",
+        "seconds": 0.037
+      }
+    ],
+    "new_java_junit_original_sha256": "7b96e61130655fc57e1566df01be7656a8be34711321a6582b59ae836296fb0a",
+    "python_source_bound_bundle_suite": {
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "python_mapping_module_discovered_method_counts": {
+      "OrderedMappingContract": 17,
+      "SourceBoundContractBundle": 13,
+      "CompleteConnectionStream": 6,
+      "FrontendPublicationContract": 3
+    },
+    "sources_sha256": {
+      "test/src/com/xilinx/rapidwright/edif/partition/TestMappingContractProperties.java": "fc12e9e90de6cb129471f8fa4d56105f638b2f2e067d8de49d8e84d1da5d60ac",
+      "scripts/partition/test_mapping_contract.py": "1c7ae695c6fc0779815146d3e15372fafabb43680070a39aa01fcc30f35f1344",
+      "scripts/partition/mapping_contract.py": "5a9744805c49f120974be7b12d8708398c74aa20a4a393d9e0a3b0b769dc4c47",
+      "src/com/xilinx/rapidwright/edif/partition/MappingContract.java": "27ec47ba8af9228f9a6efe91c70604d2634f27b13dda7363eae7209ca655887c"
+    }
+  },
+  "limits": [
+    "These bounded exhaustive and seeded checks are not a proof over all possible netlists.",
+    "The Java source graph is the authority for exact EDIF hierarchy. Native implementation-leaf versus original EDIF macro expansion is not assumed interchangeable.",
+    "The independent extraction oracle checks intended source ownership only; it does not model or execute WrapAndRegroup.",
+    "No claim is made for transformed-netlist connectivity, clock/reset delivery, promoted attributes, BRAM metadata, transport, routing, DUT frequency or hardware behavior."
+  ],
+  "actual_qualified_mapping_replay": {
+    "status": "PASS",
+    "receipt_relative_to_workspace": "work/ci_runtime_20261020/qualified_mapping_replay_receipt.json",
+    "receipt_sha256": "d07c480cb66ad939ef3109af9a19169111aa51397418b92f46e14c5a7b59f093",
+    "oracle_script_relative_to_workspace": "work/ci_runtime_20261020/replay_qualified_mapping_ownership.py",
+    "oracle_script_sha256": "4d52638bf0aaecef2217c4ac880e1504d65d802ba18fe9f19c4d2c928ae8278a",
+    "cases": 16,
+    "functional_rows": 59952616,
+    "ownership_mismatches": 0,
+    "seconds": 200.381,
+    "maximum_cached_parent_paths": 65536,
+    "checks": [
+      "Every functional source leaf label matches its most-specific serialized mapping owner",
+      "Every functional leaf label matches its recorded actual governing record owner and frontier owner",
+      "Functional, constant, empty and per-FPGA population counts match the original source-bound contract",
+      "Original mapping, cells, contract, records and ownership artifacts retain identical before/after hashes"
+    ],
+    "per_case": [
+      {
+        "case": "AES_FARM/k1",
+        "functional_rows": 517282,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "b7c6ffa571a33ca19d6d42a6643983836957089d2af3b303ed31f9ef257fbd23",
+        "ownership_sha256": "80ec91385e03f719b3544bee6301bf96a5c147ed0590817e0188e7b1f8cc573d",
+        "contract_sha256": "97ffe8e30e6a5eeeb11d62506b249385fd2ed1c9ae65ce7c419040bb3ffc1149",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "AES_FARM/k2",
+        "functional_rows": 517282,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "7b8fb305f1a3044fbb19195afee06b313cb56279af47111862827c6e1b892c64",
+        "ownership_sha256": "608a26233cbf5e0a989ad9db6b363a06ea2a7f227c353777eaa633020ec064f7",
+        "contract_sha256": "38306a13b737c1768bb072930b93e2d01a8e06f4f32c1a0ee488004551d300d4",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "AES_FARM/k3",
+        "functional_rows": 517282,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "bd809f8d164fc8922ca00e74a0d3bb1ad0a32ef169cdf0aadf0166af73f3930b",
+        "ownership_sha256": "f1a5e475fe221f9c7fc9dd81c4a30731cf4cab08a3ba4da3c46d07be2949691c",
+        "contract_sha256": "bc2233d953c0a98aafefae613baa9a701b9654740e66da9ee3dc773dd87ef27b",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "AES_FARM/k4",
+        "functional_rows": 517282,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "8939662e82c3bf0df6a9774aaaa1f7a5dcafc02d2575860be9c46a4d32d481c1",
+        "ownership_sha256": "b6b08bca32e50978ddfba098454b7c18910416e82726975b546ced232b8a91c2",
+        "contract_sha256": "dde47451dbbeb52a5b66945bf6e78ae2b52eaacdea4cee5584986402c0be1ed2",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "NVDLA/k1",
+        "functional_rows": 2864063,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "1c4a2ad3b2f82091a816586fd118177b0a06a3777ea0855fcfcd0be354041102",
+        "ownership_sha256": "10e317b36c758230e25009600aa0d97f4c916a7f3510fb5018b87356f94d4713",
+        "contract_sha256": "42e5fc3749e6716a0f0d29eff2057543ba8f4519fc74ecc0c967fa2239371efa",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "NVDLA/k2",
+        "functional_rows": 2864063,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "a96012d04d81ec68c19a30907a02743c360172625c577c1b364496fd0a34461e",
+        "ownership_sha256": "762bd89369eb592b33ea0923504a958f151fda443548220ccbd08fa696579a95",
+        "contract_sha256": "a0e9d2873bdb7dfefe3cde9da7a7308a0534cbb53f87eb1dc476b692207b41b5",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "NVDLA/k3",
+        "functional_rows": 2864063,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "b899348a578c759450a0d11d0310c547bae90dc6351084b42af2573ddeeb9adb",
+        "ownership_sha256": "24f5c089dbd36cd2b09562cd7a89657ed9c35d6f8f00b0d713a52ba4b5033bcd",
+        "contract_sha256": "8d5e14a0df09936326eebd373cad670eb70a00a1e3183560b39618d522c6bc6e",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "NVDLA/k4",
+        "functional_rows": 2864063,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "ca5b7a52c30fa8cbf9a0097a72cd9da828a5cc062ddad0625ba0fdbff767bb29",
+        "ownership_sha256": "90dbc848a068b6fa3740b4da358e919906b0f2a4a4dad9d30106d28d2acd7601",
+        "contract_sha256": "aa402b103ea5d03bfe0773ce162d5ecad5d3be86609d510a64b59dcfb7f47c9c",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "OPENTITAN_EARL_GREY/k1",
+        "functional_rows": 427171,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "c2ea38c33d11023cf078f580cb53bbd84e0a0c93f45a94a1a374321bbb5dfc16",
+        "ownership_sha256": "e4e42e462320e936929d490cf8395de9b1aa84eac9252a5c0ca44c3d20fb064c",
+        "contract_sha256": "79d4b1a55c887e8439e73c48b9d8e7ebecfa19b312394c2ed786084c1ac2e54a",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "OPENTITAN_EARL_GREY/k2",
+        "functional_rows": 427171,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "8e73a3d350a4a38d08e922e5da90f7400712ab287cfe06d87ef754cf56b9a7d9",
+        "ownership_sha256": "173caf2fa57f18fe20dfc52d54f9e86f7b7db18803b0514c4d95363844dacc79",
+        "contract_sha256": "5c8013bd109274d810547ffa60d10155792190f05ab0d04a054c1957f0d9212b",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "OPENTITAN_EARL_GREY/k3",
+        "functional_rows": 427171,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "b181b872ea6a5b81c5a64307f3a667a69e4a2f5db9262101e2a19790cb5df7c4",
+        "ownership_sha256": "0c464f1007a002bc9a1c5ada7b2da740eda3463935cf75c3e5ebada705967b56",
+        "contract_sha256": "2377890f5b5783af7cd25f2bbbf2059e87351d17f6dc584d2c1a6849f7a99330",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "OPENTITAN_EARL_GREY/k4",
+        "functional_rows": 427171,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "ce123a0a45471b29b8db474822c4a9df81ba3528282fc487198310aba89eae3d",
+        "ownership_sha256": "d144739870d0311784a2025f20b94eac4ebeaa5ca6ad3a4627ce599d2aedb368",
+        "contract_sha256": "e835f6c66bccc1c1f02d8510c427fb9486d1750f475e5cfecfb339e160b6c2c0",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "RISCV_MESH_3072/k1",
+        "functional_rows": 11179638,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "962a2da742da514bc29fb85f8cac59cf2ab1d571b84e9219d95b0634740cb508",
+        "ownership_sha256": "a69cb5215175ecf8ea0e4694746546b9639bd5f3140f6a568f30ba0b7a3d2622",
+        "contract_sha256": "e48c1507b2f4126403e2e97f335049899134061fc4d5bebd68cf0a8a867d14c9",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "RISCV_MESH_3072/k2",
+        "functional_rows": 11179638,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "60cd1a606f5c77c3f148bff48e5241786ac4aa4c3942e2ba8ca87ffec9216518",
+        "ownership_sha256": "14541b5aa3dd26feb0acbb30e0ac8df93eef722654c1ec45abb93575c0d50db3",
+        "contract_sha256": "43b63c0b008faa7ecc721dbddaa28fda0941dd6ec42bad1adda45346cb3f66b0",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "RISCV_MESH_3072/k3",
+        "functional_rows": 11179638,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "057521ae583649551cb9a0b7fdaa7c24c42691f9f585376d405f58d3e0fff2ef",
+        "ownership_sha256": "9724310278b7d95b5739bbde5b936c3e7dd1092bb41b06541f9a702558cd5086",
+        "contract_sha256": "6a56f8adbadc657c6519f6628648b31d1ec801f1426b7cd8bff69a1793af1f16",
+        "all_source_files_unchanged": true
+      },
+      {
+        "case": "RISCV_MESH_3072/k4",
+        "functional_rows": 11179638,
+        "ownership_mismatches": 0,
+        "mapping_sha256": "eb7e646246ddf02e787a23e1c12d874b5ed7cfb6aaa5183399bcb52c715b98d7",
+        "ownership_sha256": "ad9b95ebdf76e795d81818098aade25222357605a16782ba0d7c56645645e1a0",
+        "contract_sha256": "c1f5bf13c516b359dc4d8d3ed3601f931887692a093c139ed3d352568e2235a8",
+        "all_source_files_unchanged": true
+      }
+    ],
+    "fresh_native_measurement": false,
+    "scope": "Read-only streaming replay of every functional source ownership row against each original qualified successor mapping; not a fresh Native or downstream regroup validation."
+  }
+}

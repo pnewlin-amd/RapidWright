@@ -10,6 +10,7 @@ env:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         single_threaded: [multi-threaded, single-threaded]
@@ -39,7 +40,10 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          pip install pytest python/
+          python -m pip install pytest python/ -r scripts/partition/requirements.txt
+
+      - name: Check partitioner Python before Java build
+        run: python -m unittest discover -s scripts/partition -p 'test_*.py'
 
       - name: Compile
         run: ./gradlew assemble -Dorg.gradle.warning.mode=fail 

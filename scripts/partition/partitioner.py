@@ -15,6 +15,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 REPO = Path(__file__).resolve().parents[2]
@@ -237,6 +238,24 @@ def prepare_reporting(output):
     return module, font, proof, pins
 
 
+def start_runtime_monitor(started_perf, started_cpu, started_utc, wsl):
+    source = Path(__file__).with_name("runtime_metrics.py")
+    digest = sha256(source)
+    specification = importlib.util.spec_from_file_location("partition_runtime_metrics", source)
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    monitor = module.RuntimeMonitor(started_perf=started_perf, started_cpu=started_cpu,
+                                   started_utc=started_utc,
+                                   wsl_guest_excluded=os.name == "nt" and bool(wsl)).start()
+    pins = {source: digest, source.with_name("requirements.txt"): sha256(source.with_name("requirements.txt"))}
+    try:
+        verify_snapshots(pins)
+    except Exception:
+        monitor.stop()
+        raise
+    return monitor, pins
+
+
 def publish_partition_reports(output, state, staged_mapping, renderer, font):
     """Stage and verify every presentation artifact before mapping publication."""
     stage = Path(output) / "report.pending"
@@ -261,6 +280,20 @@ def publish_partition_reports(output, state, staged_mapping, renderer, font):
     stage.rmdir()
     verify_snapshots(pins)
     return pins
+
+
+def finalize_runtime_report(output, state, renderer, monitor, report_pins):
+    """Seal timing after the expensive source checks, before mapping publication."""
+    verify_snapshots(report_pins)
+    statistics = monitor.snapshot("before_mapping_publication")
+    manifest = renderer.refresh_runtime(output, statistics)
+    if manifest["mapping_sha256"] != state["accepted_mapping_sha256"]:
+        raise ValueError("Runtime report refresh changed mapping identity")
+    for name, digest in manifest["files_sha256"].items():
+        if sha256(Path(output) / name) != digest:
+            raise ValueError("Runtime report refresh hash differs: " + name)
+    state["runtime_statistics"] = statistics
+    return {Path(output) / name: sha256(Path(output) / name) for name in renderer.REPORT_FILES}
 
 
 def freeze_selected_reports(selected):
@@ -768,6 +801,8 @@ def parser():
 
 
 def execute(args):
+    started_perf, started_cpu = time.perf_counter(), time.process_time()
+    started_utc = datetime.now(timezone.utc).isoformat()
     out = (args.output if args.output else Path.cwd() / "partition_results" /
            (args.input.stem + "_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f"))).resolve()
     if out.exists() and any(out.iterdir()):
@@ -781,6 +816,7 @@ def execute(args):
              "frontend_sha256": sha256(Path(__file__))}
     status.write_text(json.dumps(state, indent=2))
     native_session = None
+    runtime_monitor = None
     published_mapping_hash = None
     presentation_names = ()
     source_pair_snapshots = {}
@@ -818,6 +854,7 @@ def execute(args):
         passes = args.refine_passes if args.refine_passes is not None else (1, 3, 6)[quality]
         if min(iterations, starts, args.threads) < 1 or passes < 0:
             raise ValueError("Iterations, starts and threads must be positive; passes nonnegative")
+        runtime_monitor, runtime_pins = start_runtime_monitor(started_perf, started_cpu, started_utc, args.wsl)
         source = args.input.resolve()
         source_hash = sha256(source)
         topology_source = args.system_topology.resolve()
@@ -1041,6 +1078,7 @@ def execute(args):
                        and all(path.is_file() for path in session_files))
         tool_snapshots = {path: sha256(path) for path in session_files} if use_session else {}
         tool_snapshots.update(report_tool_pins)
+        tool_snapshots.update(runtime_pins)
         tool_snapshots[capacity_source] = capacity_source_sha
         contract_source = Path(__file__).with_name("mapping_contract.py")
         tool_snapshots[contract_source] = sha256(contract_source)
@@ -1374,6 +1412,7 @@ def execute(args):
         state["selected_report_sha256"] = selected_report_hashes
         state["mapping_contract"] = contract_audit
         state["iterations_attempted"] = len(state["candidates"])
+        state["runtime_statistics"] = runtime_monitor.snapshot("before_report_generation")
         report_pins = publish_partition_reports(out, state, staged_mapping, renderer, report_font)
         state["presentation_report_sha256"] = {path.name: digest for path, digest in report_pins.items()}
         report_manifest = json.loads((out / "report_manifest.json").read_text(encoding="utf-8"))
@@ -1394,6 +1433,13 @@ def execute(args):
             raise ValueError("Original topology changed during report generation")
         if (sha256(source), sha256(netlist), sha256(checkpoint), sha256(inventory)) != (source_hash, netlist_hash, checkpoint_hash, inventory_hash):
             raise ValueError("Source or native reference changed during report generation")
+        report_pins = finalize_runtime_report(out, state, renderer, runtime_monitor, report_pins)
+        state["presentation_report_sha256"] = {path.name: digest for path, digest in report_pins.items()}
+        verify_snapshots(report_pins)
+        verify_snapshots(report_source_pins)
+        verify_snapshots(tool_snapshots)
+        if sha256(staged_mapping) != selected_mapping_hash:
+            raise ValueError("Staged mapping changed during runtime report refresh")
         os.replace(staged_mapping, out / "mapping.txt")
         published_mapping_hash = selected_mapping_hash
         status.write_text(json.dumps(state, indent=2))
@@ -1412,8 +1458,12 @@ def execute(args):
         status.write_text(json.dumps(state, indent=2))
         raise
     finally:
-        if native_session is not None:
-            native_session.close()
+        try:
+            if native_session is not None:
+                native_session.close()
+        finally:
+            if runtime_monitor is not None:
+                runtime_monitor.stop()
 
 
 if __name__ == "__main__":
